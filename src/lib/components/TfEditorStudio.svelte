@@ -21,6 +21,10 @@
   let dominantColors = $state<Array<{ hex: string; count: number }>>([]);
   let copiedHex = $state<string | null>(null);
 
+  // Interactive Color Picker State
+  let isColorPickerActive = $state(false);
+  let sampledColor = $state<{ hex: string; rgb: string } | null>(null);
+
   const applyTfCanvasFilters = async () => {
     if (!rawImageObj || !tfCanvas) return;
     const version = ++renderVersion;
@@ -106,6 +110,31 @@
     } catch (error) {
       modelError = error instanceof Error ? error.message : 'TensorFlow.js could not process this image.';
     }
+  };
+
+  const handleCanvasClick = (e: MouseEvent) => {
+    if (!isColorPickerActive || !tfCanvas) return;
+    const canvas = tfCanvas;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const x = Math.floor((e.clientX - rect.left) * scaleX);
+    const y = Math.floor((e.clientY - rect.top) * scaleY);
+
+    if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) return;
+
+    const pixel = ctx.getImageData(x, y, 1, 1).data;
+    const r = pixel[0];
+    const g = pixel[1];
+    const b = pixel[2];
+    const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+    const rgb = `rgb(${r}, ${g}, ${b})`;
+
+    sampledColor = { hex, rgb };
   };
 
   const extractColorPalette = () => {
@@ -201,6 +230,7 @@
       previousImage = rawImageObj;
       backgroundMask = null;
       imageDescription = '';
+      sampledColor = null;
       extractColorPalette();
     }
     void applyTfCanvasFilters();
@@ -241,6 +271,25 @@
         </div>
       </div>
     {/if}
+
+    <!-- Color Picker Tool Toggle -->
+    <div class="space-y-2 bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-dark flex items-center gap-1.5">
+          <Icon icon="mdi:eyedropper" class="text-primary text-base" /> Eyedropper Tool
+        </span>
+        <button
+          type="button"
+          onclick={() => isColorPickerActive = !isColorPickerActive}
+          class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer {isColorPickerActive ? 'bg-purple-600 text-white animate-pulse' : 'bg-white text-dark border border-gray-200 hover:bg-gray-100'}"
+        >
+          {isColorPickerActive ? 'ACTIVE (Click Image)' : 'OFF'}
+        </button>
+      </div>
+      {#if isColorPickerActive}
+        <p class="text-[11px] text-purple-600 font-medium">Click anywhere on the preview image to sample color.</p>
+      {/if}
+    </div>
 
     <div>
       <div class="flex justify-between text-xs font-medium mb-1 text-gray-600">
@@ -286,8 +335,42 @@
     </button>
   </div>
 
-  <!-- Canvas Preview Area -->
-  <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[500px]">
-    <canvas bind:this={tfCanvas} class="max-w-full max-h-[520px] object-contain rounded-xl shadow-md border border-gray-200"></canvas>
+  <!-- Canvas Preview Area with Sampled Color Footer -->
+  <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-between min-h-[500px]">
+    <div class="w-full flex-1 flex items-center justify-center overflow-hidden bg-gray-100 rounded-xl border border-gray-200 p-2">
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <canvas 
+        bind:this={tfCanvas} 
+        onclick={handleCanvasClick}
+        class="max-w-full max-h-[460px] object-contain rounded-lg shadow-md {isColorPickerActive ? 'cursor-crosshair ring-2 ring-purple-600' : 'cursor-default'}"
+      ></canvas>
+    </div>
+
+    <!-- Sampled Color Displayed at the Bottom -->
+    <div class="w-full mt-4 bg-gray-50 p-3.5 rounded-xl border border-gray-200 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-xs font-semibold text-gray-600">Sampled Color:</span>
+        {#if sampledColor}
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded-md border border-black/10 shadow-xs" style="background-color: {sampledColor.hex};"></div>
+            <span class="text-xs font-mono font-bold text-dark">{sampledColor.hex}</span>
+            <span class="text-[11px] font-mono text-gray-500">({sampledColor.rgb})</span>
+          </div>
+        {:else}
+          <span class="text-xs text-gray-400 italic">Toggle Eyedropper ON and click on image</span>
+        {/if}
+      </div>
+
+      {#if sampledColor}
+        <button
+          type="button"
+          onclick={() => sampledColor && copyHexCode(sampledColor.hex)}
+          class="px-3 py-1 bg-white hover:bg-gray-100 border border-gray-200 text-dark font-semibold text-xs rounded-lg transition cursor-pointer"
+        >
+          Copy HEX
+        </button>
+      {/if}
+    </div>
   </div>
 </div>
