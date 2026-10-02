@@ -11,12 +11,19 @@
   let gridColor = $state('rgba(0, 0, 0, 0.5)');
   let gridLineStyle = $state<'dashed' | 'solid'>('dashed');
   let showDiagonals = $state(true);
+  let showRuleOfThirds = $state(false);
+  let showGoldenSpiral = $state(false);
+  let isGrayscale = $state(false);
+  let isFlipped = $state(false);
+  let showCoordinates = $state(true);
   let gridPieces = $state<string[]>([]);
 
   let imageContainerRef = $state<HTMLDivElement | null>(null);
   let isLineToolActive = $state(false);
   let tempLineStart = $state<{ x: number; y: number } | null>(null);
   let customLines = $state<Array<{ x1: number; y1: number; x2: number; y2: number }>>([]);
+
+  const colLetters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"];
 
   const splitImage = () => {
     if (!rawImageObj) return;
@@ -48,7 +55,8 @@
 
     if (e.clientX < imgRect.left || e.clientX > imgRect.right || e.clientY < imgRect.top || e.clientY > imgRect.bottom) return;
 
-    const x = ((e.clientX - imgRect.left) / imgRect.width) * 100;
+    let x = ((e.clientX - imgRect.left) / imgRect.width) * 100;
+    if (isFlipped) x = 100 - x; // account for horizontal mirror transform
     const y = ((e.clientY - imgRect.top) / imgRect.height) * 100;
 
     if (!tempLineStart) {
@@ -66,7 +74,14 @@
     if (!ctx) return;
     canvas.width = rawImageObj.width;
     canvas.height = rawImageObj.height;
+
+    ctx.save();
+    if (isFlipped) {
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+    }
     ctx.drawImage(rawImageObj, 0, 0);
+    ctx.restore();
 
     ctx.strokeStyle = gridColor;
     ctx.lineWidth = Math.max(2, Math.floor(rawImageObj.width / 400));
@@ -102,7 +117,7 @@
     }
 
     const link = document.createElement('a');
-    link.download = `artist_grid_with_lines_${rows}x${cols}.jpg`;
+    link.download = `artist_grid_pro_${rows}x${cols}.jpg`;
     link.href = canvas.toDataURL('image/jpeg', 0.95);
     link.click();
   };
@@ -124,7 +139,7 @@
 </script>
 
 <div class="space-y-6">
-  <!-- Controls -->
+  <!-- Controls Panel -->
   <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
     <div>
       <label class="block text-xs font-semibold mb-1 text-gray-700">Rows: {rows}</label>
@@ -152,7 +167,29 @@
     </div>
   </div>
 
-  <!-- Toggles & Download -->
+  <!-- Artist Advanced Tools Toolbar -->
+  <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs flex flex-wrap items-center justify-between gap-4 text-xs">
+    <div class="flex flex-wrap items-center gap-4">
+      <label class="flex items-center gap-1.5 font-medium cursor-pointer text-gray-700">
+        <input type="checkbox" bind:checked={isGrayscale} class="rounded accent-primary w-4 h-4" />
+        <span>Value Study (B&W)</span>
+      </label>
+      <label class="flex items-center gap-1.5 font-medium cursor-pointer text-gray-700">
+        <input type="checkbox" bind:checked={isFlipped} class="rounded accent-primary w-4 h-4" />
+        <span>Mirror View (Flip H)</span>
+      </label>
+      <label class="flex items-center gap-1.5 font-medium cursor-pointer text-gray-700">
+        <input type="checkbox" bind:checked={showCoordinates} class="rounded accent-primary w-4 h-4" />
+        <span>Grid Labels (A1, B2)</span>
+      </label>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <span class="font-mono text-gray-500">Total Cells: <strong class="text-dark">{cols * rows}</strong></span>
+    </div>
+  </div>
+
+  <!-- Mode & Export Bar -->
   <div class="flex flex-wrap justify-between items-center gap-4 bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
     <div class="flex gap-2">
       <button onclick={() => gridMode = 'overlay'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {gridMode === 'overlay' ? 'bg-primary text-light shadow-sm' : 'bg-gray-100 text-dark hover:bg-gray-200'}">
@@ -163,10 +200,14 @@
       </button>
     </div>
 
-    <div class="flex items-center gap-4">
-      <label class="flex items-center gap-2 text-xs font-medium cursor-pointer text-gray-700">
+    <div class="flex items-center gap-4 flex-wrap">
+      <label class="flex items-center gap-1.5 text-xs font-medium cursor-pointer text-gray-700">
         <input type="checkbox" bind:checked={showDiagonals} class="rounded accent-primary w-4 h-4" />
-        <span>Center Diagonals (X)</span>
+        <span>Center Diagonals</span>
+      </label>
+      <label class="flex items-center gap-1.5 text-xs font-medium cursor-pointer text-gray-700">
+        <input type="checkbox" bind:checked={showRuleOfThirds} class="rounded accent-primary w-4 h-4" />
+        <span>Rule of Thirds</span>
       </label>
       <button onclick={downloadGridWithOverlay} class="bg-primary hover:bg-primary-dark text-light font-semibold py-2 px-4 rounded-xl shadow transition text-xs flex items-center gap-1.5 cursor-pointer">
         <Icon icon="mdi:download" class="text-sm" /> Save Grid & Lines
@@ -196,18 +237,57 @@
         onclick={handleImageClick}
         bind:this={imageContainerRef}
       >
-        <img src={originalImageSrc} alt="Reference" class="max-h-[500px] w-auto object-contain block pointer-events-none" />
+        <img 
+          src={originalImageSrc} 
+          alt="Reference" 
+          class="max-h-[500px] w-auto object-contain block pointer-events-none transition-all duration-300"
+          style="filter: {isGrayscale ? 'grayscale(100%) contrast(125%)' : 'none'}; transform: {isFlipped ? 'scaleX(-1)' : 'scaleX(1)'}"
+        />
+
         <svg class="absolute inset-0 w-full h-full pointer-events-none">
+          <!-- Columns -->
           {#each Array(cols - 1) as _, c}
             <line x1="{((c + 1) / cols) * 100}%" y1="0" x2="{((c + 1) / cols) * 100}%" y2="100%" stroke={gridColor} stroke-width="1.5" stroke-dasharray={gridLineStyle === 'dashed' ? '5 3' : 'none'} />
           {/each}
+          <!-- Rows -->
           {#each Array(rows - 1) as _, r}
             <line x1="0" y1="{((r + 1) / rows) * 100}%" x2="100%" y2="{((r + 1) / rows) * 100}%" stroke={gridColor} stroke-width="1.5" stroke-dasharray={gridLineStyle === 'dashed' ? '5 3' : 'none'} />
           {/each}
+
+          <!-- Rule of Thirds Guides -->
+          {#if showRuleOfThirds}
+            <line x1="33.33%" y1="0" x2="33.33%" y2="100%" stroke="#eab308" stroke-width="1" stroke-dasharray="4 4" />
+            <line x1="66.66%" y1="0" x2="66.66%" y2="100%" stroke="#eab308" stroke-width="1" stroke-dasharray="4 4" />
+            <line x1="0" y1="33.33%" x2="100%" y2="33.33%" stroke="#eab308" stroke-width="1" stroke-dasharray="4 4" />
+            <line x1="0" y1="66.66%" x2="100%" y2="66.66%" stroke="#eab308" stroke-width="1" stroke-dasharray="4 4" />
+          {/if}
+
+          <!-- Center Diagonals -->
           {#if showDiagonals}
             <line x1="0" y1="0" x2="100%" y2="100%" stroke={gridColor} stroke-width="1" stroke-dasharray="3 3" opacity="0.7" />
             <line x1="100%" y1="0" x2="0" y2="100%" stroke={gridColor} stroke-width="1" stroke-dasharray="3 3" opacity="0.7" />
           {/if}
+
+          <!-- Coordinate Cell Labels (A1, B2...) -->
+          {#if showCoordinates}
+            {#each Array(rows) as _, r}
+              {#each Array(cols) as __, c}
+                <text 
+                  x="{((c + 0.05) * (100 / cols))}%" 
+                  y="{((r + 0.15) * (100 / rows))}%" 
+                  fill={gridColor} 
+                  opacity="0.8" 
+                  font-size="10" 
+                  font-family="monospace" 
+                  font-weight="bold"
+                >
+                  {colLetters[c] || 'X'}{r + 1}
+                </text>
+              {/each}
+            {/each}
+          {/if}
+
+          <!-- Custom Perspective Lines -->
           {#each customLines as line}
             <line x1="{line.x1}%" y1="{line.y1}%" x2="{line.x2}%" y2="{line.y2}%" stroke="#9333ea" stroke-width="2.5" />
           {/each}
@@ -228,7 +308,9 @@
         {#each gridPieces as piece, index}
           <div class="relative group bg-gray-50 rounded-xl overflow-hidden border border-gray-200 shadow-xs">
             <img src={piece} alt="Tile" class="w-full h-auto block aspect-square object-cover" />
-            <span class="absolute top-1 left-1 bg-black/75 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">#{index + 1}</span>
+            <span class="absolute top-1 left-1 bg-black/75 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+              {colLetters[index % cols]}{Math.floor(index / cols) + 1}
+            </span>
           </div>
         {/each}
       </div>
