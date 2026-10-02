@@ -5,7 +5,7 @@
   import HeaderComponent from "$lib/components/Header.svelte";
   import FooterComponent from "$lib/components/Footer.svelte";
 
-  const headline = "About Artist Studio Suite";
+  const headline = "About Artist SvelteKit Studio";
   let displayedText = "";
   let typeTimer: ReturnType<typeof setTimeout> | null = null;
 

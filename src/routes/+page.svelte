@@ -61,24 +61,21 @@
 </svelte:head>
 
 <div class="min-h-screen bg-light text-dark flex flex-col selection:bg-primary selection:text-light font-sans">
-  <HeaderComponent title="Studio Suite" />
+  <HeaderComponent title="SvelteKit Studio" />
 
   <!-- Hero Section -->
   <section class="relative bg-cover bg-center min-h-[380px] flex items-center justify-center overflow-hidden border-b border-secondary/20" style="background-image: url('https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=1600&auto=format&fit=crop');">
     <div class="absolute inset-0 bg-gradient-to-b from-black/85 via-black/60 to-black/90 pointer-events-none" />
-    <div class="relative z-10 max-w-4xl mx-auto text-center px-4 py-16 text-light space-y-4">
+    <div class="relative z-10 mx-auto text-center px-4 py-16 text-light space-y-4">
       <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-white min-h-[2.5rem]" in:fly={{ y: 25, duration: 400 }}>
         {displayedText}
       </h1>
       <p class="text-sm sm:text-base text-light/85 max-w-2xl mx-auto">
         Precise drawing grid overlays, custom lines, tensor tone tools, and 30+ advanced filters.
       </p>
-    </div>
-  </section>
 
-  <!-- 3-Tab Navigation Bar -->
-  <div class="bg-white border-b border-gray-200 sticky top-16 z-20 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
+      <div class="bg-white border-b border-gray-200 sticky top-16 z-20 shadow-xs">
+    <div class="mx-auto px-4 py-3 flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
       <button 
         class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'splitter' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" 
         onclick={() => activeTab = 'splitter'}
@@ -100,10 +97,9 @@
         <Icon icon="mdi:palette-advanced" /> 30+ Filter Library
       </button>
     </div>
-  </div>
 
-  <!-- Workspace -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-10">
+    <!-- Workspace -->
+  <div class="flex-1 max-w-7x w-full mx-auto px-4 py-10">
     {#if !imageLoaded}
       <div class="max-w-2xl mx-auto bg-white border-2 border-dashed border-gray-300 rounded-3xl p-12 text-center hover:border-primary transition shadow-sm">
         <Icon icon="mdi:cloud-upload-outline" class="w-16 h-16 mx-auto mb-4 text-gray-400" />
@@ -154,7 +150,12 @@
         <AdvancedFiltersStudio {rawImageObj} />
       </div>
     {/if}
-  </main>
+    </div>
+  </div>
+    </div>
+  </section>
+
+  
 
   <FooterComponent />
 </div>

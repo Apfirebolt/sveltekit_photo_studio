@@ -7,7 +7,6 @@
   const menuItems = [
     { name: "Home", url: "/", icon: "mdi:home-variant-outline" },
     { name: "About", url: "/about", icon: "mdi:information-outline" },
-    { name: "Editor", url: "/shows", icon: "mdi:television-classic" },
   ];
 
   let isMenuOpen = false;
@@ -53,7 +52,7 @@
         <Icon icon="mdi:movie-open-play-outline" class="text-xl" />
       </div>
       <span class="text-xl font-black tracking-tight text-white">
-        {title}<span class="text-bermuda">.io</span>
+        {title}
       </span>
     </a>
 
@@ -65,7 +64,7 @@
           href={item.url}
           data-sveltekit-preload-data="hover"
           class="relative px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-bermuda flex items-center gap-1.5 {active
-            ? 'text-dark bg-bermuda shadow-md shadow-bermuda/25 font-extrabold'
+            ? 'text-light bg-bermuda shadow-md shadow-bermuda/25 font-extrabold'
             : 'text-white/80 hover:text-white hover:bg-white/10'}"
           aria-current={active ? "page" : undefined}
         >
@@ -106,7 +105,6 @@
   class="fixed top-0 right-0 z-50 h-full w-4/5 max-w-xs bg-primary text-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out lg:hidden"
   class:translate-x-0={isMenuOpen}
   class:translate-x-full={!isMenuOpen}
-  role="dialog"
   aria-modal="true"
   aria-label="Mobile Navigation"
 >
@@ -138,7 +136,7 @@
             href={item.url}
             data-sveltekit-preload-data="hover"
             class="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold tracking-wide transition-all {active
-              ? 'bg-bermuda text-dark shadow-md shadow-bermuda/20'
+              ? 'bg-bermuda text-white shadow-md shadow-bermuda/20'
               : 'bg-white/5 text-white/90 hover:bg-white/10 hover:text-bermuda border border-white/5'}"
             aria-current={active ? "page" : undefined}
             on:click={closeMenu}
@@ -147,7 +145,7 @@
               <Icon icon={item.icon} class="text-lg {active ? 'text-dark' : 'text-white/60'}" />
               <span>{item.name}</span>
             </div>
-            <Icon icon="mdi:chevron-right" class="text-base {active ? 'text-dark' : 'text-white/40'}" />
+            <Icon icon="mdi:chevron-right" class="text-base {active ? 'text-light' : 'text-white/40'}" />
           </a>
         </li>
       {/each}

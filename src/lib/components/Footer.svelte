@@ -29,12 +29,12 @@
           class="inline-flex items-center gap-2.5 text-lg font-black tracking-tight text-white focus:outline-none rounded-xl transition-transform active:scale-95"
         >
           <div class="w-8 h-8 rounded-xl bg-primary/20 border border-primary/40 flex items-center justify-center text-primary shadow-xs">
-            <Icon icon="mdi:drawing-box" class="text-lg" />
+            <Icon icon="mdi:drawing-box" class="text-lg" />   
           </div>
-          <span>Artist<span class="text-primary">Studio</span>.io</span>
+          <span>SvelteKit <span class="text-primary"> Studio</span></span>
         </a>
         <p class="text-xs text-light/70 font-sans max-w-sm">
-          A high-performance, client-side browser studio combining reference grids, custom line geometry, and 5 curated artistic styles.
+          A high-performance, client-side browser studio combining reference grids, custom line geometry, and 20+ curated artistic styles.
         </p>
       </div>
 
@@ -70,13 +70,9 @@
     <!-- Bottom Row: Copyright & Back to Top -->
     <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-light/60 text-center sm:text-left">
       <p>
-        &copy; {year} Artist Studio Suite. Built with SvelteKit & HTML5 Canvas.
+        &copy; {year} SvelteKit Studio. Built with SvelteKit & HTML5 Canvas.
       </p>
       <div class="flex items-center gap-6">
-        <span class="inline-flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          100% Local & Private Processing
-        </span>
         <a
           href="#top"
           class="hover:text-primary transition-colors underline underline-offset-4"

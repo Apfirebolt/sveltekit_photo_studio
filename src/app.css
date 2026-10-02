@@ -20,11 +20,11 @@ h2 {
 }
 
 @theme {
-  --color-primary: #40534C;
-  --color-secondary: #543A14;
-  --color-tertiary: #F0BB78;
-  --color-light: #FAEDCE;
-  --color-dark: #1D1616;
+  --color-primary: #6D0808;
+  --color-secondary: #315B8C;
+  --color-tertiary: #757D6F;
+  --color-light: #EEEAD7;
+  --color-dark: #0D1C42;
   --color-danger: #E82561;
   --color-success: #5B913B;
   --color-info: #f9f871;
