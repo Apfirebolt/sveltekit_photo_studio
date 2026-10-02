@@ -16,6 +16,11 @@
   let isGrayscale = $state(false);
   let isFlipped = $state(false);
   let showCoordinates = $state(true);
+  
+  // New Frame States
+  let selectedFrame = $state<'none' | 'fire' | 'smoke' | 'golden' | 'neon' | 'mosaic' | 'square'>('none');
+  let frameThickness = $state(25);
+
   let gridPieces = $state<string[]>([]);
 
   let imageContainerRef = $state<HTMLDivElement | null>(null);
@@ -83,6 +88,42 @@
     ctx.drawImage(rawImageObj, 0, 0);
     ctx.restore();
 
+    // Render Frame if selected
+    if (selectedFrame === 'mosaic') {
+      const tileSize = Math.max(10, Math.floor(rawImageObj.width / 40));
+      const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
+      for (let x = 0; x < rawImageObj.width; x += tileSize) {
+        for (let t = 0; t < frameThickness; t += tileSize) {
+          ctx.fillStyle = colors[(Math.floor(x / tileSize) + Math.floor(t / tileSize)) % colors.length];
+          ctx.fillRect(x, t, tileSize, tileSize);
+          ctx.fillRect(x, rawImageObj.height - frameThickness + t, tileSize, tileSize);
+        }
+      }
+      for (let y = 0; y < rawImageObj.height; y += tileSize) {
+        for (let t = 0; t < frameThickness; t += tileSize) {
+          ctx.fillStyle = colors[(Math.floor(y / tileSize) + Math.floor(t / tileSize)) % colors.length];
+          ctx.fillRect(t, y, tileSize, tileSize);
+          ctx.fillRect(rawImageObj.width - frameThickness + t, y, tileSize, tileSize);
+        }
+      }
+    } else if (selectedFrame === 'square') {
+      ctx.strokeStyle = '#1f2937';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(10, 10, rawImageObj.width - 20, rawImageObj.height - 20);
+      ctx.lineWidth = 2;
+      ctx.strokeRect(18, 18, rawImageObj.width - 36, rawImageObj.height - 36);
+    } else if (selectedFrame !== 'none') {
+      ctx.save();
+      ctx.lineWidth = frameThickness * (rawImageObj.width / 600);
+      if (selectedFrame === 'fire') ctx.strokeStyle = '#ea580c';
+      else if (selectedFrame === 'smoke') { ctx.strokeStyle = '#6b7280'; ctx.setLineDash([15, 10]); }
+      else if (selectedFrame === 'golden') ctx.strokeStyle = '#eab308';
+      else ctx.strokeStyle = '#3b82f6';
+
+      ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, rawImageObj.width - ctx.lineWidth, rawImageObj.height - ctx.lineWidth);
+      ctx.restore();
+    }
+
     ctx.strokeStyle = gridColor;
     ctx.lineWidth = Math.max(2, Math.floor(rawImageObj.width / 400));
     if (gridLineStyle === 'dashed') ctx.setLineDash([10, 6]);
@@ -140,7 +181,7 @@
 
 <div class="space-y-6">
   <!-- Controls Panel -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
     <div>
       <label class="block text-xs font-semibold mb-1 text-gray-700">Rows: {rows}</label>
       <input type="range" bind:value={rows} min="1" max="20" class="w-full accent-primary cursor-pointer" />
@@ -163,6 +204,18 @@
       <select bind:value={gridLineStyle} class="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-dark">
         <option value="dashed">Dashed Lines</option>
         <option value="solid">Solid Lines</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-semibold mb-1 text-gray-700">Photo Frame</label>
+      <select bind:value={selectedFrame} class="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-dark">
+        <option value="none">No Frame</option>
+        <option value="mosaic">🧩 Mosaic Tile Frame</option>
+        <option value="square">🔲 Double Square Frame</option>
+        <option value="fire">🔥 Fire Frame</option>
+        <option value="smoke">💨 Smoke Frame</option>
+        <option value="golden">✨ Golden Vintage Frame</option>
+        <option value="neon">⚡ Neon Glow Frame</option>
       </select>
     </div>
   </div>
@@ -232,7 +285,7 @@
         {/if}
       </div>
 
-      <div 
+      <button 
         class="relative max-w-2xl w-full flex justify-center bg-gray-100 rounded-2xl overflow-hidden shadow-md border border-gray-200 select-none {isLineToolActive ? 'cursor-crosshair' : 'cursor-default'}"
         onclick={handleImageClick}
         bind:this={imageContainerRef}
@@ -245,6 +298,26 @@
         />
 
         <svg class="absolute inset-0 w-full h-full pointer-events-none">
+          <!-- Frame Preview -->
+          {#if selectedFrame === 'square'}
+            <rect x="2%" y="3%" width="96%" height="94%" fill="none" stroke="#1f2937" stroke-width="3" />
+            <rect x="3.5%" y="5%" width="93%" height="90%" fill="none" stroke="#1f2937" stroke-width="1.5" />
+          {:else if selectedFrame === 'mosaic'}
+            <rect x="0" y="0" width="100%" height="100%" fill="none" stroke="#3b82f6" stroke-width="20" stroke-dasharray="15 5" opacity="0.85" />
+          {:else if selectedFrame !== 'none'}
+            <rect 
+              x="0" 
+              y="0" 
+              width="100%" 
+              height="100%" 
+              fill="none" 
+              stroke={selectedFrame === 'fire' ? '#ea580c' : selectedFrame === 'smoke' ? '#6b7280' : selectedFrame === 'golden' ? '#eab308' : '#3b82f6'} 
+              stroke-width={frameThickness / 2} 
+              stroke-dasharray={selectedFrame === 'smoke' ? '10 10' : 'none'}
+              opacity="0.85" 
+            />
+          {/if}
+
           <!-- Columns -->
           {#each Array(cols - 1) as _, c}
             <line x1="{((c + 1) / cols) * 100}%" y1="0" x2="{((c + 1) / cols) * 100}%" y2="100%" stroke={gridColor} stroke-width="1.5" stroke-dasharray={gridLineStyle === 'dashed' ? '5 3' : 'none'} />
@@ -295,7 +368,7 @@
             <circle cx="{tempLineStart.x}%" cy="{tempLineStart.y}%" r="5" fill="#9333ea" stroke="#ffffff" stroke-width="2" />
           {/if}
         </svg>
-      </div>
+    </button>
     </div>
   {:else}
     <!-- Sliced Tiles Mode -->
