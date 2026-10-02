@@ -5,7 +5,7 @@
   import FooterComponent from "$lib/components/Footer.svelte";
   import Icon from "@iconify/svelte";
   import JSZip from "jszip";
-  import { saveAs } from "file-saver";
+  import saveAs from "file-saver";
 
   // App States
   let activeTab = $state<'splitter' | 'editor'>('splitter');

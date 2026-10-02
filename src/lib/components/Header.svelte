@@ -7,10 +7,7 @@
   const menuItems = [
     { name: "Home", url: "/", icon: "mdi:home-variant-outline" },
     { name: "About", url: "/about", icon: "mdi:information-outline" },
-    { name: "Shows", url: "/shows", icon: "mdi:television-classic" },
-    { name: "People", url: "/people", icon: "mdi:account-group-outline" },
-    { name: "Updates", url: "/updates", icon: "mdi:bell-badge-outline" },
-    { name: "Schedule", url: "/schedule", icon: "mdi:calendar-clock-outline" },
+    { name: "Editor", url: "/shows", icon: "mdi:television-classic" },
   ];
 
   let isMenuOpen = false;
