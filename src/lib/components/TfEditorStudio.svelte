@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from "@iconify/svelte";
+  import { fade, scale } from "svelte/transition";
 
   let { rawImageObj, activePreset = 'normal' }: { rawImageObj: HTMLImageElement | null; activePreset?: string } = $props();
 
@@ -8,13 +9,19 @@
   let contrast = $state(100);
   let saturation = $state(100);
   
-  // New: Individual RGB Channel Sliders (Photoshop style, 0 - 200%, default 100)
+  // RGB Channel Sliders
   let redChannel = $state(100);
   let greenChannel = $state(100);
   let blueChannel = $state(100);
 
   let styleIntensity = $state(100);
-  let viewMode = $state<'standard' | 'highlights' | 'shadows' | 'heatmap'>('standard');
+  
+  // 10+ Reference Study Views
+  let viewMode = $state<
+    'standard' | 'heatmap' | 'highlights' | 'shadows' | 
+    'posterized' | 'duotone' | 'high_contrast' | 'silhouette' | 
+    'inverted' | 'sepia' | 'pointillism'
+  >('standard');
 
   let isProcessing = $state(false);
   let isDescribing = $state(false);
@@ -26,11 +33,16 @@
   let mobilenetModel: Awaited<ReturnType<typeof import('@tensorflow-models/mobilenet').load>> | null = null;
   let previousImage: HTMLImageElement | null = null;
 
-  // Dominant Color Palette State & Color Swapping
+  // Modal State for Full Preview
+  let isModalOpen = $state(false);
+  let modalImageSrc = $state('');
+
+  // Dominant Color Palette State & Color Swapping with Custom HEX Input
   let dominantColors = $state<Array<{ hex: string; count: number }>>([]);
   let copiedHex = $state<string | null>(null);
   let selectedColorToSwap = $state<string | null>(null);
   let replacementColorHex = $state('#3b82f6');
+  let customReplacementInput = $state('#3b82f6');
 
   // Interactive Color Picker State
   let isColorPickerActive = $state(false);
@@ -39,6 +51,23 @@
   const hexToRgb = (hex: string) => {
     const bigint = parseInt(hex.replace('#', ''), 16);
     return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
+  };
+
+  const resetAllFilters = () => {
+    brightness = 100;
+    contrast = 100;
+    saturation = 100;
+    redChannel = 100;
+    greenChannel = 100;
+    blueChannel = 100;
+    styleIntensity = 100;
+    viewMode = 'standard';
+    selectedColorToSwap = null;
+    replacementColorHex = '#3b82f6';
+    customReplacementInput = '#3b82f6';
+    backgroundMask = null;
+    isColorPickerActive = false;
+    sampledColor = null;
   };
 
   const applyTfCanvasFilters = async () => {
@@ -63,7 +92,6 @@
         const gray = pixels.mean(2).expandDims(2) as import('@tensorflow/tfjs').Tensor3D;
         pixels = gray.add(pixels.sub(gray).mul(saturation / 100)).clipByValue(0, 1);
 
-        // Apply Photoshop-style individual RGB channel multipliers
         if (redChannel !== 100 || greenChannel !== 100 || blueChannel !== 100) {
           const rChan = pixels.slice([0, 0, 0], [canvas.height, canvas.width, 1]).mul(redChannel / 100);
           const gChan = pixels.slice([0, 0, 1], [canvas.height, canvas.width, 1]).mul(greenChannel / 100);
@@ -99,6 +127,30 @@
         } else if (viewMode === 'heatmap') {
           const grad = gradients().mul(3).clipByValue(0, 1);
           processed = tf.stack([grad, tf.onesLike(grad).sub(grad), tf.zerosLike(grad)], 2).squeeze([3]);
+        } else if (viewMode === 'posterized') {
+          processed = pixels.mul(4).floor().div(4);
+        } else if (viewMode === 'duotone') {
+          // Dark blue & warm gold duotone mapping
+          const shadowColor = tf.tensor1d([0.05, 0.1, 0.3]).reshape([1, 1, 3]);
+          const highlightColor = tf.tensor1d([0.95, 0.85, 0.5]).reshape([1, 1, 3]);
+          processed = shadowColor.mul(tf.onesLike(grayAdjusted).sub(grayAdjusted))
+            .add(highlightColor.mul(grayAdjusted)) as import('@tensorflow/tfjs').Tensor3D;
+        } else if (viewMode === 'high_contrast') {
+          processed = grayAdjusted.sub(0.4).mul(4).clipByValue(0, 1).tile([1, 1, 3]);
+        } else if (viewMode === 'silhouette') {
+          processed = grayAdjusted.greater(0.45).toFloat().tile([1, 1, 3]);
+        } else if (viewMode === 'inverted') {
+          processed = tf.onesLike(pixels).sub(pixels);
+        } else if (viewMode === 'sepia') {
+          const r = grayAdjusted.mul(1.2);
+          const g = grayAdjusted.mul(0.95);
+          const b = grayAdjusted.mul(0.75);
+          processed = tf.concat([r, g, b], 2).clipByValue(0, 1);
+        } else if (viewMode === 'pointillism') {
+          // Simulated dot matrix halftone effect
+          const gridPattern = tf.sin(tf.range(0, canvas.height, 1, 'float32').reshape([canvas.height, 1, 1]).mul(0.4))
+            .abs().mul(tf.sin(tf.range(0, canvas.width, 1, 'float32').reshape([1, canvas.width, 1]).mul(0.4)).abs());
+          processed = grayAdjusted.mul(gridPattern.add(0.4)).clipByValue(0, 1).tile([1, 1, 3]);
         } else {
           if (activePreset === 'sketch') {
             const inverted = tf.onesLike(grayAdjusted).sub(grayAdjusted) as import('@tensorflow/tfjs').Tensor3D;
@@ -181,6 +233,12 @@
     } catch (error) {
       modelError = error instanceof Error ? error.message : 'TensorFlow.js could not process this image.';
     }
+  };
+
+  const openFullscreenModal = () => {
+    if (!tfCanvas) return;
+    modalImageSrc = tfCanvas.toDataURL('image/png', 0.95);
+    isModalOpen = true;
   };
 
   const handleCanvasClick = (e: MouseEvent) => {
@@ -319,23 +377,40 @@
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
   <!-- Controls Sidebar -->
   <div class="w-full lg:col-span-1 bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 overflow-y-auto">
-    <div class="flex items-center gap-2 border-b border-gray-100 pb-2">
-      <Icon icon="mdi:brain" class="text-primary text-lg" />
-      <h3 class="font-bold text-sm text-dark">TensorFlow.js Studio Adjustments</h3>
+    <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+      <div class="flex items-center gap-2">
+        <Icon icon="mdi:brain" class="text-primary text-lg" />
+        <h3 class="font-bold text-sm text-dark">TensorFlow.js Studio Adjustments</h3>
+      </div>
+      <button 
+        type="button" 
+        onclick={resetAllFilters} 
+        class="text-[11px] font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1"
+        title="Reset all filters & effects"
+      >
+        <Icon icon="mdi:reload" /> Reset
+      </button>
     </div>
 
-    <!-- Advanced Analysis Mode Selector -->
+    <!-- 10+ Reference Study View Selector -->
     <div class="space-y-1.5">
-      <label class="block text-xs font-bold text-dark">Reference Study View</label>
+      <label class="block text-xs font-bold text-dark">Reference Study Views (10+ Modes)</label>
       <div class="grid grid-cols-2 gap-2 text-xs">
         <button type="button" onclick={() => viewMode = 'standard'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'standard' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Standard</button>
         <button type="button" onclick={() => viewMode = 'heatmap'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'heatmap' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Edge Heatmap</button>
         <button type="button" onclick={() => viewMode = 'highlights'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'highlights' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Highlights</button>
         <button type="button" onclick={() => viewMode = 'shadows'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'shadows' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Shadows</button>
+        <button type="button" onclick={() => viewMode = 'posterized'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'posterized' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Posterized Tones</button>
+        <button type="button" onclick={() => viewMode = 'duotone'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'duotone' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Duotone Matrix</button>
+        <button type="button" onclick={() => viewMode = 'high_contrast'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'high_contrast' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">High Contrast Ink</button>
+        <button type="button" onclick={() => viewMode = 'silhouette'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'silhouette' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Silhouette Map</button>
+        <button type="button" onclick={() => viewMode = 'inverted'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'inverted' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Inverted Negative</button>
+        <button type="button" onclick={() => viewMode = 'sepia'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'sepia' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Sepia Tone</button>
+        <button type="button" onclick={() => viewMode = 'pointillism'} class="p-2 rounded-xl border transition cursor-pointer font-semibold col-span-2 {viewMode === 'pointillism' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Pointillism Dots</button>
       </div>
     </div>
 
-    <!-- Dominant Color Palette & Color Swapper Section -->
+    <!-- Dominant Color Palette & Color Swapper with Custom HEX Input -->
     {#if dominantColors.length > 0}
       <div class="space-y-2 bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
         <div class="flex justify-between items-center">
@@ -365,11 +440,32 @@
         </div>
 
         {#if selectedColorToSwap}
-          <div class="pt-2 border-t border-gray-200 flex items-center justify-between gap-2">
-            <span class="text-[11px] text-gray-600 font-medium truncate">Swap {selectedColorToSwap} with:</span>
+          <div class="pt-3 border-t border-gray-200 space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[11px] text-gray-600 font-medium truncate">Swap <strong>{selectedColorToSwap}</strong> with:</span>
+              <button type="button" onclick={() => selectedColorToSwap = null} class="text-[10px] text-red-500 font-bold hover:underline">Clear</button>
+            </div>
             <div class="flex items-center gap-2">
-              <input type="color" bind:value={replacementColorHex} class="w-7 h-7 rounded border border-gray-200 cursor-pointer p-0 bg-transparent" />
-              <button type="button" onclick={() => selectedColorToSwap = null} class="text-[10px] text-red-500 font-bold hover:underline">Reset</button>
+              <!-- Color Picker Input -->
+              <input type="color" bind:value={replacementColorHex} oninput={() => customReplacementInput = replacementColorHex} class="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white shadow-xs" />
+              <!-- Direct HEX Text Input Field -->
+              <div class="relative flex-1">
+                <span class="absolute left-2.5 top-2 text-xs font-mono text-gray-400">#</span>
+                <input 
+                  type="text" 
+                  bind:value={customReplacementInput} 
+                  oninput={(e) => {
+                    const val = (e.target as HTMLInputElement).value;
+                    customReplacementInput = val;
+                    if (/^#[0-9A-F]{6}$/i.test(val) || /^#[0-9A-F]{3}$/i.test(val)) {
+                      replacementColorHex = val;
+                    }
+                  }}
+                  placeholder="HEX (e.g. #3b82f6)" 
+                  maxlength="7"
+                  class="w-full pl-6 pr-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-bold text-dark uppercase" 
+                />
+              </div>
             </div>
           </div>
         {/if}
@@ -419,10 +515,6 @@
         </div>
         <input type="range" bind:value={blueChannel} min="0" max="200" class="w-full accent-blue-500 cursor-pointer" />
       </div>
-
-      {#if redChannel !== 100 || greenChannel !== 100 || blueChannel !== 100}
-        <button type="button" onclick={() => { redChannel = 100; greenChannel = 100; blueChannel = 100; }} class="text-[10px] text-red-500 font-bold hover:underline block text-right w-full">Reset RGB</button>
-      {/if}
     </div>
 
     <div>
@@ -476,9 +568,18 @@
     </button>
   </div>
 
-  <!-- Canvas Preview Area with Sampled Color Footer -->
+  <!-- Canvas Preview Area with Fullscreen Expand & Sampled Color Footer -->
   <div class="w-full lg:col-span-2 bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-between">
-    <div class="w-full flex items-center justify-center overflow-auto bg-gray-100 rounded-xl border border-gray-200 p-2 min-h-[350px] sm:min-h-[460px]">
+    <div class="w-full flex items-center justify-center relative overflow-auto bg-gray-100 rounded-xl border border-gray-200 p-2 min-h-[350px] sm:min-h-[460px]">
+      <button 
+        type="button" 
+        onclick={openFullscreenModal} 
+        class="absolute top-4 right-4 z-10 bg-white/90 hover:bg-white text-dark p-2 rounded-xl shadow-md border border-gray-200 transition cursor-pointer flex items-center gap-1 text-xs font-semibold"
+        title="View Fullscreen"
+      >
+        <Icon icon="mdi:fullscreen" class="text-base" /> Full View
+      </button>
+
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
       <canvas 
@@ -515,3 +616,39 @@
     </div>
   </div>
 </div>
+
+<!-- Animated Fullscreen Preview Modal -->
+{#if isModalOpen}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div 
+    transition:fade={{ duration: 200 }}
+    onclick={() => isModalOpen = false}
+    class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-8"
+  >
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div 
+      transition:scale={{ duration: 250, start: 0.95 }}
+      onclick={(e) => e.stopPropagation()}
+      class="relative bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] p-6 shadow-2xl flex flex-col items-center overflow-hidden"
+    >
+      <div class="w-full flex items-center justify-between pb-4 border-b border-gray-100 mb-4">
+        <h3 class="font-bold text-sm text-dark flex items-center gap-2">
+          <Icon icon="mdi:image-outline" class="text-primary text-lg" /> Edited Preview Full View
+        </h3>
+        <button 
+          type="button" 
+          onclick={() => isModalOpen = false} 
+          class="bg-gray-100 hover:bg-gray-200 text-gray-700 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer"
+        >
+          <Icon icon="mdi:close" class="text-lg" />
+        </button>
+      </div>
+
+      <div class="w-full flex-1 flex items-center justify-center overflow-auto bg-gray-50 rounded-2xl p-4 border border-gray-200 max-h-[75vh]">
+        <img src={modalImageSrc} alt="Processed Full View" class="max-w-full max-h-[70vh] object-contain rounded-xl shadow-lg" />
+      </div>
+    </div>
+  </div>
+{/if}
