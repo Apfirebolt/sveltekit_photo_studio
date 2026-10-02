@@ -17,7 +17,12 @@
   let isFlipped = $state(false);
   let showCoordinates = $state(true);
   
-  // New Frame States
+  // New Aspect Ratio & Cropping State
+  let aspectRatio = $state<'free' | '1:1' | '4:3' | '16:9' | 'golden'>('free');
+  let croppedImageObj = $state<HTMLImageElement | null>(null);
+  let croppedImageSrc = $state('');
+
+  // Frame States
   let selectedFrame = $state<'none' | 'fire' | 'smoke' | 'golden' | 'neon' | 'mosaic' | 'square'>('none');
   let frameThickness = $state(25);
 
@@ -30,11 +35,60 @@
 
   const colLetters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"];
 
-  const splitImage = () => {
+  // Process and crop image based on selected aspect ratio
+  const updateCroppedImage = () => {
     if (!rawImageObj) return;
+
+    if (aspectRatio === 'free') {
+      croppedImageObj = rawImageObj;
+      croppedImageSrc = originalImageSrc;
+      return;
+    }
+
+    const srcW = rawImageObj.width;
+    const srcH = rawImageObj.height;
+    let targetRatio = 1;
+
+    if (aspectRatio === '1:1') targetRatio = 1;
+    else if (aspectRatio === '4:3') targetRatio = 4 / 3;
+    else if (aspectRatio === '16:9') targetRatio = 16 / 9;
+    else if (aspectRatio === 'golden') targetRatio = 1.618;
+
+    let cropW = srcW;
+    let cropH = srcH;
+
+    if (srcW / srcH > targetRatio) {
+      cropW = srcH * targetRatio;
+    } else {
+      cropH = srcW / targetRatio;
+    }
+
+    const startX = (srcW - cropW) / 2;
+    const startY = (srcH - cropH) / 2;
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    canvas.width = cropW;
+    canvas.height = cropH;
+
+    ctx.drawImage(rawImageObj, startX, startY, cropW, cropH, 0, 0, cropW, cropH);
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    croppedImageSrc = dataUrl;
+
+    const img = new Image();
+    img.onload = () => {
+      croppedImageObj = img;
+    };
+    img.src = dataUrl;
+  };
+
+  const splitImage = () => {
+    if (!croppedImageObj) return;
     const pieces: string[] = [];
-    const tileWidth = rawImageObj.width / cols;
-    const tileHeight = rawImageObj.height / rows;
+    const tileWidth = croppedImageObj.width / cols;
+    const tileHeight = croppedImageObj.height / rows;
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -45,7 +99,7 @@
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         ctx.clearRect(0, 0, tileWidth, tileHeight);
-        ctx.drawImage(rawImageObj, c * tileWidth, r * tileHeight, tileWidth, tileHeight, 0, 0, tileWidth, tileHeight);
+        ctx.drawImage(croppedImageObj, c * tileWidth, r * tileHeight, tileWidth, tileHeight, 0, 0, tileWidth, tileHeight);
         pieces.push(canvas.toDataURL('image/jpeg', 0.9));
       }
     }
@@ -82,85 +136,85 @@
   };
 
   const downloadGridWithOverlay = () => {
-    if (!rawImageObj) return;
+    if (!croppedImageObj) return;
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    canvas.width = rawImageObj.width;
-    canvas.height = rawImageObj.height;
+    canvas.width = croppedImageObj.width;
+    canvas.height = croppedImageObj.height;
 
     ctx.save();
     if (isFlipped) {
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
     }
-    ctx.drawImage(rawImageObj, 0, 0);
+    ctx.drawImage(croppedImageObj, 0, 0);
     ctx.restore();
 
     if (selectedFrame === 'mosaic') {
-      const tileSize = Math.max(10, Math.floor(rawImageObj.width / 40));
+      const tileSize = Math.max(10, Math.floor(croppedImageObj.width / 40));
       const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
-      for (let x = 0; x < rawImageObj.width; x += tileSize) {
+      for (let x = 0; x < croppedImageObj.width; x += tileSize) {
         for (let t = 0; t < frameThickness; t += tileSize) {
           ctx.fillStyle = colors[(Math.floor(x / tileSize) + Math.floor(t / tileSize)) % colors.length];
           ctx.fillRect(x, t, tileSize, tileSize);
-          ctx.fillRect(x, rawImageObj.height - frameThickness + t, tileSize, tileSize);
+          ctx.fillRect(x, croppedImageObj.height - frameThickness + t, tileSize, tileSize);
         }
       }
-      for (let y = 0; y < rawImageObj.height; y += tileSize) {
+      for (let y = 0; y < croppedImageObj.height; y += tileSize) {
         for (let t = 0; t < frameThickness; t += tileSize) {
           ctx.fillStyle = colors[(Math.floor(y / tileSize) + Math.floor(t / tileSize)) % colors.length];
           ctx.fillRect(t, y, tileSize, tileSize);
-          ctx.fillRect(rawImageObj.width - frameThickness + t, y, tileSize, tileSize);
+          ctx.fillRect(croppedImageObj.width - frameThickness + t, y, tileSize, tileSize);
         }
       }
     } else if (selectedFrame === 'square') {
       ctx.strokeStyle = '#1f2937';
       ctx.lineWidth = 4;
-      ctx.strokeRect(10, 10, rawImageObj.width - 20, rawImageObj.height - 20);
+      ctx.strokeRect(10, 10, croppedImageObj.width - 20, croppedImageObj.height - 20);
       ctx.lineWidth = 2;
-      ctx.strokeRect(18, 18, rawImageObj.width - 36, rawImageObj.height - 36);
+      ctx.strokeRect(18, 18, croppedImageObj.width - 36, croppedImageObj.height - 36);
     } else if (selectedFrame !== 'none') {
       ctx.save();
-      ctx.lineWidth = frameThickness * (rawImageObj.width / 600);
+      ctx.lineWidth = frameThickness * (croppedImageObj.width / 600);
       if (selectedFrame === 'fire') ctx.strokeStyle = '#ea580c';
       else if (selectedFrame === 'smoke') { ctx.strokeStyle = '#6b7280'; ctx.setLineDash([15, 10]); }
       else if (selectedFrame === 'golden') ctx.strokeStyle = '#eab308';
       else ctx.strokeStyle = '#3b82f6';
 
-      ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, rawImageObj.width - ctx.lineWidth, rawImageObj.height - ctx.lineWidth);
+      ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, croppedImageObj.width - ctx.lineWidth, croppedImageObj.height - ctx.lineWidth);
       ctx.restore();
     }
 
     ctx.strokeStyle = gridColor;
-    ctx.lineWidth = Math.max(2, Math.floor(rawImageObj.width / 400));
+    ctx.lineWidth = Math.max(2, Math.floor(croppedImageObj.width / 400));
     if (gridLineStyle === 'dashed') ctx.setLineDash([10, 6]);
 
-    const cellW = rawImageObj.width / cols;
-    const cellH = rawImageObj.height / rows;
+    const cellW = croppedImageObj.width / cols;
+    const cellH = croppedImageObj.height / rows;
 
     for (let c = 1; c < cols; c++) {
-      ctx.beginPath(); ctx.moveTo(c * cellW, 0); ctx.lineTo(c * cellW, rawImageObj.height); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(c * cellW, 0); ctx.lineTo(c * cellW, croppedImageObj.height); ctx.stroke();
     }
     for (let r = 1; r < rows; r++) {
-      ctx.beginPath(); ctx.moveTo(0, r * cellH); ctx.lineTo(rawImageObj.width, r * cellH); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, r * cellH); ctx.lineTo(croppedImageObj.width, r * cellH); ctx.stroke();
     }
 
     if (showDiagonals) {
       ctx.setLineDash([6, 6]);
-      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(rawImageObj.width, rawImageObj.height); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(rawImageObj.width, 0); ctx.lineTo(0, rawImageObj.height); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(croppedImageObj.width, croppedImageObj.height); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(croppedImageObj.width, 0); ctx.lineTo(0, croppedImageObj.height); ctx.stroke();
     }
 
     if (customLines.length > 0) {
       ctx.setLineDash([]);
       ctx.strokeStyle = '#9333ea';
-      ctx.lineWidth = Math.max(3, Math.floor(rawImageObj.width / 350));
+      ctx.lineWidth = Math.max(3, Math.floor(croppedImageObj.width / 350));
       customLines.forEach(line => {
-        const px1 = (line.x1 / 100) * rawImageObj.width;
-        const py1 = (line.y1 / 100) * rawImageObj.height;
-        const px2 = (line.x2 / 100) * rawImageObj.width;
-        const py2 = (line.y2 / 100) * rawImageObj.height;
+        const px1 = (line.x1 / 100) * croppedImageObj.width;
+        const py1 = (line.y1 / 100) * croppedImageObj.height;
+        const px2 = (line.x2 / 100) * croppedImageObj.width;
+        const py2 = (line.y2 / 100) * croppedImageObj.height;
         ctx.beginPath(); ctx.moveTo(px1, py1); ctx.lineTo(px2, py2); ctx.stroke();
       });
     }
@@ -184,6 +238,13 @@
 
   $effect(() => {
     if (rawImageObj) {
+      aspectRatio;
+      updateCroppedImage();
+    }
+  });
+
+  $effect(() => {
+    if (croppedImageObj) {
       rows;
       cols;
       splitImage();
@@ -193,7 +254,7 @@
 
 <div class="space-y-6">
   <!-- Controls Panel -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
     <div>
       <label class="block text-xs font-semibold mb-1 text-gray-700">Rows: {rows}</label>
       <input type="range" bind:value={rows} min="1" max="20" class="w-full accent-primary cursor-pointer" />
@@ -201,6 +262,16 @@
     <div>
       <label class="block text-xs font-semibold mb-1 text-gray-700">Columns: {cols}</label>
       <input type="range" bind:value={cols} min="1" max="20" class="w-full accent-primary cursor-pointer" />
+    </div>
+    <div>
+      <label class="block text-xs font-semibold mb-1 text-gray-700">Crop Ratio</label>
+      <select bind:value={aspectRatio} class="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-dark">
+        <option value="free">Freeform (Original)</option>
+        <option value="1:1">1:1 Square</option>
+        <option value="4:3">4:3 Standard</option>
+        <option value="16:9">16:9 Widescreen</option>
+        <option value="golden">Golden Ratio (1.618)</option>
+      </select>
     </div>
     <div>
       <label class="block text-xs font-semibold mb-1 text-gray-700">Line Color</label>
@@ -305,8 +376,8 @@
         bind:this={imageContainerRef}
       >
         <img 
-          src={originalImageSrc} 
-          alt="Reference" 
+          src={croppedImageSrc} 
+          alt="Reference Cropped" 
           class="max-h-[500px] w-auto object-contain block pointer-events-none transition-all duration-300"
           style="filter: {isGrayscale ? 'grayscale(100%) contrast(125%)' : 'none'}; transform: {isFlipped ? 'scaleX(-1)' : 'scaleX(1)'}"
         />
@@ -401,7 +472,6 @@
               <span class="absolute top-1.5 left-1.5 bg-black/75 text-white text-[10px] font-bold px-1.5 py-0.5 rounded font-mono shadow">
                 {colLetters[index % cols]}{Math.floor(index / cols) + 1}
               </span>
-              <!-- Hover Download Overlay Button -->
               <button
                 type="button"
                 onclick={() => downloadSingleTile(piece, index)}
