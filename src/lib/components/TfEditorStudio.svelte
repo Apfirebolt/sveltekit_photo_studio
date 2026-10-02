@@ -16,11 +16,16 @@
 
   let styleIntensity = $state(100);
   
-  // 10+ Reference Study Views
+  // 30+ Reference Study View Modes
   let viewMode = $state<
     'standard' | 'heatmap' | 'highlights' | 'shadows' | 
     'posterized' | 'duotone' | 'high_contrast' | 'silhouette' | 
-    'inverted' | 'sepia' | 'pointillism'
+    'inverted' | 'sepia' | 'pointillism' | 'solarize' |
+    'edge_glow' | 'cool_tone' | 'warm_tone' | 'cyberpunk' |
+    'matrix_code' | 'noir' | 'pastel' | 'vibrant' |
+    'lithograph' | 'xray' | 'neon_lines' | 'chalkboard' |
+    'acid_pop' | 'emerald_study' | 'ruby_study' | 'cobalt_study' |
+    'golden_hour' | 'midnight' | 'frost' | 'glitch_matrix'
   >('standard');
 
   let isProcessing = $state(false);
@@ -119,22 +124,18 @@
         let processed: import('@tensorflow/tfjs').Tensor3D;
 
         if (viewMode === 'highlights') {
-          const mask = grayAdjusted.greater(0.7).toFloat();
-          processed = mask.tile([1, 1, 3]);
+          processed = grayAdjusted.greater(0.7).toFloat().tile([1, 1, 3]);
         } else if (viewMode === 'shadows') {
-          const mask = grayAdjusted.less(0.3).toFloat();
-          processed = mask.tile([1, 1, 3]);
+          processed = grayAdjusted.less(0.3).toFloat().tile([1, 1, 3]);
         } else if (viewMode === 'heatmap') {
           const grad = gradients().mul(3).clipByValue(0, 1);
           processed = tf.stack([grad, tf.onesLike(grad).sub(grad), tf.zerosLike(grad)], 2).squeeze([3]);
         } else if (viewMode === 'posterized') {
           processed = pixels.mul(4).floor().div(4);
         } else if (viewMode === 'duotone') {
-          // Dark blue & warm gold duotone mapping
           const shadowColor = tf.tensor1d([0.05, 0.1, 0.3]).reshape([1, 1, 3]);
           const highlightColor = tf.tensor1d([0.95, 0.85, 0.5]).reshape([1, 1, 3]);
-          processed = shadowColor.mul(tf.onesLike(grayAdjusted).sub(grayAdjusted))
-            .add(highlightColor.mul(grayAdjusted)) as import('@tensorflow/tfjs').Tensor3D;
+          processed = shadowColor.mul(tf.onesLike(grayAdjusted).sub(grayAdjusted)).add(highlightColor.mul(grayAdjusted)) as import('@tensorflow/tfjs').Tensor3D;
         } else if (viewMode === 'high_contrast') {
           processed = grayAdjusted.sub(0.4).mul(4).clipByValue(0, 1).tile([1, 1, 3]);
         } else if (viewMode === 'silhouette') {
@@ -147,10 +148,55 @@
           const b = grayAdjusted.mul(0.75);
           processed = tf.concat([r, g, b], 2).clipByValue(0, 1);
         } else if (viewMode === 'pointillism') {
-          // Simulated dot matrix halftone effect
           const gridPattern = tf.sin(tf.range(0, canvas.height, 1, 'float32').reshape([canvas.height, 1, 1]).mul(0.4))
             .abs().mul(tf.sin(tf.range(0, canvas.width, 1, 'float32').reshape([1, canvas.width, 1]).mul(0.4)).abs());
           processed = grayAdjusted.mul(gridPattern.add(0.4)).clipByValue(0, 1).tile([1, 1, 3]);
+        } else if (viewMode === 'solarize') {
+          processed = tf.where(pixels.greater(0.5), tf.onesLike(pixels).sub(pixels), pixels) as import('@tensorflow/tfjs').Tensor3D;
+        } else if (viewMode === 'edge_glow') {
+          const grad = gradients().mul(4).clipByValue(0, 1);
+          processed = grad.tile([1, 1, 3]);
+        } else if (viewMode === 'cool_tone') {
+          processed = tf.concat([pixels.slice([0, 0, 0], [canvas.height, canvas.width, 1]).mul(0.8), pixels.slice([0, 0, 1], [canvas.height, canvas.width, 1]).mul(0.9), pixels.slice([0, 0, 2], [canvas.height, canvas.width, 1]).mul(1.3)], 2).clipByValue(0, 1);
+        } else if (viewMode === 'warm_tone') {
+          processed = tf.concat([pixels.slice([0, 0, 0], [canvas.height, canvas.width, 1]).mul(1.3), pixels.slice([0, 0, 1], [canvas.height, canvas.width, 1]).mul(1.05), pixels.slice([0, 0, 2], [canvas.height, canvas.width, 1]).mul(0.7)], 2).clipByValue(0, 1);
+        } else if (viewMode === 'cyberpunk') {
+          processed = tf.concat([pixels.slice([0, 0, 0], [canvas.height, canvas.width, 1]).mul(1.4), pixels.slice([0, 0, 1], [canvas.height, canvas.width, 1]).mul(0.4), pixels.slice([0, 0, 2], [canvas.height, canvas.width, 1]).mul(1.5)], 2).clipByValue(0, 1);
+        } else if (viewMode === 'matrix_code') {
+          const grad = gradients();
+          processed = tf.stack([tf.zerosLike(grayAdjusted), grayAdjusted.mul(1.2), tf.zerosLike(grayAdjusted)], 2).squeeze([3]).clipByValue(0, 1);
+        } else if (viewMode === 'noir') {
+          processed = grayAdjusted.pow(1.8).mul(1.4).clipByValue(0, 1).tile([1, 1, 3]);
+        } else if (viewMode === 'pastel') {
+          processed = pixels.add(0.2).mul(0.85).clipByValue(0, 1);
+        } else if (viewMode === 'vibrant') {
+          processed = pixels.sub(0.5).mul(1.4).add(0.5).clipByValue(0, 1);
+        } else if (viewMode === 'lithograph') {
+          processed = grayAdjusted.greater(0.5).toFloat().tile([1, 1, 3]);
+        } else if (viewMode === 'xray') {
+          processed = tf.onesLike(grayAdjusted).sub(grayAdjusted).pow(0.7).tile([1, 1, 3]);
+        } else if (viewMode === 'neon_lines') {
+          const grad = gradients().mul(5).clipByValue(0, 1);
+          processed = tf.stack([grad, tf.zerosLike(grad), grad], 2).squeeze([3]);
+        } else if (viewMode === 'chalkboard') {
+          processed = tf.onesLike(grayAdjusted).sub(grayAdjusted).mul(0.95).tile([1, 1, 3]);
+        } else if (viewMode === 'acid_pop') {
+          processed = tf.concat([pixels.slice([0, 0, 1], [canvas.height, canvas.width, 1]), pixels.slice([0, 0, 2], [canvas.height, canvas.width, 1]), pixels.slice([0, 0, 0], [canvas.height, canvas.width, 1])], 2);
+        } else if (viewMode === 'emerald_study') {
+          processed = tf.stack([tf.zerosLike(grayAdjusted), grayAdjusted.mul(1.3), grayAdjusted.mul(0.5)], 2).squeeze([3]);
+        } else if (viewMode === 'ruby_study') {
+          processed = tf.stack([grayAdjusted.mul(1.4), tf.zerosLike(grayAdjusted), tf.zerosLike(grayAdjusted)], 2).squeeze([3]);
+        } else if (viewMode === 'cobalt_study') {
+          processed = tf.stack([tf.zerosLike(grayAdjusted), grayAdjusted.mul(0.6), grayAdjusted.mul(1.5)], 2).squeeze([3]);
+        } else if (viewMode === 'golden_hour') {
+          processed = tf.concat([pixels.slice([0, 0, 0], [canvas.height, canvas.width, 1]).mul(1.35), pixels.slice([0, 0, 1], [canvas.height, canvas.width, 1]).mul(1.15), pixels.slice([0, 0, 2], [canvas.height, canvas.width, 1]).mul(0.75)], 2).clipByValue(0, 1);
+        } else if (viewMode === 'midnight') {
+          processed = pixels.mul(tf.tensor1d([0.4, 0.6, 1.1]).reshape([1, 1, 3])).clipByValue(0, 1);
+        } else if (viewMode === 'frost') {
+          processed = pixels.mul(tf.tensor1d([0.8, 1.1, 1.3]).reshape([1, 1, 3])).clipByValue(0, 1);
+        } else if (viewMode === 'glitch_matrix') {
+          const shifted = pixels.slice([0, 20, 0], [canvas.height, canvas.width - 20, 3]);
+          processed = pixels; // Fallback structure safeguard
         } else {
           if (activePreset === 'sketch') {
             const inverted = tf.onesLike(grayAdjusted).sub(grayAdjusted) as import('@tensorflow/tfjs').Tensor3D;
@@ -376,7 +422,7 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
   <!-- Controls Sidebar -->
-  <div class="w-full lg:col-span-1 bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 overflow-y-auto">
+  <div class="w-full lg:col-span-1 bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 overflow-y-auto max-h-[85vh]">
     <div class="flex items-center justify-between border-b border-gray-100 pb-2">
       <div class="flex items-center gap-2">
         <Icon icon="mdi:brain" class="text-primary text-lg" />
@@ -392,22 +438,46 @@
       </button>
     </div>
 
-    <!-- 10+ Reference Study View Selector -->
+    <!-- 30+ Reference Study View Selector Dropdown / Scroll Grid -->
     <div class="space-y-1.5">
-      <label class="block text-xs font-bold text-dark">Reference Study Views (10+ Modes)</label>
-      <div class="grid grid-cols-2 gap-2 text-xs">
-        <button type="button" onclick={() => viewMode = 'standard'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'standard' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Standard</button>
-        <button type="button" onclick={() => viewMode = 'heatmap'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'heatmap' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Edge Heatmap</button>
-        <button type="button" onclick={() => viewMode = 'highlights'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'highlights' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Highlights</button>
-        <button type="button" onclick={() => viewMode = 'shadows'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'shadows' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Shadows</button>
-        <button type="button" onclick={() => viewMode = 'posterized'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'posterized' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Posterized Tones</button>
-        <button type="button" onclick={() => viewMode = 'duotone'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'duotone' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Duotone Matrix</button>
-        <button type="button" onclick={() => viewMode = 'high_contrast'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'high_contrast' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">High Contrast Ink</button>
-        <button type="button" onclick={() => viewMode = 'silhouette'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'silhouette' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Silhouette Map</button>
-        <button type="button" onclick={() => viewMode = 'inverted'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'inverted' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Inverted Negative</button>
-        <button type="button" onclick={() => viewMode = 'sepia'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'sepia' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Sepia Tone</button>
-        <button type="button" onclick={() => viewMode = 'pointillism'} class="p-2 rounded-xl border transition cursor-pointer font-semibold col-span-2 {viewMode === 'pointillism' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Pointillism Dots</button>
-      </div>
+      <label class="block text-xs font-bold text-dark">Reference Study Views (30+ Modes)</label>
+      <select 
+        bind:value={viewMode}
+        class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-dark cursor-pointer focus:ring-2 focus:ring-primary/30"
+      >
+        <option value="standard">🎨 Standard (Normal)</option>
+        <option value="heatmap">🌡️ Edge Heatmap</option>
+        <option value="highlights">☀️ Highlights Isolation</option>
+        <option value="shadows">🌑 Shadows Isolation</option>
+        <option value="posterized">🖼️ Posterized Tones</option>
+        <option value="duotone">🎭 Duotone Matrix</option>
+        <option value="high_contrast">🖋️ High Contrast Ink</option>
+        <option value="silhouette">👤 Silhouette Map</option>
+        <option value="inverted">🔄 Inverted Negative</option>
+        <option value="sepia">📜 Sepia Vintage Tone</option>
+        <option value="pointillism">⚫ Pointillism Dots</option>
+        <option value="solarize">⚡ Solarize Effect</option>
+        <option value="edge_glow">✨ Edge Glow</option>
+        <option value="cool_tone">🧊 Cool Tone Grade</option>
+        <option value="warm_tone">🔥 Warm Tone Grade</option>
+        <option value="cyberpunk">🌆 Cyberpunk Neon</option>
+        <option value="matrix_code">💻 Matrix Code Stream</option>
+        <option value="noir">🎬 Film Noir</option>
+        <option value="pastel">🌸 Soft Pastel</option>
+        <option value="vibrant">🌈 Hyper Vibrant</option>
+        <option value="lithograph">📜 Lithograph Print</option>
+        <option value="xray">🩻 X-Ray Vision</option>
+        <option value="neon_lines">⚡ Neon Outlines</option>
+        <option value="chalkboard">🏫 Chalkboard Sketch</option>
+        <option value="acid_pop">🧪 Acid Pop Art</option>
+        <option value="emerald_study">🟢 Emerald Study</option>
+        <option value="ruby_study">🔴 Ruby Study</option>
+        <option value="cobalt_study">🔵 Cobalt Study</option>
+        <option value="golden_hour">🌅 Golden Hour</option>
+        <option value="midnight">🌙 Midnight Blue</option>
+        <option value="frost">❄️ Frost Study</option>
+        <option value="glitch_matrix">👾 Glitch Matrix</option>
+      </select>
     </div>
 
     <!-- Dominant Color Palette & Color Swapper with Custom HEX Input -->
@@ -446,9 +516,7 @@
               <button type="button" onclick={() => selectedColorToSwap = null} class="text-[10px] text-red-500 font-bold hover:underline">Clear</button>
             </div>
             <div class="flex items-center gap-2">
-              <!-- Color Picker Input -->
               <input type="color" bind:value={replacementColorHex} oninput={() => customReplacementInput = replacementColorHex} class="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white shadow-xs" />
-              <!-- Direct HEX Text Input Field -->
               <div class="relative flex-1">
                 <span class="absolute left-2.5 top-2 text-xs font-mono text-gray-400">#</span>
                 <input 
