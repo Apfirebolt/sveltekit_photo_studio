@@ -5,14 +5,15 @@
   import FooterComponent from "$lib/components/Footer.svelte";
   import GridStudio from "$lib/components/GridStudio.svelte";
   import TfEditorStudio from "$lib/components/TfEditorStudio.svelte";
+  import AdvancedFiltersStudio from "$lib/components/AdvancedFilterStudio.svelte";
   import Icon from "@iconify/svelte";
 
-  let activeTab = $state<'splitter' | 'editor'>('splitter');
+  let activeTab = $state<'splitter' | 'editor' | 'filters'>('splitter');
   let imageLoaded = $state(false);
   let fileName = $state('');
   let originalImageSrc = $state('');
   let rawImageObj: HTMLImageElement | null = null;
-  let activePreset = $state<'normal' | 'sketch' | 'pen' | 'oil' | 'cartoon' | 'comic' | 'charcoal' | 'popart' | 'blueprint'>('normal');
+  let activePreset = $state<'normal' | 'sketch' | 'charcoal'>('normal');
 
   const headline = "Artist Studio & Pro Photo Suite";
   let displayedText = "";
@@ -70,19 +71,33 @@
         {displayedText}
       </h1>
       <p class="text-sm sm:text-base text-light/85 max-w-2xl mx-auto">
-        Precise drawing grid overlays, custom lines, and Tensor-backed artistic filters.
+        Precise drawing grid overlays, custom lines, tensor tone tools, and 30+ advanced filters.
       </p>
     </div>
   </section>
 
-  <!-- Navigation Tab Bar -->
+  <!-- 3-Tab Navigation Bar -->
   <div class="bg-white border-b border-gray-200 sticky top-16 z-20 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-center gap-3">
-      <button class="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'splitter' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" onclick={() => activeTab = 'splitter'}>
-        <Icon icon="mdi:grid" /> Artist Grid & Line Tool
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
+      <button 
+        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'splitter' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" 
+        onclick={() => activeTab = 'splitter'}
+      >
+        <Icon icon="mdi:grid" /> Artist Grid & Lines
       </button>
-      <button class="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'editor' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" onclick={() => activeTab = 'editor'}>
-        <Icon icon="mdi:palette-swatch-outline" /> Tensor Photo Editor
+
+      <button 
+        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'editor' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" 
+        onclick={() => activeTab = 'editor'}
+      >
+        <Icon icon="mdi:brain" /> Tensor Tone Editor
+      </button>
+
+      <button 
+        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'filters' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" 
+        onclick={() => activeTab = 'filters'}
+      >
+        <Icon icon="mdi:palette-advanced" /> 30+ Filter Library
       </button>
     </div>
   </div>
@@ -107,27 +122,24 @@
         </label>
       </div>
 
-      <!-- Persistent Tab Containers (Hidden classes preserve state across tab switches!) -->
+      <!-- Persistent Tab Containers (class:hidden prevents unmounting and preserves image state) -->
       <div class:hidden={activeTab !== 'splitter'}>
         <GridStudio {rawImageObj} {originalImageSrc} />
       </div>
 
       <div class:hidden={activeTab !== 'editor'}>
         <div class="space-y-6">
-          <div class="flex gap-2 overflow-x-auto pb-2">
-            <button onclick={() => activePreset = 'normal'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {activePreset === 'normal' ? 'bg-primary text-light' : 'bg-white border border-gray-200 text-dark'}">🌟 Original</button>
-            <button onclick={() => activePreset = 'sketch'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {activePreset === 'sketch' ? 'bg-primary text-light' : 'bg-white border border-gray-200 text-dark'}">✏️ Pencil Sketch</button>
-            <button onclick={() => activePreset = 'pen'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {activePreset === 'pen' ? 'bg-primary text-light' : 'bg-white border border-gray-200 text-dark'}">Pen Sketch</button>
-            <button onclick={() => activePreset = 'oil'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {activePreset === 'oil' ? 'bg-primary text-light' : 'bg-white border border-gray-200 text-dark'}">Oil Paint</button>
-            <button onclick={() => activePreset = 'cartoon'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {activePreset === 'cartoon' ? 'bg-primary text-light' : 'bg-white border border-gray-200 text-dark'}">Cartoon Sketch</button>
-            <button onclick={() => activePreset = 'comic'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {activePreset === 'comic' ? 'bg-primary text-light' : 'bg-white border border-gray-200 text-dark'}">💥 Comic Ink</button>
+          <div class="flex gap-2 pb-2">
+            <button onclick={() => activePreset = 'normal'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {activePreset === 'normal' ? 'bg-primary text-light' : 'bg-white border border-gray-200 text-dark'}">🌟 Normal</button>
+            <button onclick={() => activePreset = 'sketch'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {activePreset === 'sketch' ? 'bg-primary text-light' : 'bg-white border border-gray-200 text-dark'}">✏️ Sketch</button>
             <button onclick={() => activePreset = 'charcoal'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {activePreset === 'charcoal' ? 'bg-primary text-light' : 'bg-white border border-gray-200 text-dark'}">🪵 Charcoal</button>
-            <button onclick={() => activePreset = 'popart'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {activePreset === 'popart' ? 'bg-primary text-light' : 'bg-white border border-gray-200 text-dark'}">🎨 Pop Art</button>
-            <button onclick={() => activePreset = 'blueprint'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {activePreset === 'blueprint' ? 'bg-primary text-light' : 'bg-white border border-gray-200 text-dark'}">📐 Blueprint</button>
           </div>
-
           <TfEditorStudio {rawImageObj} {activePreset} />
         </div>
+      </div>
+
+      <div class:hidden={activeTab !== 'filters'}>
+        <AdvancedFiltersStudio {rawImageObj} />
       </div>
     {/if}
   </main>
