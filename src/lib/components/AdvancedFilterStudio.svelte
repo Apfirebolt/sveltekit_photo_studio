@@ -3,6 +3,7 @@
   import * as tf from "@tensorflow/tfjs";
   import Icon from "@iconify/svelte";
   import ImageModal from "$lib/components/ImageModal.svelte";
+  import FullImageModal from "$lib/components/FullImageModal.svelte";
 
   let { rawImageObj }: { rawImageObj: HTMLImageElement | null } = $props();
 
@@ -11,15 +12,25 @@
   let activeFilterId = $state<string>('normal');
   let filterSearch = $state('');
   let isProcessing = $state(false);
+  let filterError = $state('');
+  let filterRunId = 0;
+  let isDetectingSubject = $state(false);
+  let subjectMaskEnabled = $state(false);
+  let subjectMaskFeather = $state(1);
+  let subjectMaskError = $state('');
+  let subjectSegmentation = $state<{ width: number; height: number; data: Uint8Array } | null>(null);
   let engineType = $state<'canvas' | 'tensorflow'>('canvas');
   let showOriginal = $state(false);
 
   let isModalOpen = $state(false);
+  let isFullImageModalOpen = $state(false);
   let filteredDataUrl = $state('');
 
   let exportFormat = $state<'jpeg' | 'png' | 'pdf'>('jpeg');
   let compressionQuality = $state(90);
   let exportError = $state('');
+  let previousRawImage: HTMLImageElement | null = null;
+  let bodyPixModel: Awaited<ReturnType<typeof import('@tensorflow-models/body-pix').load>> | null = null;
 
   // Pro Adjustment Sliders
   let brightness = $state(100);
@@ -36,22 +47,55 @@
   let vignetteIntensity = $state(0); // 0% to 100%
   let grainAmount = $state(0);       // 0% to 50%
 
-  type SketchFamily = 'graphite' | 'contour' | 'hatching' | 'engraving' | 'stippling' | 'technical';
+  type SketchFamily = 'graphite' | 'charcoal' | 'contour' | 'hatching' | 'engraving' | 'stippling' | 'technical';
   type SketchFilter = { family: SketchFamily; variation: number };
+  type CartoonFilter = {
+    blurSize: number;
+    colorLevels: number;
+    edgeThreshold: number;
+    edgeStrength: number;
+    saturation: number;
+    inkColor: [number, number, number];
+  };
   type FilterDefinition = {
     id: string;
     name: string;
     type: 'canvas' | 'tensorflow';
     css?: string;
     sketch?: SketchFilter;
+    cartoon?: CartoonFilter;
   };
 
   const tensorSketchFamilies = [
     {
       id: 'graphite',
-      title: 'Tensor Graphite & Pencil Studies (20)',
+      title: 'Tensor Graphite & Pencil Studies (35+)',
       icon: '✏️',
-      names: ['HB Light Study', '2B Portrait Pencil', '4B Soft Shading', '6B Rich Graphite', 'H Fine Drafting Lead', 'Smudged Charcoal Pencil', 'Cross-Grain Graphite', 'Tonal Portrait Blend', 'Expressive Broad Lead', 'Paper Grain Study', 'Hard Lead Fine Grain', 'Soft Lead Shadow Pass', 'Layered Graphite Hatch', 'Bright Paper Pencil', 'Deep Value Graphite', 'Feathered Pencil Contour', 'Broad Shading Pencil', 'Fine Grain Portrait', 'Velvet Graphite Blend', 'Heavy Artist Pencil']
+      names: [
+        'HB Light Study', '2B Portrait Pencil', '4B Soft Shading', '6B Rich Graphite', 
+        '8B Deep Graphite', '10B Heavy Graphite', 'H Fine Drafting Lead', 'Smudged Charcoal Pencil', 
+        'Cross-Grain Graphite', 'Tonal Portrait Blend', 'Expressive Broad Lead', 'Paper Grain Study', 
+        'Hard Lead Fine Grain', 'Soft Lead Shadow Pass', 'Layered Graphite Hatch', 'Bright Paper Pencil', 
+        'Deep Value Graphite', 'Feathered Pencil Contour', 'Broad Shading Pencil', 'Fine Grain Portrait', 
+        'Velvet Graphite Blend', 'Heavy Artist Pencil', 'Ultra-Fine Lead Pass', 'Deep Tone Charcoal',
+        'Stippled Lead Grain', 'Contour Shading Pass', 'Structured Graphite Mesh', 'Organic Smudge Pass',
+        'Matte Graphite Pass', 'High-Density Lead', 'Textured Paper Study', 'Raw Graphite Dust',
+        'Precision Shading Pass', 'Subtle Tone Gradient', 'Master Artist Pencil'
+      ]
+    },
+    {
+      id: 'charcoal',
+      title: 'Tensor Charcoal & Ink Washes (30+)',
+      icon: '🪵',
+      names: [
+        'Willow Charcoal Pass', 'Compressed Vine Ink', 'Deep Shadow Block', 'Rich Ink Wash',
+        'Sum-e Black Stroke', 'Heavy Carbon Core', 'Smudged Charcoal Dust', 'Dark Monolith Pass',
+        'Expressive Ink Splash', 'Velvet Shadow Pass', 'Deep Void Charcoal', 'High Contrast Ink',
+        'Raw Vine Charcoal', 'Soft Carbon Blend', 'Aggressive Charcoal Stroke', 'Gothic Ink Pass',
+        'Deep Obsidian Shade', 'Dense Carbon Matrix', 'Subtle Charcoal Wash', 'Intense Shadow Pass',
+        'Textured Vine Stroke', 'Matte Carbon Layer', 'Rich Liquid Ink', 'Deep Monochromatic Core',
+        'Expressive Charcoal Pass', 'Heavy Shadow Gradient', 'Dark Contoured Ink', 'Velvety Vine Shade'
+      ]
     },
     {
       id: 'contour',
@@ -94,6 +138,34 @@
       sketch: { family: family.id, variation }
     }))
   }));
+
+  const cartoonInkColors: [number, number, number][] = [
+    [24, 24, 28], [36, 28, 54], [20, 48, 70], [65, 34, 26], [32, 60, 42], [12, 12, 16]
+  ];
+  const cartoonFilterNames = [
+    'Classic Cel Animation', 'Bold Comic Book', 'Soft Anime Outline', 'Pastel Storybook Toon',
+    'Saturday Morning Cartoon', 'Graphic Novel Ink', 'Clean Vector Toon', 'Retro Print Cartoon',
+    'Watercolor Animation', 'High-Key Character Cel', 'Noir Toon Outline', 'Warm Picture Book',
+    'Neon Pop Cartoon', 'Muted Editorial Toon', 'Heavy Ink Animation', 'Light Pencil Cartoon',
+    'Vintage Comic Halftone', 'Soft Portrait Toon', 'Crisp Studio Animation', 'Limited Palette Toon',
+    'Dreamy Pastel Anime', 'Hard Shadow Cel Shade', 'Expressive Brush Cartoon', 'Fine-Line Cartoon'
+  ];
+  const cartoonCategory = {
+    name: 'TensorFlow Cartoonify Styles (24)',
+    filters: cartoonFilterNames.map((name, index) => ({
+      id: `tf_cartoonify_${String(index + 1).padStart(2, '0')}`,
+      name: `🎨 TF ${name}`,
+      type: 'tensorflow' as const,
+      cartoon: {
+        blurSize: [3, 5, 7][Math.floor(index / 4) % 3],
+        colorLevels: [4, 5, 6, 7, 8, 9][index % 6],
+        edgeThreshold: [28, 42, 58, 76, 96, 122][Math.floor(index / 4) % 6],
+        edgeStrength: 0.45 + (index % 6) * 0.1,
+        saturation: [0.75, 0.95, 1.15, 1.35, 1.55, 1.75][Math.floor(index / 4) % 6],
+        inkColor: cartoonInkColors[index % cartoonInkColors.length]
+      }
+    }))
+  };
 
   const canvasSketchFamilies = [
     {
@@ -169,6 +241,7 @@
   }));
 
   const filterCategories: { name: string; filters: FilterDefinition[] }[] = [
+    cartoonCategory,
     ...tensorSketchCategories,
     ...canvasSketchCategories,
     {
@@ -403,6 +476,65 @@
     drawCurve(bBins, 'rgba(59, 130, 246, 0.8)');
   };
 
+  const detectSubject = async () => {
+    if (!rawImageObj) return;
+    isDetectingSubject = true;
+    subjectMaskError = '';
+    try {
+      await tf.ready();
+      const bodyPix = await import('@tensorflow-models/body-pix');
+      bodyPixModel ??= await bodyPix.load({
+        architecture: 'MobileNetV1',
+        outputStride: 16,
+        multiplier: 0.75,
+        quantBytes: 2
+      });
+      const segmentation = await bodyPixModel.segmentPerson(rawImageObj, {
+        internalResolution: 'medium',
+        segmentationThreshold: 0.7
+      });
+      subjectSegmentation = {
+        width: segmentation.width,
+        height: segmentation.height,
+        data: segmentation.data
+      };
+      subjectMaskEnabled = true;
+    } catch (error) {
+      subjectMaskError = error instanceof Error ? error.message : 'TensorFlow.js could not detect a person in this image.';
+    } finally {
+      isDetectingSubject = false;
+    }
+  };
+
+  const applySubjectMask = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    if (!subjectMaskEnabled || !subjectSegmentation) return;
+
+    const { width: maskWidth, height: maskHeight, data } = subjectSegmentation;
+    if (!maskWidth || !maskHeight || data.length !== maskWidth * maskHeight) return;
+
+    const maskCanvas = document.createElement('canvas');
+    maskCanvas.width = maskWidth;
+    maskCanvas.height = maskHeight;
+    const maskContext = maskCanvas.getContext('2d');
+    if (!maskContext) return;
+
+    const maskImage = maskContext.createImageData(maskWidth, maskHeight);
+    for (let pixel = 0; pixel < data.length; pixel++) {
+      const colorIndex = pixel * 4;
+      maskImage.data[colorIndex] = 255;
+      maskImage.data[colorIndex + 1] = 255;
+      maskImage.data[colorIndex + 2] = 255;
+      maskImage.data[colorIndex + 3] = data[pixel] > 0 ? 255 : 0;
+    }
+    maskContext.putImageData(maskImage, 0, 0);
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.filter = subjectMaskFeather > 0 ? `blur(${subjectMaskFeather}px)` : 'none';
+    ctx.drawImage(maskCanvas, 0, 0, width, height);
+    ctx.restore();
+  };
+
   const applyPostEffects = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     // 1. Ambient Glow
     if (glowEnabled) {
@@ -444,13 +576,16 @@
   };
 
   const applyFilter = async (filterId: string = activeFilterId, type: 'canvas' | 'tensorflow' = engineType) => {
+    const runId = ++filterRunId;
     activeFilterId = filterId;
     engineType = type;
+    filterError = '';
     if (!rawImageObj || !previewCanvas) return;
 
     const ctx = previewCanvas.getContext('2d');
     if (!ctx) return;
 
+    isProcessing = type === 'tensorflow';
     previewCanvas.width = rawImageObj.width;
     previewCanvas.height = rawImageObj.height;
 
@@ -462,26 +597,32 @@
     const combinedFilter = baseCss === 'none' ? sliderCss : `${baseCss} ${sliderCss}`;
 
     if (type === 'canvas') {
+      isProcessing = false;
       ctx.filter = combinedFilter;
       ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
       ctx.drawImage(rawImageObj, 0, 0);
       ctx.filter = 'none';
 
       applyPostEffects(ctx, previewCanvas.width, previewCanvas.height);
+      applySubjectMask(ctx, previewCanvas.width, previewCanvas.height);
       updateHistogram();
     } else {
-      isProcessing = true;
       await new Promise(resolve => setTimeout(resolve, 30));
+      let inputTensor: tf.Tensor3D | null = null;
+      let processedTensor: tf.Tensor | null = null;
 
       try {
         await tf.ready();
-        const inputTensor = tf.browser.fromPixels(rawImageObj);
+        inputTensor = tf.browser.fromPixels(rawImageObj);
         const sketchSettings = filterCategories
           .flatMap(category => category.filters)
           .find(filter => filter.id === filterId)?.sketch;
+        const cartoonSettings = filterCategories
+          .flatMap(category => category.filters)
+          .find(filter => filter.id === filterId)?.cartoon;
 
-        const processedTensor = tf.tidy(() => {
-          let t = inputTensor.toFloat() as tf.Tensor3D;
+        processedTensor = tf.tidy(() => {
+          let t = inputTensor!.toFloat() as tf.Tensor3D;
           const grayscale = (pixels: tf.Tensor3D) => {
             const red = pixels.slice([0, 0, 0], [-1, -1, 1]).mul(0.299);
             const green = pixels.slice([0, 0, 1], [-1, -1, 1]).mul(0.587);
@@ -508,7 +649,7 @@
             };
 
             if (settings.family === 'graphite') {
-              const blurSize = [3, 5, 7, 9, 11][Math.floor(variation / 4)];
+              const blurSize = [3, 5, 7, 9, 11][Math.min(4, Math.floor(variation / 7))];
               const inverted = tf.scalar(255).sub(gray) as tf.Tensor3D;
               const blurred = blur(inverted, blurSize);
               const dodge = gray.mul(255).div(tf.scalar(255).sub(blurred).maximum(10));
@@ -516,6 +657,17 @@
               const pencil = tf.scalar(255).sub(tf.scalar(255).sub(dodge).mul(pressure));
               const grain = sobel(pixels).mul(0.01 + (variation % 4) * 0.014);
               return rgb(pencil.sub(grain).clipByValue(0, 255));
+            }
+
+            if (settings.family === 'charcoal') {
+              const blurSize = [3, 5, 7, 9][variation % 4];
+              const shadow = tf.scalar(255).sub(gray) as tf.Tensor3D;
+              const softShadow = blur(shadow, blurSize);
+              const pressure = 0.65 + (variation % 6) * 0.1;
+              const texture = sobel(pixels).mul(0.025 + (variation % 5) * 0.012);
+              const charcoal = softShadow.mul(pressure).add(texture).clipByValue(0, 255);
+              const liftedPaper = variation % 3 === 0 ? charcoal.mul(0.88) : charcoal;
+              return rgb(tf.scalar(255).sub(liftedPaper).clipByValue(0, 255));
             }
 
             if (settings.family === 'contour' || settings.family === 'technical') {
@@ -566,10 +718,25 @@
             }
             return rgb(tf.scalar(255).sub(ink).clipByValue(0, 255));
           };
+          const renderCartoon = (pixels: tf.Tensor3D, settings: CartoonFilter): tf.Tensor3D => {
+            const softened = blur(pixels, settings.blurSize);
+            const quantizationStep = 255 / (settings.colorLevels - 1);
+            const posterized = softened.div(quantizationStep).round().mul(quantizationStep) as tf.Tensor3D;
+            const gray = grayscale(pixels);
+            const grayRgb = tf.concat([gray, gray, gray], 2) as tf.Tensor3D;
+            const color = grayRgb.add(posterized.sub(grayRgb).mul(settings.saturation)).clipByValue(0, 255);
+            const lineMask = sobel(pixels).greater(settings.edgeThreshold).toFloat()
+              .mul(settings.edgeStrength) as tf.Tensor3D;
+            const ink = tf.tensor1d(settings.inkColor).reshape([1, 1, 3]) as tf.Tensor3D;
+            return color.mul(tf.onesLike(lineMask).sub(lineMask)).add(ink.mul(lineMask)).clipByValue(0, 255) as tf.Tensor3D;
+          };
 
           let resTensor: tf.Tensor;
 
-          if (sketchSettings) {
+          if (cartoonSettings) {
+            resTensor = renderCartoon(t, cartoonSettings);
+          }
+          else if (sketchSettings) {
             resTensor = renderSketch(t, sketchSettings);
           }
           else if (filterId === 'sketch_outline') {
@@ -587,8 +754,8 @@
             const gray = grayscale(t);
             const inverted = tf.scalar(255).sub(gray) as tf.Tensor3D;
             const blurred = blur(inverted, 7);
-            const dodge = gray.div(tf.scalar(255).sub(blurred).maximum(4.0));
-            resTensor = tf.concat([dodge, dodge, dodge], 2).mul(255).clipByValue(0, 255);
+            const dodge = gray.mul(255).div(tf.scalar(255).sub(blurred).maximum(4.0));
+            resTensor = tf.concat([dodge, dodge, dodge], 2).clipByValue(0, 255);
           }
           else if (filterId === 'tf_stipple_dot') {
             const gray = grayscale(t);
@@ -622,10 +789,14 @@
             resTensor = tf.concat([lum, lum, lum], 2);
           }
           else if (filterId === 'tf_cartoon') {
-            const smoothed = blur(t, 5);
-            const posterized = smoothed.div(32).floor().mul(32);
-            const edges = sobel(t).greater(75).logicalNot().toFloat().mul(255);
-            resTensor = posterized.mul(edges).clipByValue(0, 255);
+            resTensor = renderCartoon(t, {
+              blurSize: 5,
+              colorLevels: 6,
+              edgeThreshold: 75,
+              edgeStrength: 0.9,
+              saturation: 1.2,
+              inkColor: [20, 20, 24]
+            });
           }
           else if (filterId === 'tf_style') {
             const smoothed = blur(t, 9);
@@ -677,16 +848,25 @@
           return adjusted.mul(255).toInt();
         });
 
-        await tf.browser.toPixels(processedTensor as tf.Tensor3D, previewCanvas);
-        inputTensor.dispose();
-        processedTensor.dispose();
+        if (runId !== filterRunId) return;
+        const resultCanvas = document.createElement('canvas');
+        resultCanvas.width = previewCanvas.width;
+        resultCanvas.height = previewCanvas.height;
+        await tf.browser.toPixels(processedTensor as tf.Tensor3D, resultCanvas);
+        if (runId !== filterRunId) return;
+        ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+        ctx.drawImage(resultCanvas, 0, 0);
 
         applyPostEffects(ctx, previewCanvas.width, previewCanvas.height);
+        applySubjectMask(ctx, previewCanvas.width, previewCanvas.height);
         updateHistogram();
-      } catch (err) {
-        console.error("TensorFlow filter error:", err);
+      } catch (error) {
+        filterError = error instanceof Error ? error.message : 'TensorFlow.js could not render this filter.';
+        console.error("TensorFlow filter error:", error);
       } finally {
-        isProcessing = false;
+        inputTensor?.dispose();
+        processedTensor?.dispose();
+        if (runId === filterRunId) isProcessing = false;
       }
     }
   };
@@ -705,8 +885,16 @@
 
   const openComparisonModal = () => {
     if (!previewCanvas) return;
-    filteredDataUrl = previewCanvas.toDataURL('image/jpeg', 0.95);
+    const mimeType = subjectMaskEnabled ? 'image/png' : 'image/jpeg';
+    filteredDataUrl = previewCanvas.toDataURL(mimeType, subjectMaskEnabled ? undefined : 0.95);
     isModalOpen = true;
+  };
+
+  const openFullImagePreview = () => {
+    if (!previewCanvas) return;
+    const mimeType = subjectMaskEnabled ? 'image/png' : 'image/jpeg';
+    filteredDataUrl = previewCanvas.toDataURL(mimeType, subjectMaskEnabled ? undefined : 0.95);
+    isFullImageModalOpen = true;
   };
 
   const exportImage = async () => {
@@ -716,7 +904,11 @@
     try {
       if (exportFormat === 'pdf') {
         const { jsPDF } = await import('jspdf');
-        const dataUrl = previewCanvas.toDataURL('image/jpeg', compressionQuality / 100);
+        const preserveTransparency = subjectMaskEnabled && subjectSegmentation !== null;
+        const imageType = preserveTransparency ? 'PNG' : 'JPEG';
+        const dataUrl = preserveTransparency
+          ? previewCanvas.toDataURL('image/png')
+          : previewCanvas.toDataURL('image/jpeg', compressionQuality / 100);
         const orientation = previewCanvas.width >= previewCanvas.height ? 'landscape' : 'portrait';
         const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4', compress: true });
         const margin = 10;
@@ -728,17 +920,19 @@
         );
         const imageWidth = previewCanvas.width * scale;
         const imageHeight = previewCanvas.height * scale;
-        pdf.addImage(dataUrl, 'JPEG', (pageWidth - imageWidth) / 2, (pageHeight - imageHeight) / 2, imageWidth, imageHeight, undefined, 'FAST');
+        pdf.addImage(dataUrl, imageType, (pageWidth - imageWidth) / 2, (pageHeight - imageHeight) / 2, imageWidth, imageHeight, undefined, 'FAST');
         pdf.save(`studio_artwork_${activeFilterId}.pdf`);
         return;
       }
 
-      const mimeType = exportFormat === 'png' ? 'image/png' : 'image/jpeg';
-      const quality = exportFormat === 'png' ? undefined : compressionQuality / 100;
+      const preserveTransparency = subjectMaskEnabled && subjectSegmentation !== null;
+      const outputFormat = preserveTransparency ? 'png' : exportFormat;
+      const mimeType = outputFormat === 'png' ? 'image/png' : 'image/jpeg';
+      const quality = outputFormat === 'png' ? undefined : compressionQuality / 100;
       const dataUrl = previewCanvas.toDataURL(mimeType, quality);
 
       const link = document.createElement('a');
-      link.download = `studio_artwork_${activeFilterId}.${exportFormat}`;
+      link.download = `studio_artwork_${activeFilterId}.${outputFormat}`;
       link.href = dataUrl;
       link.click();
     } catch (error) {
@@ -763,6 +957,14 @@
     glowIntensity;
     vignetteIntensity;
     grainAmount;
+    subjectSegmentation;
+    subjectMaskEnabled;
+    subjectMaskFeather;
+    if (rawImageObj !== previousRawImage) {
+      previousRawImage = rawImageObj;
+      subjectSegmentation = null;
+      subjectMaskEnabled = false;
+    }
     if (rawImageObj && previewCanvas) {
       applyFilter(activeFilterId, engineType);
     }
@@ -880,6 +1082,45 @@
       </div>
     </div>
 
+    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3">
+      <div class="flex items-center gap-2">
+        <Icon icon="mdi:person-scan" class="text-primary text-base" />
+        <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-500 font-mono">Smart Subject Mask</h4>
+      </div>
+      <p class="text-[11px] leading-relaxed text-gray-600">TensorFlow.js detects and isolates a person. The model loads on demand and runs in your browser.</p>
+      <button
+        type="button"
+        onclick={detectSubject}
+        disabled={!rawImageObj || isDetectingSubject}
+        class="w-full bg-primary hover:bg-primary-dark disabled:opacity-60 text-light font-semibold py-2.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-center gap-2"
+      >
+        <Icon icon={isDetectingSubject ? 'mdi:loading' : 'mdi:face-recognition'} class={isDetectingSubject ? 'animate-spin' : ''} />
+        {isDetectingSubject ? 'Detecting person...' : subjectSegmentation ? 'Detect person again' : 'Detect & isolate person'}
+      </button>
+      {#if subjectSegmentation}
+        <div class="space-y-2 border-t border-gray-200 pt-3">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[11px] text-gray-600">{subjectMaskEnabled ? 'Person isolated; PNG preserves transparency' : 'Person mask ready'}</span>
+            <button type="button" onclick={() => subjectMaskEnabled = !subjectMaskEnabled} class="text-[11px] font-semibold text-primary hover:underline cursor-pointer">
+              {subjectMaskEnabled ? 'Show full image' : 'Isolate'}
+            </button>
+          </div>
+          <div>
+            <label for="subject-mask-feather" class="flex justify-between text-[11px] font-medium text-gray-600 mb-0.5">
+              <span>Mask edge softness</span><span>{subjectMaskFeather}px</span>
+            </label>
+            <input id="subject-mask-feather" type="range" bind:value={subjectMaskFeather} min="0" max="6" step="0.5" class="w-full accent-primary cursor-pointer" />
+          </div>
+          <button type="button" onclick={() => { subjectSegmentation = null; subjectMaskEnabled = false; }} class="text-[11px] font-semibold text-gray-500 hover:text-dark cursor-pointer">
+            Clear person mask
+          </button>
+        </div>
+      {/if}
+      {#if subjectMaskError}
+        <p role="alert" class="text-xs text-danger">{subjectMaskError}</p>
+      {/if}
+    </div>
+
     <div class="space-y-1">
       <div class="relative">
         <Icon icon="mdi:magnify" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -951,19 +1192,35 @@
       <span class="text-xs font-semibold text-gray-600">
         Preview Mode: <strong class="text-dark">{showOriginal ? 'Original Source' : `Filtered (${activeFilterId})`}</strong>
       </span>
-      <button
-        type="button"
-        onmousedown={() => showOriginal = true}
-        onmouseup={() => showOriginal = false}
-        onmouseleave={() => showOriginal = false}
-        ontouchstart={() => showOriginal = true}
-        ontouchend={() => showOriginal = false}
-        class="px-4 py-1.5 bg-dark text-light rounded-lg text-xs font-bold transition shadow-xs active:bg-primary cursor-pointer select-none"
-        title="Press and hold to view original"
-      >
-        👁️ Hold to Compare Before / After
-      </button>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          onmousedown={() => showOriginal = true}
+          onmouseup={() => showOriginal = false}
+          onmouseleave={() => showOriginal = false}
+          ontouchstart={() => showOriginal = true}
+          ontouchend={() => showOriginal = false}
+          class="px-4 py-1.5 bg-dark text-light rounded-lg text-xs font-bold transition shadow-xs active:bg-primary cursor-pointer select-none"
+          title="Press and hold to view original"
+        >
+          👁️ Hold to Compare Before / After
+        </button>
+        <button
+          type="button"
+          onclick={openFullImagePreview}
+          disabled={!previewCanvas || isProcessing}
+          class="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-dark transition hover:bg-gray-100 disabled:opacity-50 cursor-pointer"
+          aria-label="Open full-screen processed image preview"
+          title="Full-screen preview"
+        >
+          <Icon icon="mdi:fullscreen" class="text-lg" />
+        </button>
+      </div>
     </div>
+
+    {#if filterError}
+      <p role="alert" class="w-full mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-danger">TensorFlow filter failed: {filterError}</p>
+    {/if}
 
     <!-- Processing Loader Modal Overlay -->
     {#if isProcessing}
@@ -990,3 +1247,5 @@
   originalSrc={rawImageObj?.src || ''} 
   filteredSrc={filteredDataUrl} 
 />
+
+<FullImageModal bind:isOpen={isFullImageModalOpen} imageSrc={filteredDataUrl} />
