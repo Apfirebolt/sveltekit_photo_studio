@@ -38,18 +38,18 @@
       icon: "mdi:shape-rectangle-plus",
     },
     {
-      title: "5 Curated Art Effects",
-      description: "Transform your photos locally into Classic Pencil Sketch, Comic Book Ink, Charcoal, Vibrant Pop Art, or Vintage Blueprint styles.",
+      title: "8 TensorFlow.js Art Effects",
+      description: "Transform photos into pencil and pen sketches, oil paint, cartoon ink, charcoal, pop art, or blueprint styles.",
       icon: "mdi:palette-swatch-outline",
     },
     {
       title: "100% Client-Side Privacy",
-      description: "All processing happens natively in your web browser using HTML5 Canvas APIs. Your reference photos never leave your device.",
+      description: "Image processing and AI inference run in your browser. Models download on demand, and your reference photos are not uploaded.",
       icon: "mdi:shield-check-outline",
     },
     {
       title: "Lightning-Fast SvelteKit",
-      description: "Built for high performance with zero heavy server-side dependencies or large AI model weight downloads, running smoothly everywhere.",
+      description: "Built with SvelteKit and TensorFlow.js. Segmentation and recognition models load only when you use those tools.",
       icon: "mdi:flash",
     },
   ];

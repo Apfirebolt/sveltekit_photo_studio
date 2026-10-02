@@ -1,68 +1,169 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import Icon from "@iconify/svelte";
 
-  // Accept raw image element and preset choice from parent
   let { rawImageObj, activePreset = 'normal' }: { rawImageObj: HTMLImageElement | null; activePreset?: string } = $props();
 
   let tfCanvas = $state<HTMLCanvasElement | null>(null);
   let brightness = $state(100);
   let contrast = $state(100);
   let saturation = $state(100);
+  let isProcessing = $state(false);
+  let isDescribing = $state(false);
+  let imageDescription = $state('');
+  let modelError = $state('');
+  let backgroundMask = $state<Uint8Array | null>(null);
+  let renderVersion = 0;
+  let bodyPixModel: Awaited<ReturnType<typeof import('@tensorflow-models/body-pix').load>> | null = null;
+  let mobilenetModel: Awaited<ReturnType<typeof import('@tensorflow-models/mobilenet').load>> | null = null;
+  let previousImage: HTMLImageElement | null = null;
 
-  const applyTfCanvasFilters = () => {
+  const applyTfCanvasFilters = async () => {
     if (!rawImageObj || !tfCanvas) return;
+    const version = ++renderVersion;
     const canvas = tfCanvas;
     canvas.width = rawImageObj.width;
     canvas.height = rawImageObj.height;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(rawImageObj, 0, 0);
 
-    // Simulated TensorFlow-accelerated / Canvas Convolution Pipelines
-    if (activePreset === 'sketch') {
-      ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) grayscale(100%) invert(100%) blur(3px)`;
-      ctx.drawImage(rawImageObj, 0, 0);
-      ctx.globalCompositeOperation = 'color-dodge';
-      ctx.filter = `grayscale(100%) brightness(${brightness}%)`;
-      ctx.drawImage(rawImageObj, 0, 0);
-      ctx.globalCompositeOperation = 'source-over';
-    } else if (activePreset === 'comic') {
-      ctx.filter = `brightness(${brightness}%) contrast(${contrast + 50}%) saturate(${saturation + 40}%)`;
-      ctx.drawImage(rawImageObj, 0, 0);
-    } else if (activePreset === 'charcoal') {
-      ctx.filter = `brightness(${brightness - 10}%) contrast(${contrast + 60}%) grayscale(100%) blur(1px)`;
-      ctx.drawImage(rawImageObj, 0, 0);
-    } else if (activePreset === 'popart') {
-      ctx.filter = `brightness(${brightness}%) contrast(${contrast + 30}%) saturate(${saturation + 80}%)`;
-      ctx.drawImage(rawImageObj, 0, 0);
-    } else if (activePreset === 'blueprint') {
-      ctx.filter = `brightness(${brightness}%) contrast(${contrast + 20}%) grayscale(100%) invert(100%) hue-rotate(180deg)`;
-      ctx.drawImage(rawImageObj, 0, 0);
-    } else {
-      ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
-      ctx.drawImage(rawImageObj, 0, 0);
-      ctx.filter = 'none';
+    try {
+      const tf = await import('@tensorflow/tfjs');
+      await tf.ready();
+      const source = tf.browser.fromPixels(canvas, 3).toFloat().div(255) as import('@tensorflow/tfjs').Tensor3D;
+      const result = tf.tidy(() => {
+        let pixels = source.add((brightness - 100) / 100).clipByValue(0, 1);
+        pixels = pixels.sub(0.5).mul(contrast / 100).add(0.5).clipByValue(0, 1);
+        const gray = pixels.mean(2).expandDims(2) as import('@tensorflow/tfjs').Tensor3D;
+        pixels = gray.add(pixels.sub(gray).mul(saturation / 100)).clipByValue(0, 1);
+
+        const grayAdjusted = pixels.mean(2).expandDims(2) as import('@tensorflow/tfjs').Tensor3D;
+        const blurKernel = tf.fill([5, 5, 1, 1], 1 / 25) as unknown as import('@tensorflow/tfjs').Tensor4D;
+        const blur = (input: import('@tensorflow/tfjs').Tensor3D): import('@tensorflow/tfjs').Tensor3D =>
+          tf.conv2d(input.expandDims(0) as unknown as import('@tensorflow/tfjs').Tensor4D, blurKernel, 1, 'same').squeeze([0]) as import('@tensorflow/tfjs').Tensor3D;
+        const edgeKernels = [
+          tf.tensor4d([-1, 0, 1, -2, 0, 2, -1, 0, 1], [3, 3, 1, 1]),
+          tf.tensor4d([-1, -2, -1, 0, 0, 0, 1, 2, 1], [3, 3, 1, 1])
+        ];
+        const gradients = () => {
+          const input = grayAdjusted.expandDims(0) as import('@tensorflow/tfjs').Tensor4D;
+          return tf.sqrt(
+            tf.conv2d(input, edgeKernels[0], 1, 'same').square()
+              .add(tf.conv2d(input, edgeKernels[1], 1, 'same').square())
+          ).squeeze([0]);
+        };
+
+        if (activePreset === 'sketch') {
+          const inverted = tf.onesLike(grayAdjusted).sub(grayAdjusted) as import('@tensorflow/tfjs').Tensor3D;
+          const blurred = blur(inverted);
+          pixels = grayAdjusted.div(tf.onesLike(blurred).sub(blurred).maximum(0.08)).clipByValue(0, 1).tile([1, 1, 3]);
+        } else if (activePreset === 'pen') {
+          pixels = tf.onesLike(grayAdjusted).sub(gradients().mul(3).clipByValue(0, 1)).tile([1, 1, 3]);
+        } else if (activePreset === 'oil') {
+          const channels = [0, 1, 2].map((channel) =>
+            blur(pixels.slice([0, 0, channel], [canvas.height, canvas.width, 1]) as import('@tensorflow/tfjs').Tensor3D)
+          );
+          pixels = tf.concat(channels.map((channel) => channel.mul(6).floor().div(6)), 2);
+        } else if (activePreset === 'cartoon' || activePreset === 'comic') {
+          const posterized = pixels.mul(5).floor().div(5);
+          const lines = gradients().greater(0.16).logicalNot().toFloat();
+          pixels = posterized.mul(lines.tile([1, 1, 3]));
+        } else if (activePreset === 'charcoal') {
+          pixels = tf.onesLike(grayAdjusted).sub(gradients().mul(2.5).clipByValue(0, 1)).mul(0.85).tile([1, 1, 3]);
+        } else if (activePreset === 'popart') {
+          pixels = pixels.mul(5).floor().div(5);
+        } else if (activePreset === 'blueprint') {
+          pixels = tf.stack([
+            tf.onesLike(grayAdjusted).mul(0.12),
+            grayAdjusted.mul(0.5),
+            grayAdjusted.mul(0.9)
+          ], 2).squeeze([3]);
+        }
+        return pixels.clipByValue(0, 1) as import('@tensorflow/tfjs').Tensor3D;
+      });
+
+      if (version !== renderVersion) {
+        source.dispose();
+        result.dispose();
+        return;
+      }
+      await tf.browser.toPixels(result, canvas);
+      source.dispose();
+      result.dispose();
+
+      if (backgroundMask && backgroundMask.length === canvas.width * canvas.height) {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        for (let pixel = 0; pixel < backgroundMask.length; pixel++) {
+          if (backgroundMask[pixel] === 0) imageData.data[pixel * 4 + 3] = 0;
+        }
+        ctx.putImageData(imageData, 0, 0);
+      }
+    } catch (error) {
+      modelError = error instanceof Error ? error.message : 'TensorFlow.js could not process this image.';
+    }
+  };
+
+  const removeBackground = async () => {
+    if (!rawImageObj) return;
+    isProcessing = true;
+    modelError = '';
+    try {
+      const bodyPix = await import('@tensorflow-models/body-pix');
+      bodyPixModel ??= await bodyPix.load({ architecture: 'MobileNetV1', outputStride: 16, multiplier: 0.75, quantBytes: 2 });
+      const segmentation = await bodyPixModel.segmentPerson(rawImageObj, { internalResolution: 'medium' });
+      backgroundMask = segmentation.data;
+      await applyTfCanvasFilters();
+    } catch (error) {
+      modelError = error instanceof Error ? error.message : 'Background removal failed to load.';
+    } finally {
+      isProcessing = false;
+    }
+  };
+
+  const describeImage = async () => {
+    if (!rawImageObj) return;
+    isDescribing = true;
+    modelError = '';
+    imageDescription = '';
+    try {
+      const mobilenet = await import('@tensorflow-models/mobilenet');
+      mobilenetModel ??= await mobilenet.load();
+      const predictions = await mobilenetModel.classify(rawImageObj, 5);
+      const labels = predictions.slice(0, 3).map((prediction) => prediction.className);
+      imageDescription = labels.length ? `The image likely contains ${labels.join(', ')}.` : 'No recognizable objects found.';
+    } catch (error) {
+      modelError = error instanceof Error ? error.message : 'Image recognition failed to load.';
+    } finally {
+      isDescribing = false;
     }
   };
 
   const downloadFilteredImage = () => {
     if (!tfCanvas) return;
     const link = document.createElement('a');
-    link.download = `tf_studio_${activePreset}.jpg`;
-    link.href = tfCanvas.toDataURL('image/jpeg', 0.95);
+    const format = backgroundMask ? 'png' : 'jpeg';
+    link.download = `tf_studio_${activePreset}.${format === 'png' ? 'png' : 'jpg'}`;
+    link.href = tfCanvas.toDataURL(`image/${format}`, 0.95);
     link.click();
   };
 
   $effect(() => {
-    if (rawImageObj && tfCanvas) {
-      applyTfCanvasFilters();
+    rawImageObj;
+    tfCanvas;
+    activePreset;
+    brightness;
+    contrast;
+    saturation;
+    backgroundMask;
+    if (rawImageObj !== previousImage) {
+      previousImage = rawImageObj;
+      backgroundMask = null;
+      imageDescription = '';
     }
+    void applyTfCanvasFilters();
   });
 
-  onMount(() => {
-    applyTfCanvasFilters();
-  });
 </script>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -70,37 +171,55 @@
   <div class="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4">
     <div class="flex items-center gap-2 border-b border-gray-100 pb-2">
       <Icon icon="mdi:brain" class="text-primary text-lg" />
-      <h3 class="font-bold text-sm text-dark">Tensor Engine Adjustments</h3>
+      <h3 class="font-bold text-sm text-dark">TensorFlow.js Adjustments</h3>
     </div>
 
     <div>
       <div class="flex justify-between text-xs font-medium mb-1 text-gray-600">
-        <span>Tensor Brightness</span><span>{brightness}%</span>
+        <span>Brightness</span><span>{brightness}%</span>
       </div>
-      <input type="range" bind:value={brightness} min="0" max="200" oninput={applyTfCanvasFilters} class="w-full accent-primary cursor-pointer" />
+      <input type="range" bind:value={brightness} min="0" max="200" class="w-full accent-primary cursor-pointer" />
     </div>
 
     <div>
       <div class="flex justify-between text-xs font-medium mb-1 text-gray-600">
-        <span>Tensor Contrast</span><span>{contrast}%</span>
+        <span>Contrast</span><span>{contrast}%</span>
       </div>
-      <input type="range" bind:value={contrast} min="0" max="200" oninput={applyTfCanvasFilters} class="w-full accent-primary cursor-pointer" />
+      <input type="range" bind:value={contrast} min="0" max="200" class="w-full accent-primary cursor-pointer" />
     </div>
 
     <div>
       <div class="flex justify-between text-xs font-medium mb-1 text-gray-600">
-        <span>Tensor Saturation</span><span>{saturation}%</span>
+        <span>Saturation</span><span>{saturation}%</span>
       </div>
-      <input type="range" bind:value={saturation} min="0" max="200" oninput={applyTfCanvasFilters} class="w-full accent-primary cursor-pointer" />
+      <input type="range" bind:value={saturation} min="0" max="200" class="w-full accent-primary cursor-pointer" />
     </div>
 
-    <button onclick={downloadFilteredImage} class="w-full bg-primary hover:bg-primary-dark text-light font-semibold py-2.5 rounded-xl text-xs shadow transition cursor-pointer mt-4">
-      💾 Export Tensor Processed Photo
+    <div class="border-t border-gray-100 pt-4 space-y-2">
+      <p class="text-xs font-bold text-dark">AI Tools</p>
+      <button onclick={removeBackground} disabled={isProcessing} class="w-full flex items-center justify-center gap-2 border border-gray-200 hover:bg-gray-50 disabled:opacity-60 text-dark font-semibold py-2.5 rounded-lg text-xs transition cursor-pointer">
+        <Icon icon="mdi:person-crop-circle" />
+        {isProcessing ? 'Removing background...' : backgroundMask ? 'Background removed' : 'Remove person background'}
+      </button>
+      <button onclick={describeImage} disabled={isDescribing} class="w-full flex items-center justify-center gap-2 border border-gray-200 hover:bg-gray-50 disabled:opacity-60 text-dark font-semibold py-2.5 rounded-lg text-xs transition cursor-pointer">
+        <Icon icon="mdi:image-text" />
+        {isDescribing ? 'Analyzing image...' : 'Describe image'}
+      </button>
+      {#if imageDescription}
+        <p class="bg-gray-50 border border-gray-100 rounded-lg p-3 text-xs leading-relaxed text-gray-700">{imageDescription}</p>
+      {/if}
+      {#if modelError}
+        <p role="alert" class="text-xs text-danger">{modelError}</p>
+      {/if}
+    </div>
+
+    <button onclick={downloadFilteredImage} class="w-full bg-primary hover:bg-primary-dark text-light font-semibold py-2.5 rounded-lg text-xs shadow transition cursor-pointer mt-4">
+      <Icon icon="mdi:download" class="inline-block mr-1" /> Export processed photo
     </button>
   </div>
 
   <!-- Canvas Preview Area -->
-  <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[500px]">
-    <canvas bind:this={tfCanvas} class="max-w-full max-h-[520px] object-contain rounded-xl shadow-md border border-gray-200"></canvas>
+  <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-center min-h-125">
+    <canvas bind:this={tfCanvas} class="max-w-full max-h-130 object-contain rounded-xl shadow-md border border-gray-200"></canvas>
   </div>
 </div>
