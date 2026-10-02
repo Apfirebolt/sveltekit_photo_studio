@@ -17,6 +17,10 @@
   let mobilenetModel: Awaited<ReturnType<typeof import('@tensorflow-models/mobilenet').load>> | null = null;
   let previousImage: HTMLImageElement | null = null;
 
+  // Dominant Color Palette State
+  let dominantColors = $state<Array<{ hex: string; count: number }>>([]);
+  let copiedHex = $state<string | null>(null);
+
   const applyTfCanvasFilters = async () => {
     if (!rawImageObj || !tfCanvas) return;
     const version = ++renderVersion;
@@ -47,7 +51,7 @@
           tf.tensor4d([-1, -2, -1, 0, 0, 0, 1, 2, 1], [3, 3, 1, 1])
         ];
         const gradients = () => {
-          const input = grayAdjusted.expandDims(0) as import('@tensorflow/tfjs').Tensor4D;
+          const input = grayAdjusted.expandDims(0) as unknown as import('@tensorflow/tfjs').Tensor4D;
           return tf.sqrt(
             tf.conv2d(input, edgeKernels[0], 1, 'same').square()
               .add(tf.conv2d(input, edgeKernels[1], 1, 'same').square())
@@ -102,6 +106,43 @@
     } catch (error) {
       modelError = error instanceof Error ? error.message : 'TensorFlow.js could not process this image.';
     }
+  };
+
+  const extractColorPalette = () => {
+    if (!rawImageObj) return;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const sampleSize = 100;
+    canvas.width = sampleSize;
+    canvas.height = (rawImageObj.height / rawImageObj.width) * sampleSize;
+    ctx.drawImage(rawImageObj, 0, 0, canvas.width, canvas.height);
+
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    const colorMap: Record<string, number> = {};
+
+    for (let i = 0; i < imgData.length; i += 4) {
+      const r = Math.round(imgData[i] / 24) * 24;
+      const g = Math.round(imgData[i + 1] / 24) * 24;
+      const b = Math.round(imgData[i + 2] / 24) * 24;
+      const a = imgData[i + 3];
+
+      if (a < 128) continue;
+      const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+      colorMap[hex] = (colorMap[hex] || 0) + 1;
+    }
+
+    dominantColors = Object.entries(colorMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([hex, count]) => ({ hex, count }));
+  };
+
+  const copyHexCode = (hex: string) => {
+    navigator.clipboard.writeText(hex);
+    copiedHex = hex;
+    setTimeout(() => copiedHex = null, 1500);
   };
 
   const removeBackground = async () => {
@@ -160,19 +201,46 @@
       previousImage = rawImageObj;
       backgroundMask = null;
       imageDescription = '';
+      extractColorPalette();
     }
     void applyTfCanvasFilters();
   });
-
 </script>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
   <!-- Controls Sidebar -->
-  <div class="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4">
+  <div class="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 max-h-[720px] overflow-y-auto">
     <div class="flex items-center gap-2 border-b border-gray-100 pb-2">
       <Icon icon="mdi:brain" class="text-primary text-lg" />
       <h3 class="font-bold text-sm text-dark">TensorFlow.js Adjustments</h3>
     </div>
+
+    <!-- Dominant Color Palette Section -->
+    {#if dominantColors.length > 0}
+      <div class="space-y-2 bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
+        <div class="flex justify-between items-center">
+          <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-500 font-mono">Top Image Colors</h4>
+          {#if copiedHex}
+            <span class="text-[10px] font-mono text-emerald-600 font-bold animate-fade">Copied {copiedHex}!</span>
+          {/if}
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          {#each dominantColors as color}
+            <button
+              onclick={() => copyHexCode(color.hex)}
+              class="group relative flex flex-col items-center gap-1 cursor-pointer"
+              title="Click to copy HEX"
+            >
+              <div 
+                class="w-full aspect-square rounded-lg border border-black/10 shadow-xs transition-transform group-hover:scale-110" 
+                style="background-color: {color.hex};"
+              ></div>
+              <span class="text-[9px] font-mono text-gray-600 truncate w-full text-center">{color.hex}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+    {/if}
 
     <div>
       <div class="flex justify-between text-xs font-medium mb-1 text-gray-600">
@@ -219,7 +287,7 @@
   </div>
 
   <!-- Canvas Preview Area -->
-  <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-center min-h-125">
-    <canvas bind:this={tfCanvas} class="max-w-full max-h-130 object-contain rounded-xl shadow-md border border-gray-200"></canvas>
+  <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[500px]">
+    <canvas bind:this={tfCanvas} class="max-w-full max-h-[520px] object-contain rounded-xl shadow-md border border-gray-200"></canvas>
   </div>
 </div>

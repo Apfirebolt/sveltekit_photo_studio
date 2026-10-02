@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import * as tf from "@tensorflow/tfjs";
   import Icon from "@iconify/svelte";
+  import ImageModal from "$lib/components/ImageModal.svelte";
 
   let { rawImageObj }: { rawImageObj: HTMLImageElement | null } = $props();
 
@@ -9,12 +10,16 @@
   let activeFilterId = $state<string>('normal');
   let isProcessing = $state(false);
   let engineType = $state<'canvas' | 'tensorflow'>('canvas');
+  let showOriginal = $state(false); // Before / After comparison toggle
+
+  // Modal State for Side-by-Side View
+  let isModalOpen = $state(false);
+  let filteredDataUrl = $state('');
 
   // Export settings
   let exportFormat = $state<'jpeg' | 'png' | 'pdf'>('jpeg');
-  let compressionQuality = $state(90); // 10 to 100
+  let compressionQuality = $state(90);
 
-  // Expanded Filter Library (25+ Professional Styles)
   const filterCategories = [
     {
       name: "Precision Pencil & Pen Sketches",
@@ -99,6 +104,8 @@
       ctx.filter = 'none';
     } else {
       isProcessing = true;
+      await new Promise(resolve => setTimeout(resolve, 30));
+
       try {
         await tf.ready();
         const inputTensor = tf.browser.fromPixels(rawImageObj);
@@ -183,11 +190,16 @@
     }
   };
 
+  const openComparisonModal = () => {
+    if (!previewCanvas) return;
+    filteredDataUrl = previewCanvas.toDataURL('image/jpeg', 0.95);
+    isModalOpen = true;
+  };
+
   const exportImage = () => {
     if (!previewCanvas) return;
 
     if (exportFormat === 'pdf') {
-      // PDF export via native print window frame
       const dataUrl = previewCanvas.toDataURL('image/jpeg', compressionQuality / 100);
       const printWindow = window.open('', '_blank');
       if (printWindow) {
@@ -204,7 +216,6 @@
       return;
     }
 
-    // Standard PNG / JPEG Export with Compression ratio
     const mimeType = exportFormat === 'png' ? 'image/png' : 'image/jpeg';
     const quality = exportFormat === 'png' ? undefined : compressionQuality / 100;
     const dataUrl = previewCanvas.toDataURL(mimeType, quality);
@@ -223,7 +234,7 @@
 </script>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <!-- Filter Matrix Sidebar + Export & Compression Suite -->
+  <!-- Filter Matrix Sidebar -->
   <div class="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-6 max-h-[640px] overflow-y-auto">
     <div class="flex items-center justify-between border-b border-gray-100 pb-2">
       <div class="flex items-center gap-2">
@@ -231,13 +242,12 @@
         <h3 class="font-bold text-sm text-dark">Professional Filter Suite</h3>
       </div>
       {#if isProcessing}
-        <span class="text-[10px] font-mono bg-primary/10 text-primary px-2 py-0.5 rounded-full animate-pulse">
-          Tensor Active
+        <span class="text-[10px] font-mono bg-primary/10 text-primary px-2 py-0.5 rounded-full animate-pulse flex items-center gap-1">
+          <Icon icon="mdi:loading" class="animate-spin text-xs" /> Computing Tensors
         </span>
       {/if}
     </div>
 
-    <!-- Filter Categories -->
     {#each filterCategories as category}
       <div class="space-y-2">
         <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-400 font-mono">{category.name}</h4>
@@ -256,7 +266,6 @@
         </div>
       </div>
     {/each}
-    
 
     <!-- Export & Compression Panel -->
     <div class="pt-4 border-t border-gray-100 space-y-4">
@@ -277,19 +286,61 @@
         </div>
       </div>
 
-      <button onclick={exportImage} class="w-full bg-primary hover:bg-primary-dark text-light font-semibold py-2.5 rounded-xl text-xs shadow transition cursor-pointer flex items-center justify-center gap-2">
-        <Icon icon="mdi:export-variant" class="text-sm" /> Export as {exportFormat.toUpperCase()}
-      </button>
+      <div class="space-y-2">
+        <button onclick={openComparisonModal} class="w-full bg-dark hover:bg-black text-light font-semibold py-2.5 rounded-xl text-xs shadow transition cursor-pointer flex items-center justify-center gap-2">
+          <Icon icon="mdi:compare" class="text-sm" /> Fullscreen Side-by-Side Compare
+        </button>
+
+        <button onclick={exportImage} class="w-full bg-primary hover:bg-primary-dark text-light font-semibold py-2.5 rounded-xl text-xs shadow transition cursor-pointer flex items-center justify-center gap-2">
+          <Icon icon="mdi:export-variant" class="text-sm" /> Export as {exportFormat.toUpperCase()}
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- Canvas Preview Area -->
-  <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-center min-h-[500px] relative">
+  <!-- Canvas Preview Area with Before/After & Loader Overlay -->
+  <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center min-h-[500px] relative">
+    
+    <!-- Top Comparison Toolbar -->
+    <div class="w-full flex justify-between items-center mb-4 bg-gray-50 p-3 rounded-xl border border-gray-200">
+      <span class="text-xs font-semibold text-gray-600">
+        Preview Mode: <strong class="text-dark">{showOriginal ? 'Original Source' : `Filtered (${activeFilterId})`}</strong>
+      </span>
+      <button
+        onmousedown={() => showOriginal = true}
+        onmouseup={() => showOriginal = false}
+        onmouseleave={() => showOriginal = false}
+        ontouchstart={() => showOriginal = true}
+        ontouchend={() => showOriginal = false}
+        class="px-4 py-1.5 bg-dark text-light rounded-lg text-xs font-bold transition shadow-xs active:bg-primary cursor-pointer select-none"
+        title="Press and hold to view original"
+      >
+        👁️ Hold to Compare Before / After
+      </button>
+    </div>
+
+    <!-- Processing Loader Modal Overlay -->
     {#if isProcessing}
-      <div class="absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center z-10 rounded-2xl">
-        <p class="text-xs font-bold text-primary animate-bounce">Processing Professional Filter Matrix...</p>
+      <div class="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-20 rounded-2xl space-y-3">
+        <div class="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-xs font-bold text-dark animate-pulse">Running Neural Tensor Calculations...</p>
+        <span class="text-[10px] font-mono text-gray-500">Processing WebGL Matrix Kernels</span>
       </div>
     {/if}
-    <canvas bind:this={previewCanvas} class="max-w-full max-h-[520px] object-contain rounded-xl shadow-md border border-gray-200"></canvas>
+
+    <!-- Canvas Preview / Original Image Switcher -->
+    <div class="w-full flex justify-center items-center overflow-hidden rounded-xl border border-gray-200 bg-gray-100 max-h-[500px]">
+      {#if showOriginal && rawImageObj}
+        <img src={rawImageObj.src} alt="Original Reference" class="max-w-full max-h-[500px] object-contain block animate-fade" />
+      {/if}
+      <canvas bind:this={previewCanvas} class="max-w-full max-h-[500px] object-contain block {showOriginal ? 'hidden' : ''}"></canvas>
+    </div>
   </div>
 </div>
+
+<!-- Render ImageModal Component -->
+<ImageModal 
+  bind:isOpen={isModalOpen} 
+  originalSrc={rawImageObj?.src || ''} 
+  filteredSrc={filteredDataUrl} 
+/>
