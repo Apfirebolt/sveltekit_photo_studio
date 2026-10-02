@@ -5,7 +5,7 @@
   import HeaderComponent from "$lib/components/Header.svelte";
   import FooterComponent from "$lib/components/Footer.svelte";
 
-  const headline = "Welcome to Svelte TV Maze";
+  const headline = "About Artist Studio Suite";
   let displayedText = "";
   let typeTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -15,7 +15,7 @@
       if (index < headline.length) {
         displayedText = headline.slice(0, index + 1);
         index++;
-        typeTimer = setTimeout(tick, 70);
+        typeTimer = setTimeout(tick, 60);
       }
     };
     tick();
@@ -23,19 +23,34 @@
 
   const featureCards = [
     {
-      title: "Comprehensive Directory",
-      description: "Access detailed cast line-ups, episode guides, seasonal archives, and television network metadata.",
-      icon: "mdi:television-classic",
+      title: "Reference Grids & Diagonals",
+      description: "Customize rows and columns dynamically with precise line color options and center diagonal guides for accurate drawing proportions.",
+      icon: "mdi:grid",
     },
     {
-      title: "Real-Time Broadcasting",
-      description: "Stay synchronized with global airing schedules and network premiere timetables.",
-      icon: "mdi:calendar-clock-outline",
+      title: "Perspective Line Tool",
+      description: "Click any two points on your reference canvas to overlay custom perspective and horizon lines directly onto your image.",
+      icon: "mdi:vector-line",
     },
     {
-      title: "Universal Search",
-      description: "Filter instantly across titles, genres, creators, cast ensembles, and streaming providers.",
-      icon: "mdi:movie-search-outline",
+      title: "Tile Slicer & ZIP Exporter",
+      description: "Slice complex reference photos into grid tiles instantly and download individual tiles or the entire set neatly packed in a ZIP file.",
+      icon: "mdi:shape-rectangle-plus",
+    },
+    {
+      title: "5 Curated Art Effects",
+      description: "Transform your photos locally into Classic Pencil Sketch, Comic Book Ink, Charcoal, Vibrant Pop Art, or Vintage Blueprint styles.",
+      icon: "mdi:palette-swatch-outline",
+    },
+    {
+      title: "100% Client-Side Privacy",
+      description: "All processing happens natively in your web browser using HTML5 Canvas APIs. Your reference photos never leave your device.",
+      icon: "mdi:shield-check-outline",
+    },
+    {
+      title: "Lightning-Fast SvelteKit",
+      description: "Built for high performance with zero heavy server-side dependencies or large AI model weight downloads, running smoothly everywhere.",
+      icon: "mdi:flash",
     },
   ];
 
@@ -49,87 +64,80 @@
 </script>
 
 <svelte:head>
-  <title>About TV Maze - SvelteKit Explorer</title>
+  <title>About - Artist Studio & Pro Photo Suite</title>
   <meta
     name="description"
-    content="Discover your favorite TV shows, streaming series, cast information, and broadcast schedules on TV Maze."
+    content="Learn about Artist Studio: a client-side web application featuring reference grids, perspective lines, tile slicing, and stylized artistic effects."
   />
 </svelte:head>
 
-<div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-bermuda selection:text-slate-950">
-  <HeaderComponent title="About TV Maze" />
+<div class="min-h-screen bg-light text-dark flex flex-col selection:bg-primary selection:text-light font-sans">
+  <HeaderComponent title="About Studio" />
 
   <!-- Hero Section -->
   <section
-    class="relative bg-cover bg-center min-h-[480px] sm:min-h-[520px] flex items-center justify-center overflow-hidden border-b border-white/10"
-    style="background-image: url('https://media.istockphoto.com/id/177339031/photo/space-warp-travel-trough-universe.jpg?s=612x612&w=0&k=20&c=C6U7SHZwUFLxkB-LGPLCdCsaOMmyBodlrBm4lzjT44o=');"
+    class="relative bg-cover bg-center min-h-[420px] sm:min-h-[480px] flex items-center justify-center overflow-hidden border-b border-secondary/20"
+    style="background-image: url('https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=1600&auto=format&fit=crop');"
   >
-    <div class="absolute inset-0 bg-gradient-to-b from-black/85 via-black/60 to-slate-950 pointer-events-none" />
+    <div class="absolute inset-0 bg-gradient-to-b from-black/85 via-black/60 to-black/90 pointer-events-none" />
 
-    <div class="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 py-16 space-y-5">
-      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold bg-bermuda/10 text-bermuda border border-bermuda/20 backdrop-blur-md shadow-sm">
-        <span class="w-1.5 h-1.5 rounded-full bg-bermuda animate-pulse" />
-        Open TV & Film Registry
+    <div class="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 py-16 text-light space-y-5">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold bg-white/10 text-light border border-white/20 backdrop-blur-md shadow-sm">
+        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+        Professional Artist Toolkit
       </div>
 
       <h1
-        class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white min-h-[3rem] sm:min-h-[4.25rem] leading-tight"
+        class="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white min-h-[3rem] sm:min-h-[4.25rem] leading-tight"
         in:fly={{ y: 25, duration: 450 }}
       >
         {displayedText}
       </h1>
 
       <p
-        class="text-base sm:text-lg lg:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed"
+        class="text-sm sm:text-base lg:text-lg text-light/85 max-w-2xl mx-auto leading-relaxed"
         in:fly={{ y: 25, duration: 450, delay: 150 }}
       >
-        Discover your favorite movies and more
+        Designed to empower traditional painters and digital artists with precision tooling, fast layout grids, and creative photo stylization.
       </p>
 
       <div class="pt-4 flex flex-wrap items-center justify-center gap-3.5">
         <a
-          href="/shows"
+          href="/"
           data-sveltekit-preload-data="hover"
-          class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-bermuda text-slate-950 text-xs sm:text-sm font-extrabold uppercase tracking-wider shadow-lg shadow-bermuda/20 hover:brightness-110 active:brightness-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-bermuda"
+          class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary hover:bg-primary-dark text-light text-xs sm:text-sm font-extrabold uppercase tracking-wider shadow-lg transition-all focus:outline-none cursor-pointer"
         >
-          <span>Explore Shows</span>
+          <span>Open Workspace</span>
           <Icon icon="mdi:arrow-right" class="text-base" />
-        </a>
-        <a
-          href="/schedule"
-          data-sveltekit-preload-data="hover"
-          class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs sm:text-sm font-bold border border-white/10 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-        >
-          <span>View Schedule</span>
         </a>
       </div>
     </div>
   </section>
 
-  <!-- Informational Pillars / Platform Overview -->
+  <!-- Feature Pillars Grid -->
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-12">
     <div class="max-w-2xl mx-auto text-center space-y-2">
-      <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-        Curated Television Intelligence
+      <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-dark">
+        Engineered for Creators
       </h2>
-      <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">
-        Built on modern web architectures utilizing SvelteKit and the TVmaze REST API ecosystem.
+      <p class="text-xs sm:text-sm text-gray-600 leading-relaxed">
+        Everything you need to plan, sketch, slice, and transform reference materials in one fast, responsive interface.
       </p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
       {#each featureCards as card (card.title)}
         <article
-          class="bg-slate-900/60 border border-slate-800/80 hover:border-bermuda/40 rounded-2xl p-7 backdrop-blur-md shadow-xl transition-all duration-300 flex flex-col justify-between group"
+          class="bg-white border border-gray-200 hover:border-primary/60 rounded-2xl p-7 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group"
         >
           <div class="space-y-4">
-            <div class="w-12 h-12 rounded-xl bg-bermuda/10 text-bermuda border border-bermuda/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform">
               <Icon icon={card.icon} class="text-2xl" />
             </div>
-            <h3 class="text-lg font-bold text-white tracking-tight group-hover:text-bermuda transition-colors">
+            <h3 class="text-lg font-bold text-dark tracking-tight group-hover:text-primary transition-colors">
               {card.title}
             </h3>
-            <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            <p class="text-xs sm:text-sm text-gray-600 leading-relaxed">
               {card.description}
             </p>
           </div>
