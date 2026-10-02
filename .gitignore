@@ -1,0 +1,40 @@
+# Dependencies
+/node_modules
+
+# SvelteKit build output & temporary files
+/.svelte-kit
+/build
+/dist
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Editor directories and files
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Vite cache
+/vite.config.js.timestamp-*
+/vite.config.ts.timestamp-*
+
+# Testing & Coverage
+/coverage
+/.vitest
