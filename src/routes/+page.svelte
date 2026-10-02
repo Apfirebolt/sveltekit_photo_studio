@@ -13,7 +13,7 @@
   let fileName = $state('');
   let originalImageSrc = $state('');
   let rawImageObj: HTMLImageElement | null = null;
-  let activePreset = $state<'normal' | 'sketch' | 'charcoal'>('normal');
+  let activePreset = $state<string>('normal');
 
   const headline = "Artist Studio & Pro Photo Suite";
   let displayedText = "";
@@ -90,7 +90,7 @@
         class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'editor' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" 
         onclick={() => activeTab = 'editor'}
       >
-        <Icon icon="mdi:brain" /> Tensor Tone Editor
+        <Icon icon="mdi:brain" /> Tensor Tone & Sketch Studio
       </button>
 
       <button 
@@ -129,11 +129,23 @@
 
       <div class:hidden={activeTab !== 'editor'}>
         <div class="space-y-6">
-          <div class="flex gap-2 pb-2">
-            <button onclick={() => activePreset = 'normal'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {activePreset === 'normal' ? 'bg-primary text-light' : 'bg-white border border-gray-200 text-dark'}">🌟 Normal</button>
-            <button onclick={() => activePreset = 'sketch'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {activePreset === 'sketch' ? 'bg-primary text-light' : 'bg-white border border-gray-200 text-dark'}">✏️ Sketch</button>
-            <button onclick={() => activePreset = 'charcoal'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {activePreset === 'charcoal' ? 'bg-primary text-light' : 'bg-white border border-gray-200 text-dark'}">🪵 Charcoal</button>
+          <!-- Comprehensive Artistic Sketch & Style Preset Bar -->
+          <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-2">
+            <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-400 font-mono">Select Artistic Tensor Style</h4>
+            <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              <button onclick={() => activePreset = 'normal'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'normal' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">🌟 Original</button>
+              <button onclick={() => activePreset = 'sketch'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'sketch' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">✏️ Pencil Sketch</button>
+              <button onclick={() => activePreset = 'portrait_pencil'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'portrait_pencil' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">👤 Pencil Portrait</button>
+              <button onclick={() => activePreset = 'pen'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'pen' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">✒️ Fine Pen Ink</button>
+              <button onclick={() => activePreset = 'crosshatch'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'crosshatch' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">📐 Cross-Hatch</button>
+              <button onclick={() => activePreset = 'charcoal'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'charcoal' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">🪵 Deep Charcoal</button>
+              <button onclick={() => activePreset = 'soft_graphite'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'soft_graphite' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">📝 Soft Graphite</button>
+              <button onclick={() => activePreset = 'oil'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'oil' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">🎨 Oil Paint</button>
+              <button onclick={() => activePreset = 'cartoon'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'cartoon' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">💥 Cartoon Ink</button>
+              <button onclick={() => activePreset = 'blueprint'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'blueprint' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">📏 Blueprint</button>
+            </div>
           </div>
+
           <TfEditorStudio {rawImageObj} {activePreset} />
         </div>
       </div>

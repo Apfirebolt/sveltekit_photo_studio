@@ -50,6 +50,7 @@
         const blurKernel = tf.fill([5, 5, 1, 1], 1 / 25) as unknown as import('@tensorflow/tfjs').Tensor4D;
         const blur = (input: import('@tensorflow/tfjs').Tensor3D): import('@tensorflow/tfjs').Tensor3D =>
           tf.conv2d(input.expandDims(0) as unknown as import('@tensorflow/tfjs').Tensor4D, blurKernel, 1, 'same').squeeze([0]) as import('@tensorflow/tfjs').Tensor3D;
+        
         const edgeKernels = [
           tf.tensor4d([-1, 0, 1, -2, 0, 2, -1, 0, 1], [3, 3, 1, 1]),
           tf.tensor4d([-1, -2, -1, 0, 0, 0, 1, 2, 1], [3, 3, 1, 1])
@@ -63,11 +64,32 @@
         };
 
         if (activePreset === 'sketch') {
+          // Classic Pencil Sketch
           const inverted = tf.onesLike(grayAdjusted).sub(grayAdjusted) as import('@tensorflow/tfjs').Tensor3D;
           const blurred = blur(inverted);
           pixels = grayAdjusted.div(tf.onesLike(blurred).sub(blurred).maximum(0.08)).clipByValue(0, 1).tile([1, 1, 3]);
+        } else if (activePreset === 'portrait_pencil') {
+          // Detailed Pencil Portrait (Dodge-blend simulation for smooth skin lines)
+          const inverted = tf.onesLike(grayAdjusted).sub(grayAdjusted);
+          const blurred = blur(inverted);
+          const dodge = grayAdjusted.div(tf.onesLike(blurred).sub(blurred).maximum(0.05));
+          pixels = dodge.mul(1.1).clipByValue(0, 1).tile([1, 1, 3]);
         } else if (activePreset === 'pen') {
-          pixels = tf.onesLike(grayAdjusted).sub(gradients().mul(3).clipByValue(0, 1)).tile([1, 1, 3]);
+          // Fine Ink Pen Linework
+          pixels = tf.onesLike(grayAdjusted).sub(gradients().mul(3.5).clipByValue(0, 1)).tile([1, 1, 3]);
+        } else if (activePreset === 'crosshatch') {
+          // Cross-Hatch Hatching Effect
+          const grad = gradients().mul(4).clipByValue(0, 1);
+          const hatch = tf.sin(grayAdjusted.mul(45)).abs().mul(0.25);
+          pixels = tf.onesLike(grayAdjusted).sub(grad.add(hatch)).clipByValue(0, 1).tile([1, 1, 3]);
+        } else if (activePreset === 'charcoal') {
+          // Rich Deep Charcoal
+          const darks = grayAdjusted.pow(1.5).mul(1.2);
+          pixels = tf.onesLike(darks).sub(gradients().mul(3)).sub(darks).clipByValue(0, 1).tile([1, 1, 3]);
+        } else if (activePreset === 'soft_graphite') {
+          // Soft Graphite Shading
+          const blurred = blur(grayAdjusted);
+          pixels = blurred.sub(gradients().mul(1.2)).clipByValue(0, 1).tile([1, 1, 3]);
         } else if (activePreset === 'oil') {
           const channels = [0, 1, 2].map((channel) =>
             blur(pixels.slice([0, 0, channel], [canvas.height, canvas.width, 1]) as import('@tensorflow/tfjs').Tensor3D)
@@ -77,8 +99,6 @@
           const posterized = pixels.mul(5).floor().div(5);
           const lines = gradients().greater(0.16).logicalNot().toFloat();
           pixels = posterized.mul(lines.tile([1, 1, 3]));
-        } else if (activePreset === 'charcoal') {
-          pixels = tf.onesLike(grayAdjusted).sub(gradients().mul(2.5).clipByValue(0, 1)).mul(0.85).tile([1, 1, 3]);
         } else if (activePreset === 'popart') {
           pixels = pixels.mul(5).floor().div(5);
         } else if (activePreset === 'blueprint') {
@@ -242,7 +262,7 @@
   <div class="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 max-h-[720px] overflow-y-auto">
     <div class="flex items-center gap-2 border-b border-gray-100 pb-2">
       <Icon icon="mdi:brain" class="text-primary text-lg" />
-      <h3 class="font-bold text-sm text-dark">TensorFlow.js Adjustments</h3>
+      <h3 class="font-bold text-sm text-dark">TensorFlow.js Studio Adjustments</h3>
     </div>
 
     <!-- Dominant Color Palette Section -->
