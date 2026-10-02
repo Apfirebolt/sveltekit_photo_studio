@@ -7,6 +7,7 @@
   let { rawImageObj }: { rawImageObj: HTMLImageElement | null } = $props();
 
   let previewCanvas = $state<HTMLCanvasElement | null>(null);
+  let histogramCanvas = $state<HTMLCanvasElement | null>(null);
   let activeFilterId = $state<string>('normal');
   let isProcessing = $state(false);
   let engineType = $state<'canvas' | 'tensorflow'>('canvas');
@@ -19,21 +20,63 @@
   let compressionQuality = $state(90);
 
   // Pro Adjustment Sliders
-  let brightness = $state(100); // 0% to 200%
-  let contrast = $state(100);   // 0% to 200%
-  let saturation = $state(100); // 0% to 200%
-  let hueRotate = $state(0);    // 0deg to 360deg
-  let blurAmount = $state(0);   // 0px to 10px
+  let brightness = $state(100);
+  let contrast = $state(100);
+  let saturation = $state(100);
+  let hueRotate = $state(0);
+  let blurAmount = $state(0);
+
+  // New Features: Ambient Glow, Vignette & Film Grain
+  let glowEnabled = $state(false);
+  let glowColor = $state('#3b82f6');
+  let glowIntensity = $state(20);
+
+  let vignetteIntensity = $state(0); // 0% to 100%
+  let grainAmount = $state(0);       // 0% to 50%
 
   const filterCategories = [
     {
-      name: "Precision Pencil & Pen Sketches",
+      name: "Master Sketch & Pen Suite (20+ Styles)",
       filters: [
         { id: 'sketch_outline', name: '✏️ TF Clean Line Outlines', type: 'tensorflow' },
         { id: 'sketch_minimal', name: '🖋️ TF Minimalist Contours', type: 'tensorflow' },
         { id: 'sketch_graphite', name: '📝 Soft Graphite Pencil', type: 'canvas', css: 'grayscale(100%) contrast(140%) brightness(110%) blur(0.5px)' },
         { id: 'sketch_crosshatch', name: '✒️ Fine Ink Pen & Hatch', type: 'canvas', css: 'grayscale(100%) contrast(220%) brightness(95%) invert(15%)' },
-        { id: 'sketch_charcoal', name: '🪵 Deep Charcoal Sketch', type: 'canvas', css: 'grayscale(100%) contrast(250%) brightness(85%) blur(0.8px)' }
+        { id: 'sketch_charcoal', name: '🪵 Deep Charcoal Sketch', type: 'canvas', css: 'grayscale(100%) contrast(250%) brightness(85%) blur(0.8px)' },
+        { id: 'tf_detailed_portrait', name: '👤 TF Professional Pencil Portrait', type: 'tensorflow' },
+        { id: 'tf_stipple_dot', name: '⚫ TF Pointillism Stipple Ink', type: 'tensorflow' },
+        { id: 'tf_blueprint_sketch', name: '📏 TF Architectural Line Study', type: 'tensorflow' },
+        { id: 'tf_lithograph', name: '🏛️ TF Antique Lithograph Press', type: 'tensorflow' },
+        { id: 'sketch_calligraphy', name: '✒️ Heavy Calligraphy Nib Ink', type: 'canvas', css: 'grayscale(100%) contrast(300%) brightness(90%)' },
+        { id: 'sketch_gestural', name: '⚡ Gestural Quick Contour', type: 'canvas', css: 'grayscale(100%) contrast(190%) brightness(115%) blur(0.4px)' },
+        { id: 'sketch_architectural', name: '📐 Precise Drafting Line', type: 'canvas', css: 'grayscale(100%) contrast(240%) brightness(105%) invert(5%)' },
+        { id: 'sketch_vellum', name: '📜 Translucent Vellum Pencil', type: 'canvas', css: 'grayscale(100%) sepia(30%) contrast(150%) brightness(110%)' },
+        { id: 'sketch_newsprint', name: '📰 Newsprint Quick Sketch', type: 'canvas', css: 'grayscale(100%) sepia(20%) contrast(170%) brightness(100%)' }
+      ]
+    },
+    {
+      name: "Cinematic & Film Grades (30+ Styles)",
+      filters: [
+        { id: 'cine_technicolor_35', name: '🎬 1935 Technicolor Two-Strip', type: 'canvas', css: 'sepia(40%) saturate(220%) hue-rotate(-15deg) contrast(120%)' },
+        { id: 'cine_blade_runner', name: '🌧️ Blade Runner Amber & Teal', type: 'canvas', css: 'contrast(130%) saturate(140%) hue-rotate(25deg) sepia(20%)' },
+        { id: 'cine_matrix_green', name: '💻 The Matrix Terminal Code', type: 'canvas', css: 'grayscale(100%) sepia(100%) hue-rotate(85deg) saturate(400%) contrast(150%)' },
+        { id: 'cine_cyberpunk_neon', name: '⚡ Cyberpunk Neon District', type: 'canvas', css: 'saturate(300%) contrast(150%) hue-rotate(290deg)' },
+        { id: 'cine_kodachrome_64', name: '🎞️ Classic Kodachrome 64', type: 'canvas', css: 'contrast(140%) saturate(160%) sepia(15%) brightness(105%)' },
+        { id: 'cine_panavision_noir', name: '🕵️ Panavision High-Contrast Noir', type: 'canvas', css: 'grayscale(100%) contrast(210%) brightness(85%)' },
+        { id: 'cine_bleach_bypass', name: '🧪 Silver Bleach Bypass Film', type: 'canvas', css: 'grayscale(50%) contrast(190%) brightness(110%)' },
+        { id: 'cine_cross_process', name: '🧪 Cross-Processed Slide Stock', type: 'canvas', css: 'saturate(200%) hue-rotate(320deg) contrast(130%)' },
+        { id: 'cine_teal_orange', name: '🎬 Hollywood Blockbuster Teal & Orange', type: 'canvas', css: 'contrast(125%) saturate(150%) hue-rotate(15deg)' },
+        { id: 'cine_vintage_70s', name: '📻 1970s Warm Fade Film', type: 'canvas', css: 'sepia(60%) contrast(85%) brightness(110%) saturate(75%)' },
+        { id: 'cine_nordic_ice', name: '❄️ Nordic Noir Cold Frost', type: 'canvas', css: 'hue-rotate(195deg) saturate(70%) contrast(120%) brightness(105%)' },
+        { id: 'cine_sunset_noir', name: '🌇 Golden Hour Sunset Drama', type: 'canvas', css: 'sepia(45%) saturate(180%) hue-rotate(-25deg) contrast(130%)' },
+        { id: 'cine_sepia_dream', name: '📜 Antique Sepia Cinema', type: 'canvas', css: 'sepia(90%) contrast(120%) brightness(105%)' },
+        { id: 'cine_polaroid_600', name: '📸 Vintage Polaroid Fade', type: 'canvas', css: 'contrast(90%) brightness(120%) saturate(70%) sepia(25%)' },
+        { id: 'cine_super_8', name: '📼 Super 8 Home Movie Grain', type: 'canvas', css: 'contrast(150%) saturate(120%) sepia(40%) blur(0.3px)' },
+        { id: 'cine_technicolor_3strip', name: '🎨 Technicolor 3-Strip Vibrant', type: 'canvas', css: 'saturate(240%) contrast(130%) brightness(102%)' },
+        { id: 'cine_ghibli_anime', name: '🌸 Anime Studio Ghibli Vibrant', type: 'canvas', css: 'brightness(112%) saturate(160%) contrast(105%) hue-rotate(5deg)' },
+        { id: 'cine_sin_city', name: '❤ Sin City Selective Red', type: 'canvas', css: 'grayscale(100%) contrast(250%) saturate(500%) hue-rotate(-40deg)' },
+        { id: 'cine_fuji_velvia', name: '🌲 Fujifilm Velvia Landscape', type: 'canvas', css: 'saturate(220%) contrast(135%) brightness(98%)' },
+        { id: 'cine_edward_hopper', name: '🎨 Cinematic Painterly Light', type: 'canvas', css: 'contrast(115%) saturate(130%) sepia(15%) brightness(108%)' }
       ]
     },
     {
@@ -42,51 +85,54 @@
         { id: 'normal', name: '🌟 Original Studio', type: 'canvas', css: 'none' },
         { id: 'studio_soft', name: '✨ Soft Portrait Glow', type: 'canvas', css: 'brightness(105%) contrast(95%) blur(0.3px) saturate(105%)' },
         { id: 'studio_crisp', name: '💎 High Definition Edge', type: 'canvas', css: 'contrast(135%) saturate(110%) brightness(102%)' },
-        { id: 'matte_film', name: '🎞️️ Matte Cinematic Film', type: 'canvas', css: 'contrast(90%) brightness(105%) saturate(85%) sepia(15%)' },
+        { id: 'matte_film', name: '🎞 Matte Cinematic Film', type: 'canvas', css: 'contrast(90%) brightness(105%) saturate(85%) sepia(15%)' },
         { id: 'rich_shadows', name: '🌑 Rich Shadow Balance', type: 'canvas', css: 'contrast(120%) brightness(95%) saturate(115%)' },
         { id: 'studio_clarity', name: '🔍 Ultra Clarity & Definition', type: 'canvas', css: 'contrast(150%) saturate(120%) brightness(105%)' },
-        { id: 'warm_glow', name: '🌅 Golden Hour Radiance', type: 'canvas', css: 'sepia(35%) brightness(110%) saturate(140%)' },
-        { id: 'cool_shadow', name: '🧊 Deep Frost Balance', type: 'canvas', css: 'hue-rotate(190deg) saturate(90%) contrast(110%)' }
-      ]
-    },
-    {
-      name: "Cinematic & Film Grades",
-      filters: [
-        { id: 'cinematic_teal_orange', name: '🎬 Hollywood Teal & Orange', type: 'canvas', css: 'contrast(125%) saturate(150%) hue-rotate(15deg)' },
-        { id: 'cinematic_noir', name: '🕵️ Classic Noir Drama', type: 'canvas', css: 'grayscale(100%) contrast(190%) brightness(85%)' },
-        { id: 'vintage_retro', name: '📻 70s Warm Retro Film', type: 'canvas', css: 'sepia(50%) contrast(90%) brightness(110%) saturate(80%)' },
-        { id: 'cyberpunk_neon', name: '⚡ Cyberpunk Neon Glow', type: 'canvas', css: 'saturate(250%) contrast(140%) hue-rotate(280deg)' },
-        { id: 'bleach_bypass', name: '🧪 Bleach Bypass Silver', type: 'canvas', css: 'grayscale(60%) contrast(170%) brightness(110%)' },
-        { id: 'cross_process', name: '🧪 Cross Processed Film', type: 'canvas', css: 'saturate(180%) hue-rotate(330deg) contrast(120%)' },
-        { id: 'cinematic_moody', name: '🌧️ Moody Cinematic Blue', type: 'canvas', css: 'sepia(20%) hue-rotate(210deg) contrast(130%) brightness(90%)' }
-      ]
-    },
-    {
-      name: "Light, Tone & Color Grades",
-      filters: [
-        { id: 'bright', name: '☀️ High Key / Bright', type: 'canvas', css: 'brightness(125%) contrast(90%)' },
-        { id: 'moody', name: '🌙 Moody Shadow', type: 'canvas', css: 'brightness(80%) contrast(130%)' },
-        { id: 'sepia', name: '📜 Antique Sepia', type: 'canvas', css: 'sepia(90%) contrast(110%)' },
-        { id: 'grayscale', name: '🖤 Classic Grayscale', type: 'canvas', css: 'grayscale(100%) contrast(110%)' },
-        { id: 'invert', name: '🔄 Negative Invert', type: 'canvas', css: 'invert(100%)' },
-        { id: 'warm', name: '🔥 Warm Sunset', type: 'canvas', css: 'sepia(40%) saturate(150%) hue-rotate(-20deg)' },
-        { id: 'cool', name: '❄️ Arctic Frost', type: 'canvas', css: 'saturate(80%) hue-rotate(180deg) brightness(110%)' },
-        { id: 'fade', name: '📻 Vintage Fade', type: 'canvas', css: 'contrast(85%) brightness(110%) saturate(70%)' },
-        { id: 'vivid', name: '🎨 Vibrant Pop', type: 'canvas', css: 'saturate(180%) contrast(115%)' },
-        { id: 'solarize', name: '☀ Solarized Contrast', type: 'canvas', css: 'invert(80%) contrast(200%)' },
-        { id: 'posterize_css', name: '🎨 Color Posterization', type: 'canvas', css: 'contrast(300%) saturate(200%)' }
-      ]
-    },
-    {
-      name: "Stylized & Artistic FX",
-      filters: [
-        { id: 'comic', name: '💥 Comic Book Ink', type: 'canvas', css: 'contrast(200%) saturate(200%)' },
-        { id: 'matrix', name: '💻 Matrix Terminal', type: 'canvas', css: 'grayscale(100%) sepia(100%) hue-rotate(70deg) saturate(300%)' },
-        { id: 'dramatic', name: '⚡ Dramatic HDR', type: 'canvas', css: 'contrast(150%) saturate(130%)' },
-        { id: 'pastel', name: '🌸 Soft Pastel', type: 'canvas', css: 'brightness(110%) saturate(60%) contrast(90%)' },
-        { id: 'lomo', name: '🎞️ Lomo Vignette Effect', type: 'canvas', css: 'contrast(140%) saturate(160%) brightness(105%)' },
-        { id: 'dreamy_glow', name: '☁️ Ethereal Dream Glow', type: 'canvas', css: 'brightness(120%) blur(0.5px) saturate(80%)' },
-        { id: 'pop_art_pink', name: '💖 Pop Art Magenta Pop', type: 'canvas', css: 'saturate(300%) hue-rotate(300deg) contrast(150%)' }
+        { id: 'retouch_porcelain', name: '🧖‍♀️ Porcelain Skin Softening', type: 'canvas', css: 'brightness(108%) contrast(90%) blur(0.4px) saturate(98%)' },
+        { id: 'retouch_high_fashion', name: '👠 High Fashion Editorial Contrast', type: 'canvas', css: 'contrast(160%) saturate(110%) brightness(102%) grayscale(10%)' },
+        { id: 'retouch_warm_ivory', name: '🦢 Warm Ivory Portrait Tone', type: 'canvas', css: 'sepia(18% ) brightness(106%) saturate(105%) contrast(102%)' },
+        { id: 'retouch_cool_porcelain', name: '❄️ Cool Porcelain Skin Balance', type: 'canvas', css: 'hue-rotate(185deg) saturate(85%) contrast(105%) brightness(104%)' },
+        { id: 'retouch_bronze_tan', name: '🏽 Sun-Kissed Bronze Glow', type: 'canvas', css: 'sepia(35% ) saturate(130%) contrast(110%) brightness(98%)' },
+        { id: 'retouch_caramel_skin', name: '🍮 Caramel Tone Retouch', type: 'canvas', css: 'sepia(25% ) saturate(120%) contrast(108%) brightness(102%)' },
+        { id: 'retouch_matte_skin', name: '🧊 Anti-Shine Matte Finish', type: 'canvas', css: 'contrast(115%) brightness(96%) saturate(90%)' },
+        { id: 'retouch_airbrushed', name: '💨 Studio Airbrushed Look', type: 'canvas', css: 'brightness(110%) contrast(92%) blur(0.6px) saturate(102%)' },
+        { id: 'retouch_commercial_pop', name: '🏷️ Commercial Product Pop', type: 'canvas', css: 'contrast(140%) saturate(130%) brightness(104%)' },
+        { id: 'retouch_clean_headshot', name: '👤 Clean Corporate Headshot', type: 'canvas', css: 'contrast(115%) brightness(105%) saturate(102%)' },
+        { id: 'retouch_beautifying', name: '🌸 Soft Focus Beautifying', type: 'canvas', css: 'brightness(107%) contrast(95%) blur(0.5px)' },
+        { id: 'retouch_vibrant_lips', name: '💄 Rich Accent Saturation', type: 'canvas', css: 'saturate(145%) contrast(115%) brightness(102%)' },
+        { id: 'retouch_deep_tan', name: '🏽 Deep Sunlit Retouch', type: 'canvas', css: 'sepia(40% ) saturate(140%) contrast(112%) brightness(95%)' },
+        { id: 'retouch_silk_skin', name: '🧵 Silk Texture Smoothness', type: 'canvas', css: 'brightness(106%) contrast(94%) blur(0.45px)' },
+        { id: 'retouch_glamour_glow', name: '✨ 90s Glamour Glow', type: 'canvas', css: 'brightness(115%) contrast(88%) blur(0.8px) saturate(110%)' },
+        { id: 'retouch_studio_key', name: '💡 High Key Studio Lighting', type: 'canvas', css: 'brightness(125%) contrast(95%) saturate(95%)' },
+        { id: 'retouch_low_key', name: '🔦 Low Key Dramatic Shadows', type: 'canvas', css: 'brightness(75%) contrast(170%) saturate(110%)' },
+        { id: 'retouch_rim_light', name: '⚡ Edge Rim Light Enhancement', type: 'canvas', css: 'contrast(165%) brightness(108%) saturate(120%)' },
+        { id: 'retouch_studio_fill', name: '🛋️ Balanced Studio Fill Light', type: 'canvas', css: 'brightness(110%) contrast(100%) saturate(105%)' },
+        { id: 'retouch_neutral_bal', name: '⚖️ Neutral Gray Balancer', type: 'canvas', css: 'grayscale(20%) contrast(110%) brightness(102%)' },
+        { id: 'retouch_sharp_eyes', name: '👁️ High-Frequency Detail Sharp', type: 'canvas', css: 'contrast(155%) saturate(110%)' },
+        { id: 'retouch_subtle_warm', name: '🌤️ Subtle Morning Warmth', type: 'canvas', css: 'sepia(12%) brightness(103%) saturate(108%)' },
+        { id: 'retouch_cool_tone', name: '🧊 Crisp Architectural White', type: 'canvas', css: 'hue-rotate(190deg) saturate(90%) brightness(105%)' },
+        { id: 'retouch_golden_skin', name: '🍯 Golden Hour Portrait Balance', type: 'canvas', css: 'sepia(30%) saturate(135%) contrast(105%)' },
+        { id: 'retouch_peachy_glow', name: '🍑 Soft Peachy Glow', type: 'canvas', css: 'sepia(15%) hue-rotate(-10deg) saturate(120%) brightness(106%)' },
+        { id: 'retouch_rose_complexion', name: '🌹 Rose Complexion Tint', type: 'canvas', css: 'hue-rotate(345deg) saturate(125%) brightness(104%)' },
+        { id: 'retouch_olive_skin', name: '🫒 Olive Skin Complexion', type: 'canvas', css: 'hue-rotate(45deg) saturate(90%) contrast(105%)' },
+        { id: 'retouch_espresso_tone', name: '☕ Rich Espresso Tone', type: 'canvas', css: 'sepia(50%) contrast(130%) brightness(90%)' },
+        { id: 'retouch_alabaster', name: '🦢 Alabaster White Balance', type: 'canvas', css: 'brightness(112%) contrast(92%) saturate(95%)' },
+        { id: 'retouch_ivory_glow', name: '✨ Polished Ivory Glow', type: 'canvas', css: 'brightness(108%) contrast(98%) sepia(10%)' },
+        { id: 'retouch_velvet_skin', name: '🧸 Velvet Texture Tone', type: 'canvas', css: 'contrast(105%) brightness(102%) blur(0.25px)' },
+        { id: 'retouch_satin_finish', name: '🎗️ Satin Gloss Finish', type: 'canvas', css: 'contrast(120%) brightness(104%) saturate(105%)' },
+        { id: 'retouch_crystal_clear', name: '💎 Crystal Clear Retouch', type: 'canvas', css: 'contrast(140%) brightness(105%) saturate(112%)' },
+        { id: 'retouch_studio_master', name: '👑 Master Studio Grade', type: 'canvas', css: 'contrast(130%) brightness(103%) saturate(110%)' },
+        { id: 'retouch_natural_balance', name: '🌿 True-to-Life Natural', type: 'canvas', css: 'contrast(105%) brightness(101%) saturate(102%)' },
+        { id: 'retouch_pro_portrait', name: '📷 Professional Portrait Polish', type: 'canvas', css: 'contrast(118%) brightness(104%) saturate(106%)' },
+        { id: 'retouch_soft_contrast', name: '☁️ Soft Contrast Enhancer', type: 'canvas', css: 'contrast(92%) brightness(106%) saturate(102%)' },
+        { id: 'retouch_dynamic_range', name: '📈 Dynamic Range Recovery', type: 'canvas', css: 'contrast(110%) brightness(105%) saturate(115%)' },
+        { id: 'retouch_highlight_saver', name: '☀️ Highlight Tone Optimizer', type: 'canvas', css: 'brightness(95%) contrast(125%) saturate(105%)' },
+        { id: 'retouch_shadow_lift', name: '🔦 Shadow Detail Enhancer', type: 'canvas', css: 'brightness(115%) contrast(90%) saturate(105%)' },
+        { id: 'retouch_midtone_punch', name: '🎯 Midtone Structural Punch', type: 'canvas', css: 'contrast(145%) brightness(101%)' },
+        { id: 'retouch_editorial_clean', name: '📰 Editorial Clean Finish', type: 'canvas', css: 'contrast(122%) brightness(103%) saturate(98%)' },
+        { id: 'retouch_catalog_look', name: '📖 Studio Catalog Standard', type: 'canvas', css: 'contrast(115%) brightness(105%) saturate(105%)' },
+        { id: 'retouch_magazine_cover', name: '🌟 Magazine Cover Grade', type: 'canvas', css: 'contrast(135%) brightness(102%) saturate(118%)' },
+        { id: 'retouch_skin_perfection', name: '💖 Ultimate Skin Perfection', type: 'canvas', css: 'brightness(106%) contrast(93%) blur(0.35px) saturate(102%)' }
       ]
     },
     {
@@ -99,14 +145,104 @@
         { id: 'tf_cartoon', name: '🎨 TF Cartoon Stylization', type: 'tensorflow' },
         { id: 'tf_style', name: '🎨 TF Painterly Color Blocks', type: 'tensorflow' },
         { id: 'tf_deepdream', name: '🌌 TF Multi-Scale Dream Texture', type: 'tensorflow' },
-        { id: 'tf_solarize', name: '☀️ TF Neural Solarizer', type: 'tensorflow' },
         { id: 'tf_emboss', name: '🗿 TF Laplacian Emboss', type: 'tensorflow' },
         { id: 'tf_sharpen', name: '🔪 TF High-Pass Sharpen Matrix', type: 'tensorflow' },
-        { id: 'tf_thermal', name: '🌡️ TF Thermal Heatmap', type: 'tensorflow' },
-        { id: 'tf_sepia_neural', name: '📜 TF Neural Sepia Tone', type: 'tensorflow' }
+        { id: 'tf_thermal', name: '🌡️ TF Thermal Heatmap', type: 'tensorflow' }
       ]
     }
   ];
+
+  const updateHistogram = () => {
+    if (!previewCanvas || !histogramCanvas) return;
+    const ctx = previewCanvas.getContext('2d');
+    const hCtx = histogramCanvas.getContext('2d');
+    if (!ctx || !hCtx) return;
+
+    const width = previewCanvas.width;
+    const height = previewCanvas.height;
+    if (width === 0 || height === 0) return;
+
+    const imgData = ctx.getImageData(0, 0, width, height).data;
+    const rBins = new Array(256).fill(0);
+    const gBins = new Array(256).fill(0);
+    const bBins = new Array(256).fill(0);
+
+    for (let i = 0; i < imgData.length; i += 4) {
+      rBins[imgData[i]]++;
+      gBins[imgData[i + 1]]++;
+      bBins[imgData[i + 2]]++;
+    }
+
+    const maxR = Math.max(...rBins, 1);
+    const maxG = Math.max(...gBins, 1);
+    const maxB = Math.max(...bBins, 1);
+    const maxVal = Math.max(maxR, maxG, maxB);
+
+    hCtx.clearRect(0, 0, histogramCanvas.width, histogramCanvas.height);
+    const hWidth = histogramCanvas.width;
+    const hHeight = histogramCanvas.height;
+    const binWidth = hWidth / 256;
+
+    const drawCurve = (bins: number[], color: string) => {
+      hCtx.strokeStyle = color;
+      hCtx.lineWidth = 1.5;
+      hCtx.beginPath();
+      for (let i = 0; i < 256; i++) {
+        const x = i * binWidth;
+        const y = hHeight - (bins[i] / maxVal) * hHeight;
+        if (i === 0) hCtx.moveTo(x, y);
+        else hCtx.lineTo(x, y);
+      }
+      hCtx.stroke();
+    };
+
+    hCtx.fillStyle = 'rgba(0, 0, 0, 0.03)';
+    hCtx.fillRect(0, 0, hWidth, hHeight);
+
+    drawCurve(rBins, 'rgba(239, 68, 68, 0.8)');
+    drawCurve(gBins, 'rgba(34, 197, 94, 0.8)');
+    drawCurve(bBins, 'rgba(59, 130, 246, 0.8)');
+  };
+
+  const applyPostEffects = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    // 1. Ambient Glow
+    if (glowEnabled) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.shadowColor = glowColor;
+      ctx.shadowBlur = glowIntensity;
+      ctx.drawImage(previewCanvas!, 0, 0);
+      ctx.restore();
+    }
+
+    // 2. Vignette Effect
+    if (vignetteIntensity > 0) {
+      ctx.save();
+      const gradient = ctx.createRadialGradient(
+        width / 2, height / 2, Math.min(width, height) * 0.2,
+        width / 2, height / 2, Math.max(width, height) * 0.75
+      );
+      gradient.addColorStop(0, 'rgba(0,0,0,0)');
+      gradient.addColorStop(1, `rgba(0,0,0,${vignetteIntensity / 100})`);
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      ctx.restore();
+    }
+
+    // 3. Film Grain / Paper Texture Noise
+    if (grainAmount > 0) {
+      const imgData = ctx.getImageData(0, 0, width, height);
+      const data = imgData.data;
+      const factor = (grainAmount / 100) * 40;
+      for (let i = 0; i < data.length; i += 4) {
+        const noise = (Math.random() - 0.5) * factor;
+        data[i] = Math.min(255, Math.max(0, data[i] + noise));
+        data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + noise));
+        data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + noise));
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+  };
 
   const applyFilter = async (filterId: string = activeFilterId, type: 'canvas' | 'tensorflow' = engineType) => {
     activeFilterId = filterId;
@@ -119,7 +255,6 @@
     previewCanvas.width = rawImageObj.width;
     previewCanvas.height = rawImageObj.height;
 
-    // Combine base filter CSS with live slider modifications
     const baseCss = filterCategories
       .flatMap(c => c.filters)
       .find(f => f.id === filterId)?.css || 'none';
@@ -132,6 +267,9 @@
       ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
       ctx.drawImage(rawImageObj, 0, 0);
       ctx.filter = 'none';
+
+      applyPostEffects(ctx, previewCanvas.width, previewCanvas.height);
+      updateHistogram();
     } else {
       isProcessing = true;
       await new Promise(resolve => setTimeout(resolve, 30));
@@ -173,6 +311,33 @@
             const thresholded = gray.greater(180).toFloat().mul(255);
             resTensor = tf.concat([thresholded, thresholded, thresholded], 2);
           }
+          else if (filterId === 'tf_detailed_portrait') {
+            const gray = grayscale(t);
+            const inverted = tf.scalar(255).sub(gray);
+            const blurred = blur(inverted, 7);
+            const dodge = gray.div(tf.scalar(255).sub(blurred).maximum(4.0));
+            resTensor = tf.concat([dodge, dodge, dodge], 2).mul(255).clipByValue(0, 255);
+          }
+          else if (filterId === 'tf_stipple_dot') {
+            const gray = grayscale(t);
+            const dots = tf.sin(gray.mul(0.3)).abs().greater(0.7).toFloat().mul(255);
+            resTensor = tf.concat([dots, dots, dots], 2);
+          }
+          else if (filterId === 'tf_blueprint_sketch') {
+            const gray = grayscale(t);
+            const edges = sobel(t);
+            const r = tf.zerosLike(gray);
+            const g = edges.mul(0.5);
+            const b = tf.scalar(255).sub(gray.mul(0.5));
+            resTensor = tf.concat([r, g, b], 2).clipByValue(0, 255);
+          }
+          else if (filterId === 'tf_lithograph') {
+            const gray = grayscale(t);
+            const posterized = gray.div(64).floor().mul(64);
+            const edges = sobel(t).greater(50).toFloat().mul(255);
+            const res = tf.scalar(255).sub(posterized.add(edges)).clipByValue(0, 255);
+            resTensor = tf.concat([res, res, res], 2);
+          }
           else if (filterId === 'tf_edge') {
             const edges = sobel(t).mul(1.8).clipByValue(0, 255);
             resTensor = tf.concat([edges, edges, edges], 2);
@@ -201,9 +366,6 @@
             const coarseDetails = t.sub(blur(t, 9));
             resTensor = t.add(fineDetails.mul(2.2)).add(coarseDetails.mul(1.4)).clipByValue(0, 255);
           }
-          else if (filterId === 'tf_solarize') {
-            resTensor = tf.where(t.greater(127), tf.scalar(255).sub(t), t) as tf.Tensor3D;
-          }
           else if (filterId === 'tf_emboss') {
             const gray = grayscale(t);
             const embossKernel = tf.tensor4d([-2, -1, 0, -1, 1, 1, 0, 1, 2], [3, 3, 1, 1]);
@@ -225,12 +387,6 @@
             const b = tf.scalar(255).sub(gray.mul(2)).clipByValue(0, 255);
             resTensor = tf.concat([r, g, b], 2);
           }
-          else if (filterId === 'tf_sepia_neural') {
-            const r = t.slice([0, 0, 0], [-1, -1, 1]).mul(0.393).add(t.slice([0, 0, 1], [-1, -1, 1]).mul(0.769)).add(t.slice([0, 0, 2], [-1, -1, 1]).mul(0.189));
-            const g = t.slice([0, 0, 0], [-1, -1, 1]).mul(0.349).add(t.slice([0, 0, 1], [-1, -1, 1]).mul(0.686)).add(t.slice([0, 0, 2], [-1, -1, 1]).mul(0.168));
-            const b = t.slice([0, 0, 0], [-1, -1, 1]).mul(0.272).add(t.slice([0, 0, 1], [-1, -1, 1]).mul(0.534)).add(t.slice([0, 0, 2], [-1, -1, 1]).mul(0.131));
-            resTensor = tf.concat([r, g, b], 2).clipByValue(0, 255);
-          }
           else if (filterId === 'tf_deepinvert') {
             resTensor = tf.scalar(255).sub(t);
           }
@@ -240,7 +396,6 @@
             resTensor = t.sub(min).div(max.sub(min).maximum(1)).mul(255);
           }
 
-          // Apply live slider adjustments to tensor output
           let adjusted = resTensor.toFloat().div(255);
           adjusted = adjusted.add((brightness - 100) / 100).clipByValue(0, 1);
           adjusted = adjusted.sub(0.5).mul(contrast / 100).add(0.5).clipByValue(0, 1);
@@ -253,6 +408,9 @@
         await tf.browser.toPixels(processedTensor as tf.Tensor3D, previewCanvas);
         inputTensor.dispose();
         processedTensor.dispose();
+
+        applyPostEffects(ctx, previewCanvas.width, previewCanvas.height);
+        updateHistogram();
       } catch (err) {
         console.error("TensorFlow filter error:", err);
       } finally {
@@ -267,6 +425,9 @@
     saturation = 100;
     hueRotate = 0;
     blurAmount = 0;
+    glowEnabled = false;
+    vignetteIntensity = 0;
+    grainAmount = 0;
     applyFilter();
   };
 
@@ -312,13 +473,17 @@
     }
   });
 
-  // Re-apply filter when sliders change
   $effect(() => {
     brightness;
     contrast;
     saturation;
     hueRotate;
     blurAmount;
+    glowEnabled;
+    glowColor;
+    glowIntensity;
+    vignetteIntensity;
+    grainAmount;
     if (rawImageObj && previewCanvas) {
       applyFilter(activeFilterId, engineType);
     }
@@ -326,12 +491,12 @@
 </script>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <!-- Filter Matrix Sidebar + Pro Adjustments -->
-  <div class="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-6 max-h-[700px] overflow-y-auto">
+  <!-- Filter Matrix Sidebar + Pro Adjustments & Histogram -->
+  <div class="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-6 max-h-[720px] overflow-y-auto">
     <div class="flex items-center justify-between border-b border-gray-100 pb-2">
       <div class="flex items-center gap-2">
-        <Icon icon="mdi:tune-vertical" class="text-primary text-lg" />
-        <h3 class="font-bold text-sm text-dark">Pro Adjustments & Filters</h3>
+        <Icon icon="mdi:chart-histogram" class="text-primary text-lg" />
+        <h3 class="font-bold text-sm text-dark">Studio & Histogram Analyzer</h3>
       </div>
       {#if isProcessing}
         <span class="text-[10px] font-mono bg-primary/10 text-primary px-2 py-0.5 rounded-full animate-pulse flex items-center gap-1">
@@ -340,11 +505,24 @@
       {/if}
     </div>
 
+    <!-- Real-time RGB Histogram Analyzer -->
+    <div class="bg-gray-900 p-3 rounded-2xl border border-gray-800 space-y-1.5">
+      <div class="flex justify-between items-center text-[10px] font-mono text-gray-400 uppercase tracking-wider">
+        <span>RGB Luminance Histogram</span>
+        <span class="flex items-center gap-2">
+          <span class="text-red-400">R</span> <span class="text-green-400">G</span> <span class="text-blue-400">B</span>
+        </span>
+      </div>
+      <div class="w-full h-24 bg-black/60 rounded-xl overflow-hidden border border-gray-800 flex items-center justify-center">
+        <canvas bind:this={histogramCanvas} width="256" height="96" class="w-full h-full object-fill"></canvas>
+      </div>
+    </div>
+
     <!-- Fine-Tune Sliders Panel -->
     <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3">
       <div class="flex justify-between items-center">
         <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-500 font-mono">Fine-Tune Controls</h4>
-        <button type="button" onclick={resetAdjustments} class="text-[10px] font-semibold text-primary hover:underline cursor-pointer">Reset</button>
+        <button type="button" onclick={resetAdjustments} class="text-[10px] font-semibold text-primary hover:underline cursor-pointer">Reset All</button>
       </div>
 
       <div class="space-y-2">
@@ -382,6 +560,44 @@
           </div>
           <input type="range" bind:value={blurAmount} min="0" max="10" step="0.5" class="w-full accent-primary cursor-pointer" />
         </div>
+      </div>
+    </div>
+
+    <!-- Advanced Effects Panel (Vignette, Grain, Glow) -->
+    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3">
+      <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-500 font-mono">Atmosphere & Depth FX</h4>
+
+      <div>
+        <div class="flex justify-between text-[11px] font-medium text-gray-600 mb-0.5">
+          <span>Vignette Depth</span><span>{vignetteIntensity}%</span>
+        </div>
+        <input type="range" bind:value={vignetteIntensity} min="0" max="100" class="w-full accent-primary cursor-pointer" />
+      </div>
+
+      <div>
+        <div class="flex justify-between text-[11px] font-medium text-gray-600 mb-0.5">
+          <span>Film Grain / Paper Texture</span><span>{grainAmount}%</span>
+        </div>
+        <input type="range" bind:value={grainAmount} min="0" max="50" class="w-full accent-primary cursor-pointer" />
+      </div>
+
+      <div class="pt-2 border-t border-gray-200/60">
+        <label class="flex items-center justify-between text-xs font-semibold cursor-pointer text-dark mb-2">
+          <span class="flex items-center gap-1.5"><Icon icon="mdi:lightbulb-on-outline" /> Ambient Glow</span>
+          <input type="checkbox" bind:checked={glowEnabled} class="rounded accent-primary w-4 h-4" />
+        </label>
+        {#if glowEnabled}
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] text-gray-500 mb-0.5">Color</label>
+              <input type="color" bind:value={glowColor} class="w-full h-7 rounded border border-gray-300 cursor-pointer p-0.5" />
+            </div>
+            <div>
+              <label class="block text-[10px] text-gray-500 mb-0.5">Intensity: {glowIntensity}px</label>
+              <input type="range" bind:value={glowIntensity} min="5" max="50" class="w-full accent-primary mt-1" />
+            </div>
+          </div>
+        {/if}
       </div>
     </div>
 
