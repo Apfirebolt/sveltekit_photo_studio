@@ -70,7 +70,7 @@
       ]
     },
     {
-      name: "Neural & Tensor Matrix (TensorFlow.js)",
+      name: "Tensor Matrix (TensorFlow.js)",
       filters: [
         { id: 'tf_edge', name: '🧠 TF Sobel Edge Tensor', type: 'tensorflow' },
         { id: 'tf_luminance', name: '📐 TF Neural Luminance Matrix', type: 'tensorflow' },

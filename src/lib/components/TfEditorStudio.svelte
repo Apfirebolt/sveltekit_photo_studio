@@ -64,30 +64,24 @@
         };
 
         if (activePreset === 'sketch') {
-          // Classic Pencil Sketch
           const inverted = tf.onesLike(grayAdjusted).sub(grayAdjusted) as import('@tensorflow/tfjs').Tensor3D;
           const blurred = blur(inverted);
           pixels = grayAdjusted.div(tf.onesLike(blurred).sub(blurred).maximum(0.08)).clipByValue(0, 1).tile([1, 1, 3]);
         } else if (activePreset === 'portrait_pencil') {
-          // Detailed Pencil Portrait (Dodge-blend simulation for smooth skin lines)
           const inverted = tf.onesLike(grayAdjusted).sub(grayAdjusted);
           const blurred = blur(inverted);
           const dodge = grayAdjusted.div(tf.onesLike(blurred).sub(blurred).maximum(0.05));
           pixels = dodge.mul(1.1).clipByValue(0, 1).tile([1, 1, 3]);
         } else if (activePreset === 'pen') {
-          // Fine Ink Pen Linework
           pixels = tf.onesLike(grayAdjusted).sub(gradients().mul(3.5).clipByValue(0, 1)).tile([1, 1, 3]);
         } else if (activePreset === 'crosshatch') {
-          // Cross-Hatch Hatching Effect
           const grad = gradients().mul(4).clipByValue(0, 1);
           const hatch = tf.sin(grayAdjusted.mul(45)).abs().mul(0.25);
           pixels = tf.onesLike(grayAdjusted).sub(grad.add(hatch)).clipByValue(0, 1).tile([1, 1, 3]);
         } else if (activePreset === 'charcoal') {
-          // Rich Deep Charcoal
           const darks = grayAdjusted.pow(1.5).mul(1.2);
           pixels = tf.onesLike(darks).sub(gradients().mul(3)).sub(darks).clipByValue(0, 1).tile([1, 1, 3]);
         } else if (activePreset === 'soft_graphite') {
-          // Soft Graphite Shading
           const blurred = blur(grayAdjusted);
           pixels = blurred.sub(gradients().mul(1.2)).clipByValue(0, 1).tile([1, 1, 3]);
         } else if (activePreset === 'oil') {
@@ -257,9 +251,9 @@
   });
 </script>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
   <!-- Controls Sidebar -->
-  <div class="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 max-h-[720px] overflow-y-auto">
+  <div class="w-full lg:col-span-1 bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 overflow-y-auto">
     <div class="flex items-center gap-2 border-b border-gray-100 pb-2">
       <Icon icon="mdi:brain" class="text-primary text-lg" />
       <h3 class="font-bold text-sm text-dark">TensorFlow.js Studio Adjustments</h3>
@@ -277,6 +271,7 @@
         <div class="grid grid-cols-5 gap-2">
           {#each dominantColors as color}
             <button
+              type="button"
               onclick={() => copyHexCode(color.hex)}
               class="group relative flex flex-col items-center gap-1 cursor-pointer"
               title="Click to copy HEX"
@@ -303,7 +298,7 @@
           onclick={() => isColorPickerActive = !isColorPickerActive}
           class="px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer {isColorPickerActive ? 'bg-purple-600 text-white animate-pulse' : 'bg-white text-dark border border-gray-200 hover:bg-gray-100'}"
         >
-          {isColorPickerActive ? 'ACTIVE (Click Image)' : 'OFF'}
+          {isColorPickerActive ? 'ACTIVE' : 'OFF'}
         </button>
       </div>
       {#if isColorPickerActive}
@@ -334,11 +329,11 @@
 
     <div class="border-t border-gray-100 pt-4 space-y-2">
       <p class="text-xs font-bold text-dark">AI Tools</p>
-      <button onclick={removeBackground} disabled={isProcessing} class="w-full flex items-center justify-center gap-2 border border-gray-200 hover:bg-gray-50 disabled:opacity-60 text-dark font-semibold py-2.5 rounded-lg text-xs transition cursor-pointer">
+      <button type="button" onclick={removeBackground} disabled={isProcessing} class="w-full flex items-center justify-center gap-2 border border-gray-200 hover:bg-gray-50 disabled:opacity-60 text-dark font-semibold py-2.5 rounded-lg text-xs transition cursor-pointer">
         <Icon icon="mdi:person-crop-circle" />
         {isProcessing ? 'Removing background...' : backgroundMask ? 'Background removed' : 'Remove person background'}
       </button>
-      <button onclick={describeImage} disabled={isDescribing} class="w-full flex items-center justify-center gap-2 border border-gray-200 hover:bg-gray-50 disabled:opacity-60 text-dark font-semibold py-2.5 rounded-lg text-xs transition cursor-pointer">
+      <button type="button" onclick={describeImage} disabled={isDescribing} class="w-full flex items-center justify-center gap-2 border border-gray-200 hover:bg-gray-50 disabled:opacity-60 text-dark font-semibold py-2.5 rounded-lg text-xs transition cursor-pointer">
         <Icon icon="mdi:image-text" />
         {isDescribing ? 'Analyzing image...' : 'Describe image'}
       </button>
@@ -350,14 +345,14 @@
       {/if}
     </div>
 
-    <button onclick={downloadFilteredImage} class="w-full bg-primary hover:bg-primary-dark text-light font-semibold py-2.5 rounded-lg text-xs shadow transition cursor-pointer mt-4">
+    <button type="button" onclick={downloadFilteredImage} class="w-full bg-primary hover:bg-primary-dark text-light font-semibold py-2.5 rounded-lg text-xs shadow transition cursor-pointer mt-4">
       <Icon icon="mdi:download" class="inline-block mr-1" /> Export processed photo
     </button>
   </div>
 
   <!-- Canvas Preview Area with Sampled Color Footer -->
-  <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-between min-h-[500px]">
-    <div class="w-full flex-1 flex items-center justify-center overflow-hidden bg-gray-100 rounded-xl border border-gray-200 p-2">
+  <div class="w-full lg:col-span-2 bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-between">
+    <div class="w-full flex items-center justify-center overflow-auto bg-gray-100 rounded-xl border border-gray-200 p-2 min-h-[350px] sm:min-h-[460px]">
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
       <canvas 
@@ -368,14 +363,14 @@
     </div>
 
     <!-- Sampled Color Displayed at the Bottom -->
-    <div class="w-full mt-4 bg-gray-50 p-3.5 rounded-xl border border-gray-200 flex items-center justify-between">
+    <div class="w-full mt-4 bg-gray-50 p-3.5 rounded-xl border border-gray-200 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
         <span class="text-xs font-semibold text-gray-600">Sampled Color:</span>
         {#if sampledColor}
           <div class="flex items-center gap-2">
             <div class="w-6 h-6 rounded-md border border-black/10 shadow-xs" style="background-color: {sampledColor.hex};"></div>
             <span class="text-xs font-mono font-bold text-dark">{sampledColor.hex}</span>
-            <span class="text-[11px] font-mono text-gray-500">({sampledColor.rgb})</span>
+            <span class="text-[11px] font-mono text-gray-500 hidden sm:inline">({sampledColor.rgb})</span>
           </div>
         {:else}
           <span class="text-xs text-gray-400 italic">Toggle Eyedropper ON and click on image</span>

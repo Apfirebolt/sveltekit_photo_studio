@@ -28,10 +28,10 @@
           href="/"
           class="inline-flex items-center gap-2.5 text-lg font-black tracking-tight text-white focus:outline-none rounded-xl transition-transform active:scale-95"
         >
-          <div class="w-8 h-8 rounded-xl bg-primary/20 border border-primary/40 flex items-center justify-center text-primary shadow-xs">
+          <div class="w-8 h-8 rounded-xl bg-primary/20 border border-success flex items-center justify-center text-success shadow-xs">
             <Icon icon="mdi:drawing-box" class="text-lg" />   
           </div>
-          <span>SvelteKit <span class="text-primary"> Studio</span></span>
+          <span>SvelteKit <span class="text-success"> Studio</span></span>
         </a>
         <p class="text-xs text-light/70 font-sans max-w-sm">
           A high-performance, client-side browser studio combining reference grids, custom line geometry, and 20+ curated artistic styles.
@@ -45,7 +45,7 @@
             href={item.url}
             class="px-3.5 py-2 rounded-xl text-xs font-semibold text-light/80 hover:text-white hover:bg-white/10 transition-all flex items-center gap-1.5 border border-white/5"
           >
-            <Icon icon={item.icon} class="text-sm text-primary" />
+            <Icon icon={item.icon} class="text-sm text-success" />
             <span>{item.name}</span>
           </a>
         {/each}
@@ -58,7 +58,7 @@
             href={social.url}
             target="_blank"
             rel="noopener noreferrer"
-            class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-light/80 hover:text-primary border border-white/10 hover:border-primary/40 transition-all"
+            class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-light/80 hover:text-success border border-white/10 hover:border-success/40 transition-all"
             aria-label={social.name}
           >
             <Icon icon={social.icon} class="text-lg" />
@@ -68,14 +68,14 @@
     </div>
 
     <!-- Bottom Row: Copyright & Back to Top -->
-    <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-light/60 text-center sm:text-left">
+    <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-light text-center sm:text-left">
       <p>
         &copy; {year} SvelteKit Studio. Built with SvelteKit & HTML5 Canvas.
       </p>
       <div class="flex items-center gap-6">
         <a
           href="#top"
-          class="hover:text-primary transition-colors underline underline-offset-4"
+          class="hover:text-success transition-colors underline underline-offset-4"
         >
           Back to top &uarr;
         </a>

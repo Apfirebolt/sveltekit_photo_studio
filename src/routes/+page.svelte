@@ -60,72 +60,76 @@
   <title>Artist Studio - Reference Grid & Photo Suite</title>
 </svelte:head>
 
-<div class="min-h-screen bg-light text-dark flex flex-col selection:bg-primary selection:text-light font-sans">
+<div class="min-h-screen bg-light text-dark flex flex-col selection:bg-primary selection:text-light font-sans overflow-x-hidden">
   <HeaderComponent title="SvelteKit Studio" />
 
   <!-- Hero Section -->
-  <section class="relative bg-cover bg-center min-h-[380px] flex items-center justify-center overflow-hidden border-b border-secondary/20" style="background-image: url('https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=1600&auto=format&fit=crop');">
+  <section class="relative bg-cover bg-center min-h-[280px] sm:min-h-[380px] flex items-center justify-center overflow-hidden border-b border-secondary/20" style="background-image: url('https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=1600&auto=format&fit=crop');">
     <div class="absolute inset-0 bg-gradient-to-b from-black/85 via-black/60 to-black/90 pointer-events-none" />
-    <div class="relative z-10 mx-auto text-center px-4 py-16 text-light space-y-4">
-      <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-white min-h-[2.5rem]" in:fly={{ y: 25, duration: 400 }}>
+    <div class="relative z-10 max-w-4xl mx-auto text-center px-4 py-12 sm:py-16 text-light space-y-4">
+      <h1 class="text-2xl sm:text-5xl font-black tracking-tight text-white min-h-[2.5rem]" in:fly={{ y: 25, duration: 400 }}>
         {displayedText}
       </h1>
-      <p class="text-sm sm:text-base text-light/85 max-w-2xl mx-auto">
+      <p class="text-xs sm:text-base text-light/85 max-w-2xl mx-auto">
         Precise drawing grid overlays, custom lines, tensor tone tools, and 30+ advanced filters.
       </p>
+    </div>
+  </section>
 
-      <div class="bg-white border-b border-gray-200 sticky top-16 z-20 shadow-xs">
-    <div class="mx-auto px-4 py-3 flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
+  <!-- 3-Tab Navigation Bar (Properly outside the hero section) -->
+  <div class="bg-white border-b border-gray-200 sticky top-16 z-20 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
       <button 
-        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'splitter' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" 
+        class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'splitter' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" 
         onclick={() => activeTab = 'splitter'}
       >
-        <Icon icon="mdi:grid" /> Artist Grid & Lines
+        <Icon icon="mdi:grid" /> Grid & Lines
       </button>
 
       <button 
-        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'editor' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" 
+        class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'editor' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" 
         onclick={() => activeTab = 'editor'}
       >
-        <Icon icon="mdi:brain" /> Tensor Tone & Sketch Studio
+        <Icon icon="mdi:brain" /> Tensor Studio
       </button>
 
       <button 
-        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'filters' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" 
+        class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'filters' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" 
         onclick={() => activeTab = 'filters'}
       >
-        <Icon icon="mdi:palette-advanced" /> 30+ Filter Library
+        <Icon icon="mdi:palette-advanced" /> Filter Library
       </button>
     </div>
+  </div>
 
-    <!-- Workspace -->
-  <div class="flex-1 max-w-7x w-full mx-auto px-4 py-10">
+  <!-- Workspace Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 sm:py-10">
     {#if !imageLoaded}
-      <div class="max-w-2xl mx-auto bg-white border-2 border-dashed border-gray-300 rounded-3xl p-12 text-center hover:border-primary transition shadow-sm">
+      <div class="max-w-2xl mx-auto bg-white border-2 border-dashed border-gray-300 rounded-3xl p-8 sm:p-12 text-center hover:border-primary transition shadow-sm">
         <Icon icon="mdi:cloud-upload-outline" class="w-16 h-16 mx-auto mb-4 text-gray-400" />
-        <p class="text-dark font-bold text-lg mb-1">Drag & drop your reference photo</p>
+        <p class="text-dark font-bold text-base sm:text-lg mb-1">Drag & drop your reference photo</p>
         <label class="cursor-pointer bg-primary hover:bg-primary-dark text-light font-semibold py-3 px-8 rounded-xl shadow transition text-xs inline-block mt-4">
           Browse Image File
           <input type="file" onchange={handleImageUpload} accept="image/*" class="hidden" />
         </label>
       </div>
     {:else}
-      <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-gray-200 shadow-xs mb-8">
-        <span class="text-xs font-medium text-gray-700">Active File: <strong class="text-dark">{fileName}</strong></span>
-        <label class="cursor-pointer text-xs bg-gray-100 hover:bg-gray-200 text-dark font-semibold py-2 px-4 rounded-xl border border-gray-200">
+      <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-2xl border border-gray-200 shadow-xs mb-8 gap-3">
+        <span class="text-xs font-medium text-gray-700 truncate max-w-full">Active File: <strong class="text-dark">{fileName}</strong></span>
+        <label class="cursor-pointer text-xs bg-gray-100 hover:bg-gray-200 text-dark font-semibold py-2 px-4 rounded-xl border border-gray-200 shrink-0">
           Change Image
           <input type="file" onchange={handleImageUpload} accept="image/*" class="hidden" />
         </label>
       </div>
 
-      <!-- Persistent Tab Containers (class:hidden prevents unmounting and preserves image state) -->
+      <!-- Persistent Tab Containers -->
       <div class:hidden={activeTab !== 'splitter'}>
         <GridStudio {rawImageObj} {originalImageSrc} />
       </div>
 
       <div class:hidden={activeTab !== 'editor'}>
         <div class="space-y-6">
-          <!-- Comprehensive Artistic Sketch & Style Preset Bar -->
+          <!-- Artistic Preset Bar -->
           <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-2">
             <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-400 font-mono">Select Artistic Tensor Style</h4>
             <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
@@ -150,12 +154,7 @@
         <AdvancedFiltersStudio {rawImageObj} />
       </div>
     {/if}
-    </div>
-  </div>
-    </div>
-  </section>
-
-  
+  </main>
 
   <FooterComponent />
 </div>
