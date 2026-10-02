@@ -9,6 +9,7 @@
   let previewCanvas = $state<HTMLCanvasElement | null>(null);
   let histogramCanvas = $state<HTMLCanvasElement | null>(null);
   let activeFilterId = $state<string>('normal');
+  let filterSearch = $state('');
   let isProcessing = $state(false);
   let engineType = $state<'canvas' | 'tensorflow'>('canvas');
   let showOriginal = $state(false);
@@ -34,7 +35,67 @@
   let vignetteIntensity = $state(0); // 0% to 100%
   let grainAmount = $state(0);       // 0% to 50%
 
-  const filterCategories = [
+  type SketchFamily = 'graphite' | 'contour' | 'hatching' | 'engraving' | 'stippling' | 'technical';
+  type SketchFilter = { family: SketchFamily; variation: number };
+  type FilterDefinition = {
+    id: string;
+    name: string;
+    type: 'canvas' | 'tensorflow';
+    css?: string;
+    sketch?: SketchFilter;
+  };
+
+  const tensorSketchFamilies = [
+    {
+      id: 'graphite',
+      title: 'Tensor Graphite & Pencil Studies (10)',
+      icon: '✏️',
+      names: ['HB Light Study', '2B Portrait Pencil', '4B Soft Shading', '6B Rich Graphite', 'H Fine Drafting Lead', 'Smudged Charcoal Pencil', 'Cross-Grain Graphite', 'Tonal Portrait Blend', 'Expressive Broad Lead', 'Paper Grain Study']
+    },
+    {
+      id: 'contour',
+      title: 'Tensor Contour & Line Sketches (10)',
+      icon: '🖊️',
+      names: ['Fine Contour', 'Clean Outline', 'Soft Edge Study', 'Bold Gesture Lines', 'Minimal Contours', 'Double-Weight Outline', 'Portrait Contour', 'Architectural Contour', 'High-Contrast Ink', 'Loose Gesture Study']
+    },
+    {
+      id: 'hatching',
+      title: 'Tensor Pen Hatching & Crosshatch (10)',
+      icon: '✒️',
+      names: ['Single Diagonal Hatch', 'Fine Crosshatch', 'Dense Crosshatch', 'Loose Parallel Hatch', 'Four-Way Ink Hatch', 'Shadow Hatch', 'Etching Hatch', 'Fine Nib Hatching', 'Bold Nib Hatching', 'Illustration Crosshatch']
+    },
+    {
+      id: 'engraving',
+      title: 'Tensor Engraving & Lithography (10)',
+      icon: '🖋️',
+      names: ['Copperplate Engraving', 'Woodcut Linework', 'Antique Etching', 'Lithographic Pencil', 'Newsprint Engraving', 'Fine-Line Etching', 'Bold Relief Print', 'Soft Plate Tone', 'Vintage Ink Press', 'Detailed Engraver']
+    },
+    {
+      id: 'stippling',
+      title: 'Tensor Stipple & Dot-Pen Studies (10)',
+      icon: '⚫',
+      names: ['Fine Stipple', 'Portrait Dotwork', 'Sparse Pointillism', 'Dense Ink Dots', 'Soft Halftone Pencil', 'Bold Halftone Pen', 'Micro-Dot Shading', 'Loose Stipple Study', 'Graphic Dot Screen', 'Tonal Pointillism']
+    },
+    {
+      id: 'technical',
+      title: 'Tensor Technical & Architectural Pen (10)',
+      icon: '📐',
+      names: ['Drafting Pencil', 'Blueprint Line Study', 'Fine Technical Pen', 'Architectural Ink', 'Measured Contours', 'Precision Outline', 'Plan Drawing', 'Structural Edge Study', 'Technical Crosshatch', 'Clean Diagram Ink']
+    }
+  ] as const;
+
+  const tensorSketchCategories = tensorSketchFamilies.map((family) => ({
+    name: family.title,
+    filters: family.names.map((name, variation) => ({
+      id: `tf_sketch_${family.id}_${variation + 1}`,
+      name: `${family.icon} TF ${name}`,
+      type: 'tensorflow' as const,
+      sketch: { family: family.id, variation }
+    }))
+  }));
+
+  const filterCategories: { name: string; filters: FilterDefinition[] }[] = [
+    ...tensorSketchCategories,
     {
       name: "Master Sketch & Pen Suite (20+ Styles)",
       filters: [
@@ -151,6 +212,19 @@
       ]
     }
   ];
+
+  const visibleFilterCategories = $derived.by(() => {
+    const query = filterSearch.trim().toLowerCase();
+    return filterCategories
+      .map(category => ({
+        ...category,
+        filters: category.filters.filter(filter =>
+          !query || `${filter.name} ${filter.id} ${category.name}`.toLowerCase().includes(query)
+        )
+      }))
+      .filter(category => category.filters.length > 0);
+  });
+  const visibleFilterCount = $derived(visibleFilterCategories.reduce((total, category) => total + category.filters.length, 0));
 
   const updateHistogram = () => {
     if (!previewCanvas || !histogramCanvas) return;
@@ -277,9 +351,12 @@
       try {
         await tf.ready();
         const inputTensor = tf.browser.fromPixels(rawImageObj);
+        const sketchSettings = filterCategories
+          .flatMap(category => category.filters)
+          .find(filter => filter.id === filterId)?.sketch;
 
         const processedTensor = tf.tidy(() => {
-          let t = inputTensor.toFloat();
+          let t = inputTensor.toFloat() as tf.Tensor3D;
           const grayscale = (pixels: tf.Tensor3D) => {
             const red = pixels.slice([0, 0, 0], [-1, -1, 1]).mul(0.299);
             const green = pixels.slice([0, 0, 1], [-1, -1, 1]).mul(0.587);
@@ -297,12 +374,82 @@
             const y = tf.conv2d(batch, vertical, 1, 'same');
             return tf.sqrt(x.square().add(y.square())).squeeze([0]) as tf.Tensor3D;
           };
+          const renderSketch = (pixels: tf.Tensor3D, settings: SketchFilter): tf.Tensor3D => {
+            const gray = grayscale(pixels);
+            const variation = settings.variation;
+            const rgb = (channel: tf.Tensor) => {
+              const plane = channel as tf.Tensor3D;
+              return tf.concat([plane, plane, plane], 2) as tf.Tensor3D;
+            };
 
-          let resTensor: tf.Tensor3D;
+            if (settings.family === 'graphite') {
+              const blurSize = [3, 5, 7, 9, 11][variation % 5];
+              const inverted = tf.scalar(255).sub(gray) as tf.Tensor3D;
+              const blurred = blur(inverted, blurSize);
+              const dodge = gray.mul(255).div(tf.scalar(255).sub(blurred).maximum(10));
+              const pressure = 0.8 + (variation % 5) * 0.2;
+              const pencil = tf.scalar(255).sub(tf.scalar(255).sub(dodge).mul(pressure));
+              const grain = sobel(pixels).mul(0.015 + (variation % 4) * 0.012);
+              return rgb(pencil.sub(grain).clipByValue(0, 255));
+            }
 
-          if (filterId === 'sketch_outline') {
+            if (settings.family === 'contour' || settings.family === 'technical') {
+              const edgeStrength = 1.3 + (variation % 5) * 0.45;
+              const threshold = 22 + (variation % 5) * 17;
+              const edges = sobel(pixels).sub(threshold).maximum(0).mul(edgeStrength);
+              const lineTone = settings.family === 'technical' && variation % 3 === 0
+                ? gray.mul(0.04)
+                : tf.zerosLike(gray);
+              return rgb(tf.scalar(255).sub(edges).sub(lineTone).clipByValue(0, 255));
+            }
+
+            const [height, width] = pixels.shape;
+            const x = tf.tile(tf.range(0, width, 1, 'int32').reshape([1, width]), [height, 1]).toFloat().expandDims(2) as tf.Tensor3D;
+            const y = tf.tile(tf.range(0, height, 1, 'int32').reshape([height, 1]), [1, width]).toFloat().expandDims(2) as tf.Tensor3D;
+            const darkness = tf.scalar(255).sub(gray);
+
+            if (settings.family === 'stippling') {
+              const frequency = 0.12 + (variation % 5) * 0.035;
+              const dotPattern = tf.sin(x.mul(frequency).add(y.mul(frequency * 0.7)))
+                .mul(tf.cos(y.mul(frequency).sub(x.mul(frequency * 0.35))));
+              const threshold = tf.scalar(0.92).sub(darkness.div(255).mul(1.7));
+              const dots = dotPattern.greater(threshold).toFloat();
+              const dotSize = 120 + (variation % 4) * 40;
+              return rgb(tf.scalar(255).sub(dots.mul(dotSize)));
+            }
+
+            const spacing = 5 + (variation % 5) * 2;
+            const thickness = 1 + (variation % 3);
+            const directions = settings.family === 'hatching'
+              ? [0.7, -0.7, 0.15, 1.35]
+              : [0.78, -0.78, 0.3, 1.25];
+            const lineCount = settings.family === 'engraving' ? 1 + (variation % 4) : 1 + (variation % 3);
+            let ink = tf.zerosLike(gray);
+            for (let line = 0; line < lineCount; line++) {
+              const angle = directions[(line + variation) % directions.length];
+              const coordinate = x.mul(Math.cos(angle)).add(y.mul(Math.sin(angle))).add(variation * 3 + line * 5);
+              const hatch = tf.mod(coordinate, spacing).less(thickness).toFloat();
+              const shadowGate = darkness.greater(38 + line * 42 + (variation % 3) * 8).toFloat();
+              ink = ink.add(hatch.mul(shadowGate));
+            }
+            const inkStrength = settings.family === 'engraving' ? 42 + (variation % 4) * 18 : 55 + (variation % 4) * 20;
+            if (settings.family === 'engraving') {
+              const edgeInk = sobel(pixels).sub(30 + (variation % 4) * 15).maximum(0).mul(0.35);
+              ink = ink.mul(inkStrength).add(edgeInk);
+            } else {
+              ink = ink.mul(inkStrength);
+            }
+            return rgb(tf.scalar(255).sub(ink).clipByValue(0, 255));
+          };
+
+          let resTensor: tf.Tensor;
+
+          if (sketchSettings) {
+            resTensor = renderSketch(t, sketchSettings);
+          }
+          else if (filterId === 'sketch_outline') {
             const gray = t.mean(2, true);
-            const inverted = tf.scalar(255).sub(gray);
+            const inverted = tf.scalar(255).sub(gray) as tf.Tensor3D;
             const highContrast = inverted.sub(150).mul(3).clipByValue(0, 255);
             resTensor = tf.concat([highContrast, highContrast, highContrast], 2);
           } 
@@ -313,7 +460,7 @@
           }
           else if (filterId === 'tf_detailed_portrait') {
             const gray = grayscale(t);
-            const inverted = tf.scalar(255).sub(gray);
+            const inverted = tf.scalar(255).sub(gray) as tf.Tensor3D;
             const blurred = blur(inverted, 7);
             const dodge = gray.div(tf.scalar(255).sub(blurred).maximum(4.0));
             resTensor = tf.concat([dodge, dodge, dodge], 2).mul(255).clipByValue(0, 255);
@@ -601,7 +748,21 @@
       </div>
     </div>
 
-    {#each filterCategories as category}
+    <div class="space-y-1">
+      <div class="relative">
+        <Icon icon="mdi:magnify" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input
+          type="search"
+          bind:value={filterSearch}
+          aria-label="Search filters"
+          placeholder="Search 60 TensorFlow sketch filters and more"
+          class="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-xs text-dark outline-none focus:border-primary"
+        />
+      </div>
+      <p class="text-[10px] text-gray-500">{visibleFilterCount} filters</p>
+    </div>
+
+    {#each visibleFilterCategories as category}
       <div class="space-y-2">
         <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-400 font-mono">{category.name}</h4>
         <div class="grid grid-cols-1 gap-1.5">
