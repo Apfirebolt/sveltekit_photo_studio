@@ -61,7 +61,7 @@
     if (e.clientX < imgRect.left || e.clientX > imgRect.right || e.clientY < imgRect.top || e.clientY > imgRect.bottom) return;
 
     let x = ((e.clientX - imgRect.left) / imgRect.width) * 100;
-    if (isFlipped) x = 100 - x; // account for horizontal mirror transform
+    if (isFlipped) x = 100 - x;
     const y = ((e.clientY - imgRect.top) / imgRect.height) * 100;
 
     if (!tempLineStart) {
@@ -70,6 +70,15 @@
       customLines = [...customLines, { x1: tempLineStart.x, y1: tempLineStart.y, x2: x, y2: y }];
       tempLineStart = null;
     }
+  };
+
+  const downloadSingleTile = (pieceDataUrl: string, index: number) => {
+    const colLabel = colLetters[index % cols];
+    const rowLabel = Math.floor(index / cols) + 1;
+    const link = document.createElement('a');
+    link.download = `tile_${colLabel}${rowLabel}.jpg`;
+    link.href = pieceDataUrl;
+    link.click();
   };
 
   const downloadGridWithOverlay = () => {
@@ -88,7 +97,6 @@
     ctx.drawImage(rawImageObj, 0, 0);
     ctx.restore();
 
-    // Render Frame if selected
     if (selectedFrame === 'mosaic') {
       const tileSize = Math.max(10, Math.floor(rawImageObj.width / 40));
       const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
@@ -168,20 +176,24 @@
     const zip = new JSZip();
     const folder = zip.folder("grid_tiles");
     gridPieces.forEach((piece, i) => {
-      folder?.file(`tile_${i + 1}.jpg`, piece.replace(/^data:image\/(png|jpeg);base64,/, ""), { base64: true });
+      folder?.file(`tile_${colLetters[i % cols]}${Math.floor(i / cols) + 1}.jpg`, piece.replace(/^data:image\/(png|jpeg);base64,/, ""), { base64: true });
     });
     const content = await zip.generateAsync({ type: "blob" });
     saveAs(content, "image_grid_slices.zip");
   };
 
   $effect(() => {
-    if (rawImageObj) splitImage();
+    if (rawImageObj) {
+      rows;
+      cols;
+      splitImage();
+    }
   });
 </script>
 
 <div class="space-y-6">
   <!-- Controls Panel -->
-  <div class="grid grid-cols-1 md:grid-cols-5 gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
     <div>
       <label class="block text-xs font-semibold mb-1 text-gray-700">Rows: {rows}</label>
       <input type="range" bind:value={rows} min="1" max="20" class="w-full accent-primary cursor-pointer" />
@@ -245,10 +257,10 @@
   <!-- Mode & Export Bar -->
   <div class="flex flex-wrap justify-between items-center gap-4 bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
     <div class="flex gap-2">
-      <button onclick={() => gridMode = 'overlay'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {gridMode === 'overlay' ? 'bg-primary text-light shadow-sm' : 'bg-gray-100 text-dark hover:bg-gray-200'}">
+      <button type="button" onclick={() => gridMode = 'overlay'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {gridMode === 'overlay' ? 'bg-primary text-light shadow-sm' : 'bg-gray-100 text-dark hover:bg-gray-200'}">
         ✏️ Grid Overlay Mode
       </button>
-      <button onclick={() => gridMode = 'tiles'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {gridMode === 'tiles' ? 'bg-primary text-light shadow-sm' : 'bg-gray-100 text-dark hover:bg-gray-200'}">
+      <button type="button" onclick={() => gridMode = 'tiles'} class="px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer {gridMode === 'tiles' ? 'bg-primary text-light shadow-sm' : 'bg-gray-100 text-dark hover:bg-gray-200'}">
         📦 Sliced Tiles Mode
       </button>
     </div>
@@ -262,7 +274,7 @@
         <input type="checkbox" bind:checked={showRuleOfThirds} class="rounded accent-primary w-4 h-4" />
         <span>Rule of Thirds</span>
       </label>
-      <button onclick={downloadGridWithOverlay} class="bg-primary hover:bg-primary-dark text-light font-semibold py-2 px-4 rounded-xl shadow transition text-xs flex items-center gap-1.5 cursor-pointer">
+      <button type="button" onclick={downloadGridWithOverlay} class="bg-primary hover:bg-primary-dark text-light font-semibold py-2 px-4 rounded-xl shadow transition text-xs flex items-center gap-1.5 cursor-pointer">
         <Icon icon="mdi:download" class="text-sm" /> Save Grid & Lines
       </button>
     </div>
@@ -273,7 +285,7 @@
     <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm flex flex-col items-center">
       <div class="w-full max-w-2xl flex justify-between items-center mb-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
         <div class="flex items-center gap-2">
-          <button onclick={() => { isLineToolActive = !isLineToolActive; tempLineStart = null; }} class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer {isLineToolActive ? 'bg-purple-600 text-white animate-pulse' : 'bg-white text-dark border border-gray-200 hover:bg-gray-100'}">
+          <button type="button" onclick={() => { isLineToolActive = !isLineToolActive; tempLineStart = null; }} class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer {isLineToolActive ? 'bg-purple-600 text-white animate-pulse' : 'bg-white text-dark border border-gray-200 hover:bg-gray-100'}">
             📏 Custom Line Tool: {isLineToolActive ? 'ON' : 'OFF'}
           </button>
           {#if tempLineStart}
@@ -281,11 +293,13 @@
           {/if}
         </div>
         {#if customLines.length > 0}
-          <button onclick={() => customLines = []} class="text-xs text-red-500 font-semibold cursor-pointer">Clear Lines ({customLines.length})</button>
+          <button type="button" onclick={() => customLines = []} class="text-xs text-red-500 font-semibold cursor-pointer">Clear Lines ({customLines.length})</button>
         {/if}
       </div>
 
-      <button 
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div 
         class="relative max-w-2xl w-full flex justify-center bg-gray-100 rounded-2xl overflow-hidden shadow-md border border-gray-200 select-none {isLineToolActive ? 'cursor-crosshair' : 'cursor-default'}"
         onclick={handleImageClick}
         bind:this={imageContainerRef}
@@ -341,7 +355,7 @@
             <line x1="100%" y1="0" x2="0" y2="100%" stroke={gridColor} stroke-width="1" stroke-dasharray="3 3" opacity="0.7" />
           {/if}
 
-          <!-- Coordinate Cell Labels (A1, B2...) -->
+          <!-- Coordinate Cell Labels -->
           {#if showCoordinates}
             {#each Array(rows) as _, r}
               {#each Array(cols) as __, c}
@@ -368,22 +382,43 @@
             <circle cx="{tempLineStart.x}%" cy="{tempLineStart.y}%" r="5" fill="#9333ea" stroke="#ffffff" stroke-width="2" />
           {/if}
         </svg>
-    </button>
+      </div>
     </div>
   {:else}
-    <!-- Sliced Tiles Mode -->
-    <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm flex flex-col items-center overflow-auto max-h-[600px]">
-      <div class="flex justify-between w-full max-w-3xl mb-4 items-center">
-        <p class="text-xs font-semibold text-gray-500 uppercase">Sliced Tiles ({gridPieces.length})</p>
-        <button onclick={downloadAllZip} class="bg-emerald-600 hover:bg-emerald-500 text-light text-xs font-semibold py-2 px-4 rounded-xl shadow cursor-pointer">📥 Download ZIP</button>
+    <!-- Sliced Tiles Mode with Individual Tile Downloads -->
+    <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm flex flex-col items-center">
+      <div class="flex justify-between w-full max-w-4xl mb-4 items-center">
+        <p class="text-xs font-semibold text-gray-500 uppercase">Sliced Tiles ({gridPieces.length}) - Click any tile to download</p>
+        <button type="button" onclick={downloadAllZip} class="bg-emerald-600 hover:bg-emerald-500 text-light text-xs font-semibold py-2 px-4 rounded-xl shadow cursor-pointer flex items-center gap-1.5">
+          <Icon icon="mdi:folder-zip-outline" class="text-sm" /> Download All (.zip)
+        </button>
       </div>
-      <div class="grid gap-2 w-full max-w-3xl" style="grid-template-columns: repeat({cols}, minmax(0, 1fr))">
+      <div class="grid gap-3 w-full max-w-4xl max-h-[550px] overflow-y-auto p-2" style="grid-template-columns: repeat(auto-fill, minmax(130px, 1fr))">
         {#each gridPieces as piece, index}
-          <div class="relative group bg-gray-50 rounded-xl overflow-hidden border border-gray-200 shadow-xs">
-            <img src={piece} alt="Tile" class="w-full h-auto block aspect-square object-cover" />
-            <span class="absolute top-1 left-1 bg-black/75 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-              {colLetters[index % cols]}{Math.floor(index / cols) + 1}
-            </span>
+          <div class="relative group bg-gray-50 rounded-xl overflow-hidden border border-gray-200 shadow-xs flex flex-col">
+            <div class="relative aspect-square overflow-hidden bg-gray-200">
+              <img src={piece} alt="Tile" class="w-full h-full object-cover transition-transform group-hover:scale-105" />
+              <span class="absolute top-1.5 left-1.5 bg-black/75 text-white text-[10px] font-bold px-1.5 py-0.5 rounded font-mono shadow">
+                {colLetters[index % cols]}{Math.floor(index / cols) + 1}
+              </span>
+              <!-- Hover Download Overlay Button -->
+              <button
+                type="button"
+                onclick={() => downloadSingleTile(piece, index)}
+                class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white cursor-pointer"
+                title="Download this tile"
+              >
+                <Icon icon="mdi:download" class="text-2xl mb-1" />
+                <span class="text-[10px] font-semibold font-mono uppercase tracking-wider">Save Tile</span>
+              </button>
+            </div>
+            <button
+              type="button"
+              onclick={() => downloadSingleTile(piece, index)}
+              class="w-full py-1.5 bg-white hover:bg-gray-100 text-dark text-[11px] font-semibold border-t border-gray-200 flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <Icon icon="mdi:download-outline" /> {colLetters[index % cols]}{Math.floor(index / cols) + 1}
+            </button>
           </div>
         {/each}
       </div>
