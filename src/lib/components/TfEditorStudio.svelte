@@ -7,6 +7,15 @@
   let brightness = $state(100);
   let contrast = $state(100);
   let saturation = $state(100);
+  
+  // New: Individual RGB Channel Sliders (Photoshop style, 0 - 200%, default 100)
+  let redChannel = $state(100);
+  let greenChannel = $state(100);
+  let blueChannel = $state(100);
+
+  let styleIntensity = $state(100);
+  let viewMode = $state<'standard' | 'highlights' | 'shadows' | 'heatmap'>('standard');
+
   let isProcessing = $state(false);
   let isDescribing = $state(false);
   let imageDescription = $state('');
@@ -17,13 +26,20 @@
   let mobilenetModel: Awaited<ReturnType<typeof import('@tensorflow-models/mobilenet').load>> | null = null;
   let previousImage: HTMLImageElement | null = null;
 
-  // Dominant Color Palette State
+  // Dominant Color Palette State & Color Swapping
   let dominantColors = $state<Array<{ hex: string; count: number }>>([]);
   let copiedHex = $state<string | null>(null);
+  let selectedColorToSwap = $state<string | null>(null);
+  let replacementColorHex = $state('#3b82f6');
 
   // Interactive Color Picker State
   let isColorPickerActive = $state(false);
   let sampledColor = $state<{ hex: string; rgb: string } | null>(null);
+
+  const hexToRgb = (hex: string) => {
+    const bigint = parseInt(hex.replace('#', ''), 16);
+    return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
+  };
 
   const applyTfCanvasFilters = async () => {
     if (!rawImageObj || !tfCanvas) return;
@@ -40,11 +56,20 @@
       const tf = await import('@tensorflow/tfjs');
       await tf.ready();
       const source = tf.browser.fromPixels(canvas, 3).toFloat().div(255) as import('@tensorflow/tfjs').Tensor3D;
+      
       const result = tf.tidy(() => {
         let pixels = source.add((brightness - 100) / 100).clipByValue(0, 1);
         pixels = pixels.sub(0.5).mul(contrast / 100).add(0.5).clipByValue(0, 1);
         const gray = pixels.mean(2).expandDims(2) as import('@tensorflow/tfjs').Tensor3D;
         pixels = gray.add(pixels.sub(gray).mul(saturation / 100)).clipByValue(0, 1);
+
+        // Apply Photoshop-style individual RGB channel multipliers
+        if (redChannel !== 100 || greenChannel !== 100 || blueChannel !== 100) {
+          const rChan = pixels.slice([0, 0, 0], [canvas.height, canvas.width, 1]).mul(redChannel / 100);
+          const gChan = pixels.slice([0, 0, 1], [canvas.height, canvas.width, 1]).mul(greenChannel / 100);
+          const bChan = pixels.slice([0, 0, 2], [canvas.height, canvas.width, 1]).mul(blueChannel / 100);
+          pixels = tf.concat([rChan, gChan, bChan], 2).clipByValue(0, 1);
+        }
 
         const grayAdjusted = pixels.mean(2).expandDims(2) as import('@tensorflow/tfjs').Tensor3D;
         const blurKernel = tf.fill([5, 5, 1, 1], 1 / 25) as unknown as import('@tensorflow/tfjs').Tensor4D;
@@ -63,46 +88,78 @@
           ).squeeze([0]);
         };
 
-        if (activePreset === 'sketch') {
-          const inverted = tf.onesLike(grayAdjusted).sub(grayAdjusted) as import('@tensorflow/tfjs').Tensor3D;
-          const blurred = blur(inverted);
-          pixels = grayAdjusted.div(tf.onesLike(blurred).sub(blurred).maximum(0.08)).clipByValue(0, 1).tile([1, 1, 3]);
-        } else if (activePreset === 'portrait_pencil') {
-          const inverted = tf.onesLike(grayAdjusted).sub(grayAdjusted);
-          const blurred = blur(inverted);
-          const dodge = grayAdjusted.div(tf.onesLike(blurred).sub(blurred).maximum(0.05));
-          pixels = dodge.mul(1.1).clipByValue(0, 1).tile([1, 1, 3]);
-        } else if (activePreset === 'pen') {
-          pixels = tf.onesLike(grayAdjusted).sub(gradients().mul(3.5).clipByValue(0, 1)).tile([1, 1, 3]);
-        } else if (activePreset === 'crosshatch') {
-          const grad = gradients().mul(4).clipByValue(0, 1);
-          const hatch = tf.sin(grayAdjusted.mul(45)).abs().mul(0.25);
-          pixels = tf.onesLike(grayAdjusted).sub(grad.add(hatch)).clipByValue(0, 1).tile([1, 1, 3]);
-        } else if (activePreset === 'charcoal') {
-          const darks = grayAdjusted.pow(1.5).mul(1.2);
-          pixels = tf.onesLike(darks).sub(gradients().mul(3)).sub(darks).clipByValue(0, 1).tile([1, 1, 3]);
-        } else if (activePreset === 'soft_graphite') {
-          const blurred = blur(grayAdjusted);
-          pixels = blurred.sub(gradients().mul(1.2)).clipByValue(0, 1).tile([1, 1, 3]);
-        } else if (activePreset === 'oil') {
-          const channels = [0, 1, 2].map((channel) =>
-            blur(pixels.slice([0, 0, channel], [canvas.height, canvas.width, 1]) as import('@tensorflow/tfjs').Tensor3D)
-          );
-          pixels = tf.concat(channels.map((channel) => channel.mul(6).floor().div(6)), 2);
-        } else if (activePreset === 'cartoon' || activePreset === 'comic') {
-          const posterized = pixels.mul(5).floor().div(5);
-          const lines = gradients().greater(0.16).logicalNot().toFloat();
-          pixels = posterized.mul(lines.tile([1, 1, 3]));
-        } else if (activePreset === 'popart') {
-          pixels = pixels.mul(5).floor().div(5);
-        } else if (activePreset === 'blueprint') {
-          pixels = tf.stack([
-            tf.onesLike(grayAdjusted).mul(0.12),
-            grayAdjusted.mul(0.5),
-            grayAdjusted.mul(0.9)
-          ], 2).squeeze([3]);
+        let processed: import('@tensorflow/tfjs').Tensor3D;
+
+        if (viewMode === 'highlights') {
+          const mask = grayAdjusted.greater(0.7).toFloat();
+          processed = mask.tile([1, 1, 3]);
+        } else if (viewMode === 'shadows') {
+          const mask = grayAdjusted.less(0.3).toFloat();
+          processed = mask.tile([1, 1, 3]);
+        } else if (viewMode === 'heatmap') {
+          const grad = gradients().mul(3).clipByValue(0, 1);
+          processed = tf.stack([grad, tf.onesLike(grad).sub(grad), tf.zerosLike(grad)], 2).squeeze([3]);
+        } else {
+          if (activePreset === 'sketch') {
+            const inverted = tf.onesLike(grayAdjusted).sub(grayAdjusted) as import('@tensorflow/tfjs').Tensor3D;
+            const blurred = blur(inverted);
+            processed = grayAdjusted.div(tf.onesLike(blurred).sub(blurred).maximum(0.08)).clipByValue(0, 1).tile([1, 1, 3]);
+          } else if (activePreset === 'portrait_pencil') {
+            const inverted = tf.onesLike(grayAdjusted).sub(grayAdjusted);
+            const blurred = blur(inverted);
+            const dodge = grayAdjusted.div(tf.onesLike(blurred).sub(blurred).maximum(0.05));
+            processed = dodge.mul(1.1).clipByValue(0, 1).tile([1, 1, 3]);
+          } else if (activePreset === 'pen') {
+            processed = tf.onesLike(grayAdjusted).sub(gradients().mul(3.5).clipByValue(0, 1)).tile([1, 1, 3]);
+          } else if (activePreset === 'crosshatch') {
+            const grad = gradients().mul(4).clipByValue(0, 1);
+            const hatch = tf.sin(grayAdjusted.mul(45)).abs().mul(0.25);
+            processed = tf.onesLike(grayAdjusted).sub(grad.add(hatch)).clipByValue(0, 1).tile([1, 1, 3]);
+          } else if (activePreset === 'charcoal') {
+            const darks = grayAdjusted.pow(1.5).mul(1.2);
+            processed = tf.onesLike(darks).sub(gradients().mul(3)).sub(darks).clipByValue(0, 1).tile([1, 1, 3]);
+          } else if (activePreset === 'soft_graphite') {
+            const blurred = blur(grayAdjusted);
+            processed = blurred.sub(gradients().mul(1.2)).clipByValue(0, 1).tile([1, 1, 3]);
+          } else if (activePreset === 'oil') {
+            const channels = [0, 1, 2].map((channel) =>
+              blur(pixels.slice([0, 0, channel], [canvas.height, canvas.width, 1]) as import('@tensorflow/tfjs').Tensor3D)
+            );
+            processed = tf.concat(channels.map((channel) => channel.mul(6).floor().div(6)), 2);
+          } else if (activePreset === 'cartoon' || activePreset === 'comic') {
+            const posterized = pixels.mul(5).floor().div(5);
+            const lines = gradients().greater(0.16).logicalNot().toFloat();
+            processed = posterized.mul(lines.tile([1, 1, 3]));
+          } else if (activePreset === 'popart') {
+            processed = pixels.mul(5).floor().div(5);
+          } else if (activePreset === 'blueprint') {
+            processed = tf.stack([
+              tf.onesLike(grayAdjusted).mul(0.12),
+              grayAdjusted.mul(0.5),
+              grayAdjusted.mul(0.9)
+            ], 2).squeeze([3]);
+          } else {
+            processed = pixels;
+          }
+
+          const alpha = styleIntensity / 100;
+          processed = source.mul(1 - alpha).add(processed.mul(alpha)) as import('@tensorflow/tfjs').Tensor3D;
         }
-        return pixels.clipByValue(0, 1) as import('@tensorflow/tfjs').Tensor3D;
+
+        if (selectedColorToSwap) {
+          const targetRgb = hexToRgb(selectedColorToSwap);
+          const replaceRgb = hexToRgb(replacementColorHex);
+          const rDiff = processed.slice([0, 0, 0], [canvas.height, canvas.width, 1]).sub(targetRgb.r / 255).abs();
+          const gDiff = processed.slice([0, 0, 1], [canvas.height, canvas.width, 1]).sub(targetRgb.g / 255).abs();
+          const bDiff = processed.slice([0, 0, 2], [canvas.height, canvas.width, 1]).sub(targetRgb.b / 255).abs();
+          const matchMask = rDiff.add(gDiff).add(bDiff).less(0.25).toFloat();
+          
+          const replacementTensor = tf.tensor1d([replaceRgb.r / 255, replaceRgb.g / 255, replaceRgb.b / 255]).reshape([1, 1, 3]);
+          processed = processed.mul(tf.onesLike(matchMask).sub(matchMask).tile([1, 1, 3]))
+            .add(replacementTensor.mul(matchMask.tile([1, 1, 3]))) as import('@tensorflow/tfjs').Tensor3D;
+        }
+
+        return processed.clipByValue(0, 1) as import('@tensorflow/tfjs').Tensor3D;
       });
 
       if (version !== renderVersion) {
@@ -239,12 +296,20 @@
     brightness;
     contrast;
     saturation;
+    redChannel;
+    greenChannel;
+    blueChannel;
+    styleIntensity;
+    viewMode;
+    selectedColorToSwap;
+    replacementColorHex;
     backgroundMask;
     if (rawImageObj !== previousImage) {
       previousImage = rawImageObj;
       backgroundMask = null;
       imageDescription = '';
       sampledColor = null;
+      selectedColorToSwap = null;
       extractColorPalette();
     }
     void applyTfCanvasFilters();
@@ -259,7 +324,18 @@
       <h3 class="font-bold text-sm text-dark">TensorFlow.js Studio Adjustments</h3>
     </div>
 
-    <!-- Dominant Color Palette Section -->
+    <!-- Advanced Analysis Mode Selector -->
+    <div class="space-y-1.5">
+      <label class="block text-xs font-bold text-dark">Reference Study View</label>
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <button type="button" onclick={() => viewMode = 'standard'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'standard' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Standard</button>
+        <button type="button" onclick={() => viewMode = 'heatmap'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'heatmap' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Edge Heatmap</button>
+        <button type="button" onclick={() => viewMode = 'highlights'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'highlights' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Highlights</button>
+        <button type="button" onclick={() => viewMode = 'shadows'} class="p-2 rounded-xl border transition cursor-pointer font-semibold {viewMode === 'shadows' ? 'bg-primary text-light border-primary' : 'bg-gray-50 text-gray-700 border-gray-200'}">Shadows</button>
+      </div>
+    </div>
+
+    <!-- Dominant Color Palette & Color Swapper Section -->
     {#if dominantColors.length > 0}
       <div class="space-y-2 bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
         <div class="flex justify-between items-center">
@@ -272,18 +348,31 @@
           {#each dominantColors as color}
             <button
               type="button"
-              onclick={() => copyHexCode(color.hex)}
+              onclick={() => {
+                copyHexCode(color.hex);
+                selectedColorToSwap = color.hex;
+              }}
               class="group relative flex flex-col items-center gap-1 cursor-pointer"
-              title="Click to copy HEX"
+              title="Click to copy & select for color swap"
             >
               <div 
-                class="w-full aspect-square rounded-lg border border-black/10 shadow-xs transition-transform group-hover:scale-110" 
+                class="w-full aspect-square rounded-lg border-2 {selectedColorToSwap === color.hex ? 'border-primary ring-2 ring-primary/30' : 'border-black/10'} shadow-xs transition-transform group-hover:scale-110" 
                 style="background-color: {color.hex};"
               ></div>
               <span class="text-[9px] font-mono text-gray-600 truncate w-full text-center">{color.hex}</span>
             </button>
           {/each}
         </div>
+
+        {#if selectedColorToSwap}
+          <div class="pt-2 border-t border-gray-200 flex items-center justify-between gap-2">
+            <span class="text-[11px] text-gray-600 font-medium truncate">Swap {selectedColorToSwap} with:</span>
+            <div class="flex items-center gap-2">
+              <input type="color" bind:value={replacementColorHex} class="w-7 h-7 rounded border border-gray-200 cursor-pointer p-0 bg-transparent" />
+              <button type="button" onclick={() => selectedColorToSwap = null} class="text-[10px] text-red-500 font-bold hover:underline">Reset</button>
+            </div>
+          </div>
+        {/if}
       </div>
     {/if}
 
@@ -304,6 +393,43 @@
       {#if isColorPickerActive}
         <p class="text-[11px] text-purple-600 font-medium">Click anywhere on the preview image to sample color.</p>
       {/if}
+    </div>
+
+    <!-- RGB Channel Adjustments Section -->
+    <div class="space-y-3 bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
+      <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-500 font-mono">RGB Channel Mixer</h4>
+      
+      <div>
+        <div class="flex justify-between text-xs font-medium mb-1 text-red-600">
+          <span>Red Channel</span><span>{redChannel}%</span>
+        </div>
+        <input type="range" bind:value={redChannel} min="0" max="200" class="w-full accent-red-500 cursor-pointer" />
+      </div>
+
+      <div>
+        <div class="flex justify-between text-xs font-medium mb-1 text-green-600">
+          <span>Green Channel</span><span>{greenChannel}%</span>
+        </div>
+        <input type="range" bind:value={greenChannel} min="0" max="200" class="w-full accent-green-500 cursor-pointer" />
+      </div>
+
+      <div>
+        <div class="flex justify-between text-xs font-medium mb-1 text-blue-600">
+          <span>Blue Channel</span><span>{blueChannel}%</span>
+        </div>
+        <input type="range" bind:value={blueChannel} min="0" max="200" class="w-full accent-blue-500 cursor-pointer" />
+      </div>
+
+      {#if redChannel !== 100 || greenChannel !== 100 || blueChannel !== 100}
+        <button type="button" onclick={() => { redChannel = 100; greenChannel = 100; blueChannel = 100; }} class="text-[10px] text-red-500 font-bold hover:underline block text-right w-full">Reset RGB</button>
+      {/if}
+    </div>
+
+    <div>
+      <div class="flex justify-between text-xs font-medium mb-1 text-gray-600">
+        <span>Style Blend Intensity</span><span>{styleIntensity}%</span>
+      </div>
+      <input type="range" bind:value={styleIntensity} min="0" max="100" class="w-full accent-primary cursor-pointer" />
     </div>
 
     <div>
