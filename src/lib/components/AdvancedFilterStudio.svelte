@@ -19,6 +19,7 @@
 
   let exportFormat = $state<'jpeg' | 'png' | 'pdf'>('jpeg');
   let compressionQuality = $state(90);
+  let exportError = $state('');
 
   // Pro Adjustment Sliders
   let brightness = $state(100);
@@ -48,33 +49,33 @@
   const tensorSketchFamilies = [
     {
       id: 'graphite',
-      title: 'Tensor Graphite & Pencil Studies (10)',
+      title: 'Tensor Graphite & Pencil Studies (20)',
       icon: '✏️',
-      names: ['HB Light Study', '2B Portrait Pencil', '4B Soft Shading', '6B Rich Graphite', 'H Fine Drafting Lead', 'Smudged Charcoal Pencil', 'Cross-Grain Graphite', 'Tonal Portrait Blend', 'Expressive Broad Lead', 'Paper Grain Study']
+      names: ['HB Light Study', '2B Portrait Pencil', '4B Soft Shading', '6B Rich Graphite', 'H Fine Drafting Lead', 'Smudged Charcoal Pencil', 'Cross-Grain Graphite', 'Tonal Portrait Blend', 'Expressive Broad Lead', 'Paper Grain Study', 'Hard Lead Fine Grain', 'Soft Lead Shadow Pass', 'Layered Graphite Hatch', 'Bright Paper Pencil', 'Deep Value Graphite', 'Feathered Pencil Contour', 'Broad Shading Pencil', 'Fine Grain Portrait', 'Velvet Graphite Blend', 'Heavy Artist Pencil']
     },
     {
       id: 'contour',
-      title: 'Tensor Contour & Line Sketches (10)',
+      title: 'Tensor Contour & Line Sketches (20)',
       icon: '🖊️',
-      names: ['Fine Contour', 'Clean Outline', 'Soft Edge Study', 'Bold Gesture Lines', 'Minimal Contours', 'Double-Weight Outline', 'Portrait Contour', 'Architectural Contour', 'High-Contrast Ink', 'Loose Gesture Study']
+      names: ['Fine Contour', 'Clean Outline', 'Soft Edge Study', 'Bold Gesture Lines', 'Minimal Contours', 'Double-Weight Outline', 'Portrait Contour', 'Architectural Contour', 'High-Contrast Ink', 'Loose Gesture Study', 'Whisper Thin Outline', 'Confident Brush Contour', 'Broken Edge Drawing', 'Continuous Line Study', 'Soft Portrait Edges', 'Graphic Black Contour', 'Expressive Face Lines', 'Light Gesture Pass', 'Heavy Silhouette Ink', 'Contour Detail Pass']
     },
     {
       id: 'hatching',
-      title: 'Tensor Pen Hatching & Crosshatch (10)',
+      title: 'Tensor Pen Hatching & Crosshatch (20)',
       icon: '✒️',
-      names: ['Single Diagonal Hatch', 'Fine Crosshatch', 'Dense Crosshatch', 'Loose Parallel Hatch', 'Four-Way Ink Hatch', 'Shadow Hatch', 'Etching Hatch', 'Fine Nib Hatching', 'Bold Nib Hatching', 'Illustration Crosshatch']
+      names: ['Single Diagonal Hatch', 'Fine Crosshatch', 'Dense Crosshatch', 'Loose Parallel Hatch', 'Four-Way Ink Hatch', 'Shadow Hatch', 'Etching Hatch', 'Fine Nib Hatching', 'Bold Nib Hatching', 'Illustration Crosshatch', 'Wide-Spaced Hatch', 'Tight Shadow Crosshatch', 'Light Pencil Hatch', 'Heavy Ink Hatch', 'Portrait Form Hatching', 'Angled Shade Lines', 'Layered Nib Crosshatch', 'Soft Parallel Shading', 'Deep Black Crosshatch', 'Open Line Hatching']
     },
     {
       id: 'engraving',
-      title: 'Tensor Engraving & Lithography (10)',
+      title: 'Tensor Engraving & Lithography (20)',
       icon: '🖋️',
-      names: ['Copperplate Engraving', 'Woodcut Linework', 'Antique Etching', 'Lithographic Pencil', 'Newsprint Engraving', 'Fine-Line Etching', 'Bold Relief Print', 'Soft Plate Tone', 'Vintage Ink Press', 'Detailed Engraver']
+      names: ['Copperplate Engraving', 'Woodcut Linework', 'Antique Etching', 'Lithographic Pencil', 'Newsprint Engraving', 'Fine-Line Etching', 'Bold Relief Print', 'Soft Plate Tone', 'Vintage Ink Press', 'Detailed Engraver', 'Fine Copperplate Lines', 'Deep Wood Engraving', 'Soft Litho Shading', 'Classic Steel Etch', 'Textured Relief Study', 'Antique Plate Hatching', 'Fine Intaglio Detail', 'Bold Pressed Ink', 'Tonal Engraving', 'Cross-Line Print Study']
     },
     {
       id: 'stippling',
-      title: 'Tensor Stipple & Dot-Pen Studies (10)',
+      title: 'Tensor Stipple & Dot-Pen Studies (20)',
       icon: '⚫',
-      names: ['Fine Stipple', 'Portrait Dotwork', 'Sparse Pointillism', 'Dense Ink Dots', 'Soft Halftone Pencil', 'Bold Halftone Pen', 'Micro-Dot Shading', 'Loose Stipple Study', 'Graphic Dot Screen', 'Tonal Pointillism']
+      names: ['Fine Stipple', 'Portrait Dotwork', 'Sparse Pointillism', 'Dense Ink Dots', 'Soft Halftone Pencil', 'Bold Halftone Pen', 'Micro-Dot Shading', 'Loose Stipple Study', 'Graphic Dot Screen', 'Tonal Pointillism', 'Fine Nib Dot Shading', 'Airy Stipple Portrait', 'Dense Shadow Dotwork', 'Wide Halftone Screen', 'Soft Grain Pointillism', 'Graphic Ink Stipple', 'Microtone Dot Study', 'Bold Screenprint Dots', 'Sparse Pencil Stipple', 'Layered Dot Shading']
     },
     {
       id: 'technical',
@@ -94,10 +95,84 @@
     }))
   }));
 
+  const canvasSketchFamilies = [
+    {
+      id: 'graphite',
+      title: 'Canvas Graphite & Pencil Presets (10)',
+      icon: '✏️',
+      names: ['2H Drafting Lead', 'HB Everyday Pencil', '2B Portrait Shading', '4B Soft Graphite', '6B Dark Graphite', 'Pencil on Vellum', 'Soft Blend Pencil', 'Bright Paper Study', 'Toned Paper Graphite', 'Expressive Pencil Grain']
+    },
+    {
+      id: 'ink',
+      title: 'Canvas Pen & Ink Presets (10)',
+      icon: '🖋️',
+      names: ['Fine-Liner Outline', 'Bold Brush Ink', 'Blue Ballpoint Study', 'Red Ballpoint Study', 'Fountain Pen Wash', 'Dip Pen Blackline', 'Manga Inker', 'Technical Pen', 'Quill on Parchment', 'White Chalk Ink']
+    },
+    {
+      id: 'charcoal',
+      title: 'Canvas Charcoal & Chalk Presets (10)',
+      icon: '🪵',
+      names: ['Willow Charcoal', 'Compressed Charcoal', 'Chalk on Slate', 'Sanguine Chalk', 'Conte Crayon', 'Soft Charcoal Blend', 'Deep Shadow Charcoal', 'Light Chalk Outline', 'Gesture Charcoal', 'Dusty Charcoal Paper']
+    },
+    {
+      id: 'print',
+      title: 'Canvas Etching & Print Presets (10)',
+      icon: '🏛️',
+      names: ['Copperplate Etching', 'Woodcut Contrast', 'Linocut Ink', 'Antique Lithograph', 'Mezzotint Tone', 'Aquatint Study', 'Newsprint Halftone', 'Relief Print Ink', 'Vintage Engraving', 'Fine Plate Lines']
+    },
+    {
+      id: 'paper',
+      title: 'Canvas Paper & Drafting Presets (10)',
+      icon: '📐',
+      names: ['Blueprint Draft', 'Cyanotype Lines', 'Sepia Architecture', 'Ledger Pencil', 'Rice Paper Wash', 'Parchment Quill', 'Mechanical Draft', 'Isometric Plan', 'Vellum Contour', 'Architectural Ink']
+    }
+  ] as const;
+
+  const canvasSketchCategories = canvasSketchFamilies.map((family) => ({
+    name: family.title,
+    filters: family.names.map((name, variation) => {
+      const index = variation % 5;
+      const cssByFamily: Record<(typeof canvasSketchFamilies)[number]['id'], string[]> = {
+        graphite: [
+          'grayscale(100%) contrast(125%) brightness(122%)', 'grayscale(100%) contrast(150%) brightness(112%) blur(0.2px)',
+          'grayscale(100%) contrast(185%) brightness(100%) blur(0.4px)', 'grayscale(100%) contrast(225%) brightness(90%) blur(0.6px)',
+          'grayscale(100%) contrast(270%) brightness(78%) blur(0.8px)'
+        ],
+        ink: [
+          'grayscale(100%) contrast(155%) brightness(118%)', 'grayscale(100%) contrast(205%) brightness(105%)',
+          'saturate(260%) hue-rotate(205deg) contrast(165%)', 'saturate(280%) hue-rotate(330deg) contrast(170%)',
+          'grayscale(100%) contrast(290%) brightness(88%)'
+        ],
+        charcoal: [
+          'grayscale(100%) contrast(155%) brightness(112%) blur(0.3px)', 'grayscale(100%) contrast(210%) brightness(98%) blur(0.5px)',
+          'grayscale(100%) invert(100%) contrast(230%) brightness(110%)', 'sepia(90%) saturate(170%) hue-rotate(330deg) contrast(145%)',
+          'grayscale(100%) contrast(300%) brightness(75%) blur(0.9px)'
+        ],
+        print: [
+          'grayscale(100%) contrast(155%) brightness(115%)', 'grayscale(100%) contrast(205%) brightness(102%)',
+          'grayscale(100%) contrast(250%) brightness(92%)', 'grayscale(100%) contrast(295%) brightness(82%)',
+          'grayscale(100%) sepia(35%) contrast(180%) brightness(102%)'
+        ],
+        paper: [
+          'grayscale(100%) invert(92%) hue-rotate(185deg) contrast(210%)', 'grayscale(100%) sepia(18%) contrast(155%) brightness(115%)',
+          'grayscale(100%) sepia(45%) contrast(175%) brightness(106%)', 'grayscale(100%) contrast(205%) brightness(110%) blur(0.25px)',
+          'grayscale(100%) sepia(65%) contrast(145%) brightness(112%) blur(0.4px)'
+        ]
+      };
+      return {
+        id: `canvas_sketch_${family.id}_${variation + 1}`,
+        name: `${family.icon} Canvas ${name}`,
+        type: 'canvas' as const,
+        css: `${cssByFamily[family.id][index]} brightness(${96 + variation * 0.8}%) contrast(${98 + variation * 0.6}%)`
+      };
+    })
+  }));
+
   const filterCategories: { name: string; filters: FilterDefinition[] }[] = [
     ...tensorSketchCategories,
+    ...canvasSketchCategories,
     {
-      name: "Master Sketch & Pen Suite (20+ Styles)",
+      name: "Master Sketch & Pen Suite (50+ Styles)",
       filters: [
         { id: 'sketch_outline', name: '✏️ TF Clean Line Outlines', type: 'tensorflow' },
         { id: 'sketch_minimal', name: '🖋️ TF Minimalist Contours', type: 'tensorflow' },
@@ -113,7 +188,6 @@
         { id: 'sketch_architectural', name: '📐 Precise Drafting Line', type: 'canvas', css: 'grayscale(100%) contrast(240%) brightness(105%) invert(5%)' },
         { id: 'sketch_vellum', name: '📜 Translucent Vellum Pencil', type: 'canvas', css: 'grayscale(100%) sepia(30%) contrast(150%) brightness(110%)' },
         { id: 'sketch_newsprint', name: '📰 Newsprint Quick Sketch', type: 'canvas', css: 'grayscale(100%) sepia(20%) contrast(170%) brightness(100%)' },
-        // 50+ New Canvas Sketch & Pen Styles
         { id: 'cs_01', name: '🖋️ 2H Hard Technical Pencil', type: 'canvas', css: 'grayscale(100%) contrast(130%) brightness(120%)' },
         { id: 'cs_02', name: '✏️ 4B Soft Dark Graphite', type: 'canvas', css: 'grayscale(100%) contrast(190%) brightness(85%) blur(0.4px)' },
         { id: 'cs_03', name: '🪵 6B Extra Dark Charcoal', type: 'canvas', css: 'grayscale(100%) contrast(280%) brightness(75%) blur(0.7px)' },
@@ -434,18 +508,18 @@
             };
 
             if (settings.family === 'graphite') {
-              const blurSize = [3, 5, 7, 9, 11][variation % 5];
+              const blurSize = [3, 5, 7, 9, 11][Math.floor(variation / 4)];
               const inverted = tf.scalar(255).sub(gray) as tf.Tensor3D;
               const blurred = blur(inverted, blurSize);
               const dodge = gray.mul(255).div(tf.scalar(255).sub(blurred).maximum(10));
-              const pressure = 0.8 + (variation % 5) * 0.2;
+              const pressure = 0.75 + (variation % 4) * 0.28;
               const pencil = tf.scalar(255).sub(tf.scalar(255).sub(dodge).mul(pressure));
-              const grain = sobel(pixels).mul(0.015 + (variation % 4) * 0.012);
+              const grain = sobel(pixels).mul(0.01 + (variation % 4) * 0.014);
               return rgb(pencil.sub(grain).clipByValue(0, 255));
             }
 
             if (settings.family === 'contour' || settings.family === 'technical') {
-              const edgeStrength = 1.3 + (variation % 5) * 0.45;
+              const edgeStrength = 1.1 + variation * 0.12;
               const threshold = 22 + (variation % 5) * 17;
               const edges = sobel(pixels).sub(threshold).maximum(0).mul(edgeStrength);
               const lineTone = settings.family === 'technical' && variation % 3 === 0
@@ -460,16 +534,16 @@
             const darkness = tf.scalar(255).sub(gray);
 
             if (settings.family === 'stippling') {
-              const frequency = 0.12 + (variation % 5) * 0.035;
+              const frequency = 0.1 + variation * 0.017;
               const dotPattern = tf.sin(x.mul(frequency).add(y.mul(frequency * 0.7)))
                 .mul(tf.cos(y.mul(frequency).sub(x.mul(frequency * 0.35))));
-              const threshold = tf.scalar(0.92).sub(darkness.div(255).mul(1.7));
+              const threshold = tf.scalar(0.92 - (variation % 5) * 0.015).sub(darkness.div(255).mul(1.7));
               const dots = dotPattern.greater(threshold).toFloat();
               const dotSize = 120 + (variation % 4) * 40;
               return rgb(tf.scalar(255).sub(dots.mul(dotSize)));
             }
 
-            const spacing = 5 + (variation % 5) * 2;
+            const spacing = 3 + variation;
             const thickness = 1 + (variation % 3);
             const directions = settings.family === 'hatching'
               ? [0.7, -0.7, 0.15, 1.35]
@@ -635,34 +709,41 @@
     isModalOpen = true;
   };
 
-  const exportImage = () => {
+  const exportImage = async () => {
     if (!previewCanvas) return;
+    exportError = '';
 
-    if (exportFormat === 'pdf') {
-      const dataUrl = previewCanvas.toDataURL('image/jpeg', compressionQuality / 100);
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(`
-          <html>
-            <head><title>Artist Studio Export - PDF</title></head>
-            <body style="margin:0;display:flex;justify-content:center;align-items:center;height:100vh;background:#111;">
-              <img src="${dataUrl}" style="max-width:100%;max-height:100%;object-fit:contain;" onload="window.print();window.close();" />
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
+    try {
+      if (exportFormat === 'pdf') {
+        const { jsPDF } = await import('jspdf');
+        const dataUrl = previewCanvas.toDataURL('image/jpeg', compressionQuality / 100);
+        const orientation = previewCanvas.width >= previewCanvas.height ? 'landscape' : 'portrait';
+        const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4', compress: true });
+        const margin = 10;
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const scale = Math.min(
+          (pageWidth - margin * 2) / previewCanvas.width,
+          (pageHeight - margin * 2) / previewCanvas.height
+        );
+        const imageWidth = previewCanvas.width * scale;
+        const imageHeight = previewCanvas.height * scale;
+        pdf.addImage(dataUrl, 'JPEG', (pageWidth - imageWidth) / 2, (pageHeight - imageHeight) / 2, imageWidth, imageHeight, undefined, 'FAST');
+        pdf.save(`studio_artwork_${activeFilterId}.pdf`);
+        return;
       }
-      return;
+
+      const mimeType = exportFormat === 'png' ? 'image/png' : 'image/jpeg';
+      const quality = exportFormat === 'png' ? undefined : compressionQuality / 100;
+      const dataUrl = previewCanvas.toDataURL(mimeType, quality);
+
+      const link = document.createElement('a');
+      link.download = `studio_artwork_${activeFilterId}.${exportFormat}`;
+      link.href = dataUrl;
+      link.click();
+    } catch (error) {
+      exportError = error instanceof Error ? error.message : 'The image could not be exported.';
     }
-
-    const mimeType = exportFormat === 'png' ? 'image/png' : 'image/jpeg';
-    const quality = exportFormat === 'png' ? undefined : compressionQuality / 100;
-    const dataUrl = previewCanvas.toDataURL(mimeType, quality);
-
-    const link = document.createElement('a');
-    link.download = `studio_artwork_${activeFilterId}.${exportFormat}`;
-    link.href = dataUrl;
-    link.click();
   };
 
   onMount(() => {
@@ -806,7 +887,7 @@
           type="search"
           bind:value={filterSearch}
           aria-label="Search filters"
-          placeholder="Search 60 TensorFlow sketch filters and more"
+          placeholder="Search 300+ filters, including TensorFlow sketches"
           class="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-xs text-dark outline-none focus:border-primary"
         />
       </div>
@@ -833,39 +914,37 @@
       </div>
     {/each}
 
-    <!-- Export & Compression Panel -->
-    <div class="pt-4 border-t border-gray-100 space-y-4">
-      <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-400 font-mono">Export & Compression Settings</h4>
-      
-      <div class="grid grid-cols-2 gap-3">
+  </div>
+
+  <!-- Canvas Preview Area with Before/After & Loader Overlay -->
+  <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center min-h-[500px] relative">
+
+    <div class="w-full space-y-3 border-b border-gray-200 pb-4 mb-4">
+      <h3 class="text-[11px] font-bold uppercase tracking-wider text-gray-500 font-mono">Export & Compression</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 items-end">
         <div>
-          <label class="block text-[11px] font-semibold mb-1 text-gray-700">Format</label>
-          <select bind:value={exportFormat} class="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-dark">
+          <span class="block text-[11px] font-semibold mb-1 text-gray-700">Format</span>
+          <select aria-label="Export format" bind:value={exportFormat} class="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium text-dark">
             <option value="jpeg">JPEG (.jpg)</option>
             <option value="png">PNG (.png)</option>
             <option value="pdf">PDF (.pdf)</option>
           </select>
         </div>
         <div>
-          <label class="block text-[11px] font-semibold mb-1 text-gray-700">Quality: {compressionQuality}%</label>
-          <input type="range" bind:value={compressionQuality} min="10" max="100" disabled={exportFormat === 'png'} class="w-full accent-primary cursor-pointer disabled:opacity-40 mt-2" />
+          <label for="export-quality" class="block text-[11px] font-semibold mb-1 text-gray-700">Quality: {compressionQuality}%</label>
+          <input id="export-quality" type="range" bind:value={compressionQuality} min="10" max="100" disabled={exportFormat === 'png'} class="w-full accent-primary cursor-pointer disabled:opacity-40 mt-2" />
         </div>
-      </div>
-
-      <div class="space-y-2">
-        <button type="button" onclick={openComparisonModal} class="w-full bg-dark hover:bg-black text-light font-semibold py-2.5 rounded-xl text-xs shadow transition cursor-pointer flex items-center justify-center gap-2">
-          <Icon icon="mdi:compare" class="text-sm" /> Fullscreen Side-by-Side Compare
+        <button type="button" onclick={openComparisonModal} class="w-full bg-dark hover:bg-black text-light font-semibold py-2.5 rounded-lg text-xs shadow transition cursor-pointer flex items-center justify-center gap-2">
+          <Icon icon="mdi:compare" class="text-sm" /> Compare
         </button>
-
-        <button type="button" onclick={exportImage} class="w-full bg-primary hover:bg-primary-dark text-light font-semibold py-2.5 rounded-xl text-xs shadow transition cursor-pointer flex items-center justify-center gap-2">
-          <Icon icon="mdi:export-variant" class="text-sm" /> Export as {exportFormat.toUpperCase()}
+        <button type="button" onclick={exportImage} class="w-full bg-primary hover:bg-primary-dark text-light font-semibold py-2.5 rounded-lg text-xs shadow transition cursor-pointer flex items-center justify-center gap-2">
+          <Icon icon="mdi:export-variant" class="text-sm" /> Export {exportFormat.toUpperCase()}
         </button>
       </div>
+      {#if exportError}
+        <p role="alert" class="text-xs text-danger">{exportError}</p>
+      {/if}
     </div>
-  </div>
-
-  <!-- Canvas Preview Area with Before/After & Loader Overlay -->
-  <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center min-h-[500px] relative">
     
     <!-- Top Comparison Toolbar -->
     <div class="w-full flex justify-between items-center mb-4 bg-gray-50 p-3 rounded-xl border border-gray-200">
