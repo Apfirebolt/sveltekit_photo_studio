@@ -1,190 +1,129 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
   import { fly } from "svelte/transition";
   import HeaderComponent from "$lib/components/Header.svelte";
   import FooterComponent from "$lib/components/Footer.svelte";
-  import GridStudio from "$lib/components/GridStudio.svelte";
-  import TfEditorStudio from "$lib/components/TfEditorStudio.svelte";
-  import AdvancedFiltersStudio from "$lib/components/AdvancedFilterStudio.svelte";
   import Icon from "@iconify/svelte";
-
-  let activeTab = $state<'splitter' | 'editor' | 'filters'>('splitter');
-  let imageLoaded = $state(false);
-  let fileName = $state('');
-  let originalImageSrc = $state('');
-  let rawImageObj: HTMLImageElement | null = null;
-  let activePreset = $state<string>('normal');
-  let uploadError = $state('');
-
-  const headline = "Artist Studio & Pro Photo Suite";
-  let displayedText = "";
-  let typeTimer: ReturnType<typeof setTimeout> | null = null;
-
-  const runTypewriter = () => {
-    let index = 0;
-    const tick = () => {
-      if (index < headline.length) {
-        displayedText = headline.slice(0, index + 1);
-        index++;
-        typeTimer = setTimeout(tick, 60);
-      }
-    };
-    tick();
-  };
-
-  const handleImageUpload = (e: Event) => {
-    const target = e.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (!file) return;
-
-    uploadError = '';
-
-    // Check if file size exceeds 3 MB (3 * 1024 * 1024 bytes)
-    const MAX_SIZE_MB = 3;
-    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      uploadError = `File size exceeds ${MAX_SIZE_MB}MB limit (${(file.size / (1024 * 1024)).toFixed(2)}MB). Please upload a smaller image.`;
-      imageLoaded = false;
-      rawImageObj = null;
-      originalImageSrc = '';
-      target.value = ''; // Reset input so same file can be re-selected if fixed
-      return;
-    }
-
-    fileName = file.name;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (typeof event.target?.result === 'string') {
-        originalImageSrc = event.target.result;
-        const img = new Image();
-        img.onload = () => {
-          rawImageObj = img;
-          imageLoaded = true;
-        };
-        img.src = event.target.result;
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  onMount(() => runTypewriter());
-  onDestroy(() => { if (typeTimer) clearTimeout(typeTimer); });
 </script>
 
 <svelte:head>
-  <title>Artist Studio - Reference Grid & Photo Suite</title>
+  <title>About - Artist Studio & Pro Photo Suite</title>
 </svelte:head>
 
 <div class="min-h-screen bg-light text-dark flex flex-col selection:bg-primary selection:text-light font-sans overflow-x-hidden">
-  <HeaderComponent title="SvelteKit Studio" />
+  <HeaderComponent title="Studio Suite" />
 
   <!-- Hero Section -->
-  <section class="relative bg-cover bg-center min-h-[280px] sm:min-h-[380px] flex items-center justify-center overflow-hidden border-b border-secondary/20" style="background-image: url('https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=1600&auto=format&fit=crop');">
+  <section class="relative bg-cover bg-center min-h-[320px] sm:min-h-[400px] flex items-center justify-center overflow-hidden border-b border-secondary/20" style="background-image: url('https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=1600&auto=format&fit=crop');">
     <div class="absolute inset-0 bg-gradient-to-b from-black/85 via-black/60 to-black/90 pointer-events-none" />
-    <div class="relative z-10 max-w-4xl mx-auto text-center px-4 py-12 sm:py-16 text-light space-y-4">
-      <h1 class="text-2xl sm:text-5xl font-black tracking-tight text-white min-h-[2.5rem]" in:fly={{ y: 25, duration: 400 }}>
-        {displayedText}
+    <div class="relative z-10 max-w-4xl mx-auto text-center px-4 py-16 text-light space-y-4">
+      <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-white min-h-[2.5rem]" in:fly={{ y: 25, duration: 400 }}>
+        About Artist Studio Suite
       </h1>
-      <p class="text-xs sm:text-base text-light/85 max-w-2xl mx-auto">
-        Precise drawing grid overlays, custom lines, tensor tone tools, and 30+ advanced filters.
+      <p class="text-sm sm:text-base text-light/85 max-w-2xl mx-auto leading-relaxed">
+        Bridging the gap between traditional fine art technique and browser-based artificial intelligence. Built for professional painters, sketch artists, and digital creators.
       </p>
     </div>
   </section>
 
-  <!-- 3-Tab Navigation Bar -->
-  <div class="bg-white border-b border-gray-200 sticky top-16 z-20 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
-      <button 
-        type="button"
-        class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'splitter' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" 
-        onclick={() => activeTab = 'splitter'}
-      >
-        <Icon icon="mdi:grid" /> Grid & Lines
-      </button>
-
-      <button 
-        type="button"
-        class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'editor' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" 
-        onclick={() => activeTab = 'editor'}
-      >
-        <Icon icon="mdi:brain" /> Tensor Studio
-      </button>
-
-      <button 
-        type="button"
-        class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'filters' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" 
-        onclick={() => activeTab = 'filters'}
-      >
-        <Icon icon="mdi:palette-advanced" /> Filter Library
-      </button>
-    </div>
-  </div>
-
-  <!-- Workspace Container -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 sm:py-10">
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-12 space-y-16">
     
-    <!-- Global Upload Error Banner -->
-    {#if uploadError}
-      <div role="alert" class="max-w-2xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-xs font-semibold text-red-600 flex items-center justify-between shadow-xs">
-        <div class="flex items-center gap-2">
-          <Icon icon="mdi:alert-circle" class="text-lg shrink-0" />
-          <span>{uploadError}</span>
+    <!-- Vision & Philosophy -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+      <div class="space-y-4">
+        <span class="text-xs font-mono font-bold uppercase tracking-wider text-primary bg-primary/10 px-3 py-1 rounded-full">Our Philosophy</span>
+        <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-dark">Empowering Artists with Intelligent Tools</h2>
+        <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
+          Creating accurate drawings and managing reference photos often requires jumping across heavy desktop software. Artist Studio Suite was engineered to provide a lightning-fast, zero-install, privacy-first workstation right inside your web browser.
+        </p>
+        <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
+          Whether you are mapping proportions using precision grid lines, breaking down lighting values into monochrome studies, or running WebGL-accelerated neural tensor filters, our suite adapts to your traditional or digital drawing workflow.
+        </p>
+      </div>
+      <div class="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+        <div class="flex items-center gap-3 text-primary">
+          <Icon icon="mdi:shield-check-outline" class="text-3xl" />
+          <h3 class="font-bold text-base text-dark">100% Client-Side Privacy</h3>
         </div>
-        <button type="button" onclick={() => uploadError = ''} class="text-red-400 hover:text-red-600 font-bold cursor-pointer">✕</button>
+        <p class="text-xs sm:text-sm text-gray-600 leading-relaxed">
+          Your reference images never touch an external server. All image processing, AI background removal, tensor convolutions, and color extractions happen locally on your machine via WebGL and browser memory.
+        </p>
       </div>
-    {/if}
+    </div>
 
-    {#if !imageLoaded}
-      <div class="max-w-2xl mx-auto bg-white border-2 border-dashed border-gray-300 rounded-3xl p-8 sm:p-12 text-center hover:border-primary transition shadow-sm space-y-3">
-        <Icon icon="mdi:cloud-upload-outline" class="w-16 h-16 mx-auto text-gray-400" />
-        <p class="text-dark font-bold text-base sm:text-lg mb-1">Drag & drop your reference photo</p>
-        <p class="text-xs text-gray-400 font-mono">Maximum file size allowed: 3 MB</p>
-        
-        <label class="cursor-pointer bg-primary hover:bg-primary-dark text-light font-semibold py-3 px-8 rounded-xl shadow transition text-xs inline-block mt-2">
-          Browse Image File
-          <input type="file" onchange={handleImageUpload} accept="image/*" class="hidden" />
-        </label>
-      </div>
-    {:else}
-      <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-2xl border border-gray-200 shadow-xs mb-8 gap-3">
-        <span class="text-xs font-medium text-gray-700 truncate max-w-full">Active File: <strong class="text-dark">{fileName}</strong></span>
-        <label class="cursor-pointer text-xs bg-gray-100 hover:bg-gray-200 text-dark font-semibold py-2 px-4 rounded-xl border border-gray-200 shrink-0">
-          Change Image
-          <input type="file" onchange={handleImageUpload} accept="image/*" class="hidden" />
-        </label>
+    <!-- Core Feature Highlights Grid -->
+    <div class="space-y-6">
+      <div class="text-center max-w-2xl mx-auto space-y-2">
+        <span class="text-xs font-mono font-bold uppercase tracking-wider text-primary">Workstation Modules</span>
+        <h2 class="text-2xl sm:text-3xl font-black text-dark">Engineered for Creative Excellence</h2>
       </div>
 
-      <!-- Persistent Tab Containers -->
-      <div class:hidden={activeTab !== 'splitter'}>
-        <GridStudio {rawImageObj} {originalImageSrc} />
-      </div>
-
-      <div class:hidden={activeTab !== 'editor'}>
-        <div class="space-y-6">
-          <!-- Artistic Preset Bar -->
-          <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-2">
-            <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-400 font-mono">Select Artistic Tensor Style</h4>
-            <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-              <button type="button" onclick={() => activePreset = 'normal'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'normal' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">🌟 Original</button>
-              <button type="button" onclick={() => activePreset = 'sketch'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'sketch' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">✏️ Pencil Sketch</button>
-              <button type="button" onclick={() => activePreset = 'portrait_pencil'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'portrait_pencil' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">👤 Pencil Portrait</button>
-              <button type="button" onclick={() => activePreset = 'pen'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'pen' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">✒️ Fine Pen Ink</button>
-              <button type="button" onclick={() => activePreset = 'crosshatch'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'crosshatch' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">📐 Cross-Hatch</button>
-              <button type="button" onclick={() => activePreset = 'charcoal'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'charcoal' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">🪵 Deep Charcoal</button>
-              <button type="button" onclick={() => activePreset = 'soft_graphite'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'soft_graphite' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">📝 Soft Graphite</button>
-              <button type="button" onclick={() => activePreset = 'oil'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'oil' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">🎨 Oil Paint</button>
-              <button type="button" onclick={() => activePreset = 'cartoon'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'cartoon' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">💥 Cartoon Ink</button>
-              <button type="button" onclick={() => activePreset = 'blueprint'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'blueprint' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">📏 Blueprint</button>
-            </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Feature 1 -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl">
+            <Icon icon="mdi:grid" />
           </div>
+          <h3 class="font-bold text-sm text-dark">Artist Grid & Line Studio</h3>
+          <p class="text-xs text-gray-600 leading-relaxed">
+            Configure rows, columns, coordinate labels (A1, B2), Rule of Thirds, center diagonals, custom perspective lines, and split tiles for large-scale canvas transfers.
+          </p>
+        </div>
 
-          <TfEditorStudio {rawImageObj} {activePreset} />
+        <!-- Feature 2 -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl">
+            <Icon icon="mdi:brain" />
+          </div>
+          <h3 class="font-bold text-sm text-dark">TensorFlow.js Neural Studio</h3>
+          <p class="text-xs text-gray-600 leading-relaxed">
+            Leverage WebGL matrix kernels, Sobel edge detectors, Laplacian embossing, and neural color mapping to turn photos into precise sketches or cinematic masterpieces.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl">
+            <Icon icon="mdi:palette-advanced" />
+          </div>
+          <h3 class="font-bold text-sm text-dark">300+ Filter & Retouch Library</h3>
+          <p class="text-xs text-gray-600 leading-relaxed">
+            Explore vast collections of professional studio grades, film stocks, graphite pencils, charcoal shading, and real-time RGB histogram tonal analyzers.
+          </p>
         </div>
       </div>
+    </div>
 
-      <div class:hidden={activeTab !== 'filters'}>
-        <AdvancedFiltersStudio {rawImageObj} />
+    <!-- Technology Stack Callout -->
+    <div class="bg-gray-900 text-white p-8 sm:p-12 rounded-3xl shadow-md space-y-6">
+      <div class="max-w-xl space-y-2">
+        <span class="text-xs font-mono text-success font-bold uppercase tracking-wider">Under The Hood</span>
+        <h3 class="text-xl sm:text-2xl font-bold">Built with Modern Web Architecture</h3>
+        <p class="text-xs sm:text-sm text-gray-400 leading-relaxed">
+          Powered by Svelte's high-performance reactivity model, TensorFlow.js for browser-native machine learning, HTML5 Canvas API for rapid pixel manipulation, and Tailwind CSS for responsive studio UI layouts.
+        </p>
       </div>
-    {/if}
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
+          <span class="text-xs font-mono text-success font-bold">Svelte</span>
+          <p class="text-[11px] text-gray-400">Reactive Runes State</p>
+        </div>
+        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
+          <span class="text-xs font-mono text-success font-bold">TensorFlow.js</span>
+          <p class="text-[11px] text-gray-400">WebGL Tensor Kernels</p>
+        </div>
+        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
+          <span class="text-xs font-mono text-success font-bold">Canvas API</span>
+          <p class="text-[11px] text-gray-400">Low-level Pixel Editing</p>
+        </div>
+        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
+          <span class="text-xs font-mono text-success font-bold">Tailwind CSS</span>
+          <p class="text-[11px] text-gray-400">Responsive Studio UI</p>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <FooterComponent />
@@ -193,5 +132,9 @@
 <style>
   .no-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
   }
 </style>

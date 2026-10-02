@@ -34,7 +34,7 @@
           <span>SvelteKit <span class="text-success"> Studio</span></span>
         </a>
         <p class="text-xs text-light/70 font-sans max-w-sm">
-          A high-performance, client-side browser studio combining reference grids, custom line geometry, and 20+ curated artistic styles.
+          A high-performance, client-side browser studio combining reference grids, custom line geometry, and 300+ curated artistic styles.
         </p>
       </div>
 
