@@ -349,23 +349,6 @@
     setTimeout(() => copiedHex = null, 1500);
   };
 
-  const removeBackground = async () => {
-    if (!rawImageObj) return;
-    isProcessing = true;
-    modelError = '';
-    try {
-      const bodyPix = await import('@tensorflow-models/body-pix');
-      bodyPixModel ??= await bodyPix.load({ architecture: 'MobileNetV1', outputStride: 16, multiplier: 0.75, quantBytes: 2 });
-      const segmentation = await bodyPixModel.segmentPerson(rawImageObj, { internalResolution: 'medium' });
-      backgroundMask = segmentation.data;
-      await applyTfCanvasFilters();
-    } catch (error) {
-      modelError = error instanceof Error ? error.message : 'Background removal failed to load.';
-    } finally {
-      isProcessing = false;
-    }
-  };
-
   const describeImage = async () => {
     if (!rawImageObj) return;
     isDescribing = true;
@@ -615,10 +598,6 @@
 
     <div class="border-t border-gray-100 pt-4 space-y-2">
       <p class="text-xs font-bold text-dark">AI Tools</p>
-      <button type="button" onclick={removeBackground} disabled={isProcessing} class="w-full flex items-center justify-center gap-2 border border-gray-200 hover:bg-gray-50 disabled:opacity-60 text-dark font-semibold py-2.5 rounded-lg text-xs transition cursor-pointer">
-        <Icon icon="mdi:person-crop-circle" />
-        {isProcessing ? 'Removing background...' : backgroundMask ? 'Background removed' : 'Remove person background'}
-      </button>
       <button type="button" onclick={describeImage} disabled={isDescribing} class="w-full flex items-center justify-center gap-2 border border-gray-200 hover:bg-gray-50 disabled:opacity-60 text-dark font-semibold py-2.5 rounded-lg text-xs transition cursor-pointer">
         <Icon icon="mdi:image-text" />
         {isDescribing ? 'Analyzing image...' : 'Describe image'}

@@ -30,7 +30,6 @@
   let compressionQuality = $state(90);
   let exportError = $state('');
   let previousRawImage: HTMLImageElement | null = null;
-  let bodyPixModel: Awaited<ReturnType<typeof import('@tensorflow-models/body-pix').load>> | null = null;
 
   // Pro Adjustment Sliders
   let brightness = $state(100);
@@ -476,65 +475,6 @@
     drawCurve(bBins, 'rgba(59, 130, 246, 0.8)');
   };
 
-  const detectSubject = async () => {
-    if (!rawImageObj) return;
-    isDetectingSubject = true;
-    subjectMaskError = '';
-    try {
-      await tf.ready();
-      const bodyPix = await import('@tensorflow-models/body-pix');
-      bodyPixModel ??= await bodyPix.load({
-        architecture: 'MobileNetV1',
-        outputStride: 16,
-        multiplier: 0.75,
-        quantBytes: 2
-      });
-      const segmentation = await bodyPixModel.segmentPerson(rawImageObj, {
-        internalResolution: 'medium',
-        segmentationThreshold: 0.7
-      });
-      subjectSegmentation = {
-        width: segmentation.width,
-        height: segmentation.height,
-        data: segmentation.data
-      };
-      subjectMaskEnabled = true;
-    } catch (error) {
-      subjectMaskError = error instanceof Error ? error.message : 'TensorFlow.js could not detect a person in this image.';
-    } finally {
-      isDetectingSubject = false;
-    }
-  };
-
-  const applySubjectMask = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    if (!subjectMaskEnabled || !subjectSegmentation) return;
-
-    const { width: maskWidth, height: maskHeight, data } = subjectSegmentation;
-    if (!maskWidth || !maskHeight || data.length !== maskWidth * maskHeight) return;
-
-    const maskCanvas = document.createElement('canvas');
-    maskCanvas.width = maskWidth;
-    maskCanvas.height = maskHeight;
-    const maskContext = maskCanvas.getContext('2d');
-    if (!maskContext) return;
-
-    const maskImage = maskContext.createImageData(maskWidth, maskHeight);
-    for (let pixel = 0; pixel < data.length; pixel++) {
-      const colorIndex = pixel * 4;
-      maskImage.data[colorIndex] = 255;
-      maskImage.data[colorIndex + 1] = 255;
-      maskImage.data[colorIndex + 2] = 255;
-      maskImage.data[colorIndex + 3] = data[pixel] > 0 ? 255 : 0;
-    }
-    maskContext.putImageData(maskImage, 0, 0);
-
-    ctx.save();
-    ctx.globalCompositeOperation = 'destination-in';
-    ctx.filter = subjectMaskFeather > 0 ? `blur(${subjectMaskFeather}px)` : 'none';
-    ctx.drawImage(maskCanvas, 0, 0, width, height);
-    ctx.restore();
-  };
-
   const applyPostEffects = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     // 1. Ambient Glow
     if (glowEnabled) {
@@ -604,7 +544,6 @@
       ctx.filter = 'none';
 
       applyPostEffects(ctx, previewCanvas.width, previewCanvas.height);
-      applySubjectMask(ctx, previewCanvas.width, previewCanvas.height);
       updateHistogram();
     } else {
       await new Promise(resolve => setTimeout(resolve, 30));
@@ -858,7 +797,6 @@
         ctx.drawImage(resultCanvas, 0, 0);
 
         applyPostEffects(ctx, previewCanvas.width, previewCanvas.height);
-        applySubjectMask(ctx, previewCanvas.width, previewCanvas.height);
         updateHistogram();
       } catch (error) {
         filterError = error instanceof Error ? error.message : 'TensorFlow.js could not render this filter.';
@@ -1080,45 +1018,6 @@
           </div>
         {/if}
       </div>
-    </div>
-
-    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3">
-      <div class="flex items-center gap-2">
-        <Icon icon="mdi:person-scan" class="text-primary text-base" />
-        <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-500 font-mono">Smart Subject Mask</h4>
-      </div>
-      <p class="text-[11px] leading-relaxed text-gray-600">TensorFlow.js detects and isolates a person. The model loads on demand and runs in your browser.</p>
-      <button
-        type="button"
-        onclick={detectSubject}
-        disabled={!rawImageObj || isDetectingSubject}
-        class="w-full bg-primary hover:bg-primary-dark disabled:opacity-60 text-light font-semibold py-2.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-center gap-2"
-      >
-        <Icon icon={isDetectingSubject ? 'mdi:loading' : 'mdi:face-recognition'} class={isDetectingSubject ? 'animate-spin' : ''} />
-        {isDetectingSubject ? 'Detecting person...' : subjectSegmentation ? 'Detect person again' : 'Detect & isolate person'}
-      </button>
-      {#if subjectSegmentation}
-        <div class="space-y-2 border-t border-gray-200 pt-3">
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-[11px] text-gray-600">{subjectMaskEnabled ? 'Person isolated; PNG preserves transparency' : 'Person mask ready'}</span>
-            <button type="button" onclick={() => subjectMaskEnabled = !subjectMaskEnabled} class="text-[11px] font-semibold text-primary hover:underline cursor-pointer">
-              {subjectMaskEnabled ? 'Show full image' : 'Isolate'}
-            </button>
-          </div>
-          <div>
-            <label for="subject-mask-feather" class="flex justify-between text-[11px] font-medium text-gray-600 mb-0.5">
-              <span>Mask edge softness</span><span>{subjectMaskFeather}px</span>
-            </label>
-            <input id="subject-mask-feather" type="range" bind:value={subjectMaskFeather} min="0" max="6" step="0.5" class="w-full accent-primary cursor-pointer" />
-          </div>
-          <button type="button" onclick={() => { subjectSegmentation = null; subjectMaskEnabled = false; }} class="text-[11px] font-semibold text-gray-500 hover:text-dark cursor-pointer">
-            Clear person mask
-          </button>
-        </div>
-      {/if}
-      {#if subjectMaskError}
-        <p role="alert" class="text-xs text-danger">{subjectMaskError}</p>
-      {/if}
     </div>
 
     <div class="space-y-1">
