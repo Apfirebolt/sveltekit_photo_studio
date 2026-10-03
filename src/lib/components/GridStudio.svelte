@@ -2,6 +2,7 @@
   import Icon from "@iconify/svelte";
   import JSZip from "jszip";
   import saveAs from "file-saver";
+  import { fade, scale } from "svelte/transition";
 
   let { rawImageObj, originalImageSrc }: { rawImageObj: HTMLImageElement | null; originalImageSrc: string } = $props();
 
@@ -17,8 +18,19 @@
   let isFlipped = $state(false);
   let showCoordinates = $state(true);
   
-  // Feature 2 State: Side-by-Side Split View
+  // Side-by-Side Split View
   let isSplitView = $state(false);
+
+  // Workspace Brightness & Contrast Sub-Adjustments
+  let gridBrightness = $state(100);
+  let gridContrast = $state(100);
+
+  // Single Tile Zoom & Edit Modal State
+  let isTileModalOpen = $state(false);
+  let activeTileIndex = $state<number | null>(null);
+  let activeTileDataUrl = $state<string>('');
+  let tileBrightness = $state(100);
+  let tileContrast = $state(100);
 
   // Aspect Ratio & Cropping State
   let aspectRatio = $state<'free' | '1:1' | '4:3' | '16:9' | 'golden'>('free');
@@ -102,10 +114,18 @@
       for (let c = 0; c < cols; c++) {
         ctx.clearRect(0, 0, tileWidth, tileHeight);
         ctx.drawImage(croppedImageObj, c * tileWidth, r * tileHeight, tileWidth, tileHeight, 0, 0, tileWidth, tileHeight);
-        pieces.push(canvas.toDataURL('image/jpeg', 0.9));
+        pieces.push(canvas.toDataURL('image/jpeg', 0.95));
       }
     }
     gridPieces = pieces;
+  };
+
+  const openTileModal = (index: number) => {
+    activeTileIndex = index;
+    activeTileDataUrl = gridPieces[index];
+    tileBrightness = 100;
+    tileContrast = 100;
+    isTileModalOpen = true;
   };
 
   const handleImageClick = (e: MouseEvent) => {
@@ -128,13 +148,35 @@
     }
   };
 
-  const downloadSingleTile = (pieceDataUrl: string, index: number) => {
+  const downloadSingleTile = (pieceDataUrl: string, index: number, customB = 100, customC = 100) => {
     const colLabel = colLetters[index % cols];
     const rowLabel = Math.floor(index / cols) + 1;
-    const link = document.createElement('a');
-    link.download = `tile_${colLabel}${rowLabel}.jpg`;
-    link.href = pieceDataUrl;
-    link.click();
+
+    if (customB === 100 && customC === 100) {
+      const link = document.createElement('a');
+      link.download = `tile_${colLabel}${rowLabel}.jpg`;
+      link.href = pieceDataUrl;
+      link.click();
+      return;
+    }
+
+    // Render with custom tile adjustments if edited in modal
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.filter = `brightness(${customB}%) contrast(${customC}%)`;
+      ctx.drawImage(img, 0, 0);
+
+      const link = document.createElement('a');
+      link.download = `tile_${colLabel}${rowLabel}_edited.jpg`;
+      link.href = canvas.toDataURL('image/jpeg', 0.95);
+      link.click();
+    };
+    img.src = pieceDataUrl;
   };
 
   const downloadGridWithOverlay = () => {
@@ -150,6 +192,7 @@
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
     }
+    ctx.filter = `brightness(${gridBrightness}%) contrast(${gridContrast}%)`;
     ctx.drawImage(croppedImageObj, 0, 0);
     ctx.restore();
 
@@ -305,6 +348,28 @@
     </div>
   </div>
 
+  <!-- Workspace Exposure & Contrast Adjustments Bar -->
+  <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+    <div>
+      <div class="flex justify-between font-semibold mb-1 text-gray-700">
+        <span>Workspace Brightness: {gridBrightness}%</span>
+        {#if gridBrightness !== 100}
+          <button type="button" onclick={() => gridBrightness = 100} class="text-primary hover:underline">Reset</button>
+        {/if}
+      </div>
+      <input type="range" bind:value={gridBrightness} min="50" max="180" class="w-full accent-primary cursor-pointer" />
+    </div>
+    <div>
+      <div class="flex justify-between font-semibold mb-1 text-gray-700">
+        <span>Workspace Contrast: {gridContrast}%</span>
+        {#if gridContrast !== 100}
+          <button type="button" onclick={() => gridContrast = 100} class="text-primary hover:underline">Reset</button>
+        {/if}
+      </div>
+      <input type="range" bind:value={gridContrast} min="50" max="180" class="w-full accent-primary cursor-pointer" />
+    </div>
+  </div>
+
   <!-- Artist Advanced Tools Toolbar -->
   <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs flex flex-wrap items-center justify-between gap-4 text-xs">
     <div class="flex flex-wrap items-center gap-4">
@@ -374,10 +439,7 @@
         {/if}
       </div>
 
-      <!-- Workspace Layout: Single vs Side-by-Side Split View -->
       <div class="w-full grid {isSplitView ? 'grid-cols-1 md:grid-cols-2 gap-4' : 'flex justify-center'}">
-        
-        <!-- Left Pane: Clean Reference Photo (Shown only in Split View) -->
         {#if isSplitView}
           <div class="bg-gray-50 rounded-2xl p-3 border border-gray-200 flex flex-col items-center shadow-inner">
             <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Clean Reference Photo</span>
@@ -386,13 +448,12 @@
                 src={croppedImageSrc} 
                 alt="Clean Reference" 
                 class="max-h-[460px] w-auto object-contain block transition-all duration-300"
-                style="filter: {isGrayscale ? 'grayscale(100%) contrast(125%)' : 'none'}; transform: {isFlipped ? 'scaleX(-1)' : 'scaleX(1)'}"
+                style="filter: {isGrayscale ? 'grayscale(100%) contrast(125%)' : 'none'} brightness({gridBrightness}%) contrast({gridContrast}%); transform: {isFlipped ? 'scaleX(-1)' : 'scaleX(1)'}"
               />
             </div>
           </div>
         {/if}
 
-        <!-- Right Pane / Main Workspace: Grid Overlay -->
         <div class="{isSplitView ? '' : 'max-w-2xl w-full'} flex flex-col items-center">
           {#if isSplitView}
             <span class="text-[11px] font-bold text-primary uppercase tracking-wider mb-2">Grid & Annotation View</span>
@@ -409,11 +470,10 @@
               src={croppedImageSrc} 
               alt="Reference Cropped" 
               class="max-h-[460px] w-auto object-contain block pointer-events-none transition-all duration-300"
-              style="filter: {isGrayscale ? 'grayscale(100%) contrast(125%)' : 'none'}; transform: {isFlipped ? 'scaleX(-1)' : 'scaleX(1)'}"
+              style="filter: {isGrayscale ? 'grayscale(100%) contrast(125%)' : 'none'} brightness({gridBrightness}%) contrast({gridContrast}%); transform: {isFlipped ? 'scaleX(-1)' : 'scaleX(1)'}"
             />
 
             <svg class="absolute inset-0 w-full h-full pointer-events-none">
-              <!-- Frame Preview -->
               {#if selectedFrame === 'square'}
                 <rect x="2%" y="3%" width="96%" height="94%" fill="none" stroke="#1f2937" stroke-width="3" />
                 <rect x="3.5%" y="5%" width="93%" height="90%" fill="none" stroke="#1f2937" stroke-width="1.5" />
@@ -433,16 +493,13 @@
                 />
               {/if}
 
-              <!-- Columns -->
               {#each Array(cols - 1) as _, c}
                 <line x1="{((c + 1) / cols) * 100}%" y1="0" x2="{((c + 1) / cols) * 100}%" y2="100%" stroke={gridColor} stroke-width="1.5" stroke-dasharray={gridLineStyle === 'dashed' ? '5 3' : 'none'} />
               {/each}
-              <!-- Rows -->
               {#each Array(rows - 1) as _, r}
                 <line x1="0" y1="{((r + 1) / rows) * 100}%" x2="100%" y2="{((r + 1) / rows) * 100}%" stroke={gridColor} stroke-width="1.5" stroke-dasharray={gridLineStyle === 'dashed' ? '5 3' : 'none'} />
               {/each}
 
-              <!-- Rule of Thirds Guides -->
               {#if showRuleOfThirds}
                 <line x1="33.33%" y1="0" x2="33.33%" y2="100%" stroke="#eab308" stroke-width="1" stroke-dasharray="4 4" />
                 <line x1="66.66%" y1="0" x2="66.66%" y2="100%" stroke="#eab308" stroke-width="1" stroke-dasharray="4 4" />
@@ -450,13 +507,11 @@
                 <line x1="0" y1="66.66%" x2="100%" y2="66.66%" stroke="#eab308" stroke-width="1" stroke-dasharray="4 4" />
               {/if}
 
-              <!-- Center Diagonals -->
               {#if showDiagonals}
                 <line x1="0" y1="0" x2="100%" y2="100%" stroke={gridColor} stroke-width="1" stroke-dasharray="3 3" opacity="0.7" />
                 <line x1="100%" y1="0" x2="0" y2="100%" stroke={gridColor} stroke-width="1" stroke-dasharray="3 3" opacity="0.7" />
               {/if}
 
-              <!-- Coordinate Cell Labels -->
               {#if showCoordinates}
                 {#each Array(rows) as _, r}
                   {#each Array(cols) as __, c}
@@ -475,7 +530,6 @@
                 {/each}
               {/if}
 
-              <!-- Custom Perspective Lines -->
               {#each customLines as line}
                 <line x1="{line.x1}%" y1="{line.y1}%" x2="{line.x2}%" y2="{line.y2}%" stroke="#9333ea" stroke-width="2.5" />
               {/each}
@@ -485,14 +539,13 @@
             </svg>
           </div>
         </div>
-
       </div>
     </div>
   {:else}
-    <!-- Sliced Tiles Mode with Individual Tile Downloads -->
+    <!-- Sliced Tiles Mode with Zoom & Edit Modal Trigger -->
     <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm flex flex-col items-center">
       <div class="flex justify-between w-full max-w-4xl mb-4 items-center">
-        <p class="text-xs font-semibold text-gray-500 uppercase">Sliced Tiles ({gridPieces.length}) - Click any tile to download</p>
+        <p class="text-xs font-semibold text-gray-500 uppercase">Sliced Tiles ({gridPieces.length}) - Click any tile to zoom & edit</p>
         <button type="button" onclick={downloadAllZip} class="bg-emerald-600 hover:bg-emerald-500 text-light text-xs font-semibold py-2 px-4 rounded-xl shadow cursor-pointer flex items-center gap-1.5">
           <Icon icon="mdi:folder-zip-outline" class="text-sm" /> Download All (.zip)
         </button>
@@ -500,27 +553,27 @@
       <div class="grid gap-3 w-full max-w-4xl max-h-[550px] overflow-y-auto p-2" style="grid-template-columns: repeat(auto-fill, minmax(130px, 1fr))">
         {#each gridPieces as piece, index}
           <div class="relative group bg-gray-50 rounded-xl overflow-hidden border border-gray-200 shadow-xs flex flex-col">
-            <div class="relative aspect-square overflow-hidden bg-gray-200">
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+            <div 
+              class="relative aspect-square overflow-hidden bg-gray-200 cursor-pointer"
+              onclick={() => openTileModal(index)}
+            >
               <img src={piece} alt="Tile" class="w-full h-full object-cover transition-transform group-hover:scale-105" />
               <span class="absolute top-1.5 left-1.5 bg-black/75 text-white text-[10px] font-bold px-1.5 py-0.5 rounded font-mono shadow">
                 {colLetters[index % cols]}{Math.floor(index / cols) + 1}
               </span>
-              <button
-                type="button"
-                onclick={() => downloadSingleTile(piece, index)}
-                class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white cursor-pointer"
-                title="Download this tile"
-              >
-                <Icon icon="mdi:download" class="text-2xl mb-1" />
-                <span class="text-[10px] font-semibold font-mono uppercase tracking-wider">Save Tile</span>
-              </button>
+              <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+                <Icon icon="mdi:magnify-plus-outline" class="text-2xl mb-1" />
+                <span class="text-[10px] font-semibold font-mono uppercase tracking-wider">Zoom & Edit</span>
+              </div>
             </div>
             <button
               type="button"
               onclick={() => downloadSingleTile(piece, index)}
               class="w-full py-1.5 bg-white hover:bg-gray-100 text-dark text-[11px] font-semibold border-t border-gray-200 flex items-center justify-center gap-1 cursor-pointer"
             >
-              <Icon icon="mdi:download-outline" /> {colLetters[index % cols]}{Math.floor(index / cols) + 1}
+              <Icon icon="mdi:download-outline" /> Save {colLetters[index % cols]}{Math.floor(index / cols) + 1}
             </button>
           </div>
         {/each}
@@ -528,3 +581,86 @@
     </div>
   {/if}
 </div>
+
+<!-- Single Tile Zoom & Edit Modal -->
+{#if isTileModalOpen && activeTileIndex !== null}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div 
+    transition:fade={{ duration: 200 }}
+    onclick={() => isTileModalOpen = false}
+    class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-8"
+  >
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div 
+      transition:scale={{ duration: 250, start: 0.95 }}
+      onclick={(e) => e.stopPropagation()}
+      class="relative bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl flex flex-col items-center overflow-hidden"
+    >
+      <div class="w-full flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+        <h3 class="font-bold text-sm text-dark flex items-center gap-2">
+          <Icon icon="mdi:grid-large" class="text-primary text-lg" /> 
+          Tile Inspection & Edit ({colLetters[activeTileIndex % cols]}{Math.floor(activeTileIndex / cols) + 1})
+        </h3>
+        <button 
+          type="button" 
+          onclick={() => isTileModalOpen = false} 
+          class="bg-gray-100 hover:bg-gray-200 text-gray-700 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer"
+        >
+          <Icon icon="mdi:close" class="text-lg" />
+        </button>
+      </div>
+
+      <!-- Zoomed Tile Preview Canvas / Image -->
+      <div class="w-full flex items-center justify-center bg-gray-100 rounded-2xl p-4 border border-gray-200 mb-4 shadow-inner max-h-[350px]">
+        <img 
+          src={activeTileDataUrl} 
+          alt="Zoomed Tile" 
+          class="max-h-[300px] w-auto object-contain rounded-xl shadow-md transition-all duration-150"
+          style="filter: brightness({tileBrightness}%) contrast({tileContrast}%);"
+        />
+      </div>
+
+      <!-- Individual Tile Adjustments -->
+      <div class="w-full grid grid-cols-2 gap-3 mb-5 text-xs bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
+        <div>
+          <div class="flex justify-between font-semibold mb-1 text-gray-700">
+            <span>Tile Brightness: {tileBrightness}%</span>
+            {#if tileBrightness !== 100}
+              <button type="button" onclick={() => tileBrightness = 100} class="text-primary hover:underline">Reset</button>
+            {/if}
+          </div>
+          <input type="range" bind:value={tileBrightness} min="50" max="180" class="w-full accent-primary cursor-pointer" />
+        </div>
+        <div>
+          <div class="flex justify-between font-semibold mb-1 text-gray-700">
+            <span>Tile Contrast: {tileContrast}%</span>
+            {#if tileContrast !== 100}
+              <button type="button" onclick={() => tileContrast = 100} class="text-primary hover:underline">Reset</button>
+            {/if}
+          </div>
+          <input type="range" bind:value={tileContrast} min="50" max="180" class="w-full accent-primary cursor-pointer" />
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="w-full flex gap-3">
+        <button
+          type="button"
+          onclick={() => downloadSingleTile(activeTileDataUrl, activeTileIndex!, tileBrightness, tileContrast)}
+          class="flex-1 bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-4 rounded-xl shadow transition text-xs flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <Icon icon="mdi:download" class="text-base" /> Save Edited Tile ({colLetters[activeTileIndex % cols]}{Math.floor(activeTileIndex / cols) + 1})
+        </button>
+        <button
+          type="button"
+          onclick={() => isTileModalOpen = false}
+          class="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-xs transition cursor-pointer"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
