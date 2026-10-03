@@ -24,18 +24,6 @@
   let displayedText = "";
   let typeTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const runTypewriter = () => {
-    let index = 0;
-    const tick = () => {
-      if (index < headline.length) {
-        displayedText = headline.slice(0, index + 1);
-        index++;
-        typeTimer = setTimeout(tick, 60);
-      }
-    };
-    tick();
-  };
-
   const handleImageUpload = (e: Event) => {
     const target = e.target as HTMLInputElement;
     const file = target.files?.[0];
@@ -98,7 +86,6 @@
     img.src = masterImageSrc;
   };
 
-  onMount(() => runTypewriter());
   onDestroy(() => { if (typeTimer) clearTimeout(typeTimer); });
 </script>
 
@@ -114,7 +101,7 @@
     <div class="absolute inset-0 bg-gradient-to-b from-black/85 via-black/60 to-black/90 pointer-events-none" />
     <div class="relative z-10 max-w-4xl mx-auto text-center px-4 py-12 sm:py-16 text-light space-y-4">
       <h1 class="text-2xl sm:text-5xl font-black tracking-tight text-white min-h-[2.5rem]" in:fly={{ y: 25, duration: 400 }}>
-        {displayedText}
+        Artist Studio & Pro Photo Suite
       </h1>
       <p class="text-xs sm:text-base text-light/85 max-w-2xl mx-auto">
         Precise drawing grid overlays, custom tiles, tensor tone tools, and 300+ advanced filters.
@@ -165,7 +152,7 @@
     {/if}
 
     {#if !imageLoaded}
-      <div class="max-w-2xl mx-auto bg-white border-2 border-dashed border-gray-300 rounded-3xl p-8 sm:p-12 text-center hover:border-primary transition shadow-sm space-y-3">
+      <div class="max-w-2xl mx-auto bg-white border-2 border-gray-300 rounded-3xl p-8 sm:p-12 text-center hover:border-primary transition shadow-sm space-y-3">
         <Icon icon="mdi:cloud-upload-outline" class="w-16 h-16 mx-auto text-gray-400" />
         <p class="text-dark font-bold text-base sm:text-lg mb-1">Drag & drop your reference photo</p>
         <p class="text-xs text-gray-400 font-mono">Maximum file size allowed: 3 MB</p>

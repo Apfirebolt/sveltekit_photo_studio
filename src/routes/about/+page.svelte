@@ -36,9 +36,6 @@
         <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
           Creating accurate drawings and managing reference photos often requires jumping across heavy desktop software. Artist Studio Suite was engineered to provide a lightning-fast, zero-install, privacy-first workstation right inside your web browser.
         </p>
-        <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
-          Whether you are mapping proportions using precision grid lines, breaking down lighting values into monochrome studies, or running WebGL-accelerated neural tensor filters, our suite adapts to your traditional or digital drawing workflow.
-        </p>
       </div>
       <div class="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm space-y-4">
         <div class="flex items-center gap-3 text-primary">
