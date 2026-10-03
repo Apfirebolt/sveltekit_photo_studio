@@ -17,7 +17,10 @@
   let isFlipped = $state(false);
   let showCoordinates = $state(true);
   
-  // New Aspect Ratio & Cropping State
+  // Feature 2 State: Side-by-Side Split View
+  let isSplitView = $state(false);
+
+  // Aspect Ratio & Cropping State
   let aspectRatio = $state<'free' | '1:1' | '4:3' | '16:9' | 'golden'>('free');
   let croppedImageObj = $state<HTMLImageElement | null>(null);
   let croppedImageSrc = $state('');
@@ -35,7 +38,6 @@
 
   const colLetters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"];
 
-  // Process and crop image based on selected aspect ratio
   const updateCroppedImage = () => {
     if (!rawImageObj) return;
 
@@ -318,6 +320,10 @@
         <input type="checkbox" bind:checked={showCoordinates} class="rounded accent-primary w-4 h-4" />
         <span>Grid Labels (A1, B2)</span>
       </label>
+      <label class="flex items-center gap-1.5 font-medium cursor-pointer text-purple-700 font-semibold">
+        <input type="checkbox" bind:checked={isSplitView} class="rounded accent-purple-600 w-4 h-4" />
+        <span>Split View (Side-by-Side)</span>
+      </label>
     </div>
 
     <div class="flex items-center gap-3">
@@ -351,10 +357,10 @@
     </div>
   </div>
 
-  <!-- Overlay Mode Workspace -->
+  <!-- Overlay Mode Workspace (Single or Split View) -->
   {#if gridMode === 'overlay'}
     <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm flex flex-col items-center">
-      <div class="w-full max-w-2xl flex justify-between items-center mb-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
+      <div class="w-full max-w-4xl flex justify-between items-center mb-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
         <div class="flex items-center gap-2">
           <button type="button" onclick={() => { isLineToolActive = !isLineToolActive; tempLineStart = null; }} class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer {isLineToolActive ? 'bg-purple-600 text-white animate-pulse' : 'bg-white text-dark border border-gray-200 hover:bg-gray-100'}">
             📏 Custom Line Tool: {isLineToolActive ? 'ON' : 'OFF'}
@@ -368,91 +374,118 @@
         {/if}
       </div>
 
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div 
-        class="relative max-w-2xl w-full flex justify-center bg-gray-100 rounded-2xl overflow-hidden shadow-md border border-gray-200 select-none {isLineToolActive ? 'cursor-crosshair' : 'cursor-default'}"
-        onclick={handleImageClick}
-        bind:this={imageContainerRef}
-      >
-        <img 
-          src={croppedImageSrc} 
-          alt="Reference Cropped" 
-          class="max-h-[500px] w-auto object-contain block pointer-events-none transition-all duration-300"
-          style="filter: {isGrayscale ? 'grayscale(100%) contrast(125%)' : 'none'}; transform: {isFlipped ? 'scaleX(-1)' : 'scaleX(1)'}"
-        />
+      <!-- Workspace Layout: Single vs Side-by-Side Split View -->
+      <div class="w-full grid {isSplitView ? 'grid-cols-1 md:grid-cols-2 gap-4' : 'flex justify-center'}">
+        
+        <!-- Left Pane: Clean Reference Photo (Shown only in Split View) -->
+        {#if isSplitView}
+          <div class="bg-gray-50 rounded-2xl p-3 border border-gray-200 flex flex-col items-center shadow-inner">
+            <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Clean Reference Photo</span>
+            <div class="relative w-full flex justify-center bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 p-2">
+              <img 
+                src={croppedImageSrc} 
+                alt="Clean Reference" 
+                class="max-h-[460px] w-auto object-contain block transition-all duration-300"
+                style="filter: {isGrayscale ? 'grayscale(100%) contrast(125%)' : 'none'}; transform: {isFlipped ? 'scaleX(-1)' : 'scaleX(1)'}"
+              />
+            </div>
+          </div>
+        {/if}
 
-        <svg class="absolute inset-0 w-full h-full pointer-events-none">
-          <!-- Frame Preview -->
-          {#if selectedFrame === 'square'}
-            <rect x="2%" y="3%" width="96%" height="94%" fill="none" stroke="#1f2937" stroke-width="3" />
-            <rect x="3.5%" y="5%" width="93%" height="90%" fill="none" stroke="#1f2937" stroke-width="1.5" />
-          {:else if selectedFrame === 'mosaic'}
-            <rect x="0" y="0" width="100%" height="100%" fill="none" stroke="#3b82f6" stroke-width="20" stroke-dasharray="15 5" opacity="0.85" />
-          {:else if selectedFrame !== 'none'}
-            <rect 
-              x="0" 
-              y="0" 
-              width="100%" 
-              height="100%" 
-              fill="none" 
-              stroke={selectedFrame === 'fire' ? '#ea580c' : selectedFrame === 'smoke' ? '#6b7280' : selectedFrame === 'golden' ? '#eab308' : '#3b82f6'} 
-              stroke-width={frameThickness / 2} 
-              stroke-dasharray={selectedFrame === 'smoke' ? '10 10' : 'none'}
-              opacity="0.85" 
+        <!-- Right Pane / Main Workspace: Grid Overlay -->
+        <div class="{isSplitView ? '' : 'max-w-2xl w-full'} flex flex-col items-center">
+          {#if isSplitView}
+            <span class="text-[11px] font-bold text-primary uppercase tracking-wider mb-2">Grid & Annotation View</span>
+          {/if}
+
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div 
+            class="relative w-full flex justify-center bg-gray-100 rounded-2xl overflow-hidden shadow-md border border-gray-200 select-none {isLineToolActive ? 'cursor-crosshair' : 'cursor-default'}"
+            onclick={handleImageClick}
+            bind:this={imageContainerRef}
+          >
+            <img 
+              src={croppedImageSrc} 
+              alt="Reference Cropped" 
+              class="max-h-[460px] w-auto object-contain block pointer-events-none transition-all duration-300"
+              style="filter: {isGrayscale ? 'grayscale(100%) contrast(125%)' : 'none'}; transform: {isFlipped ? 'scaleX(-1)' : 'scaleX(1)'}"
             />
-          {/if}
 
-          <!-- Columns -->
-          {#each Array(cols - 1) as _, c}
-            <line x1="{((c + 1) / cols) * 100}%" y1="0" x2="{((c + 1) / cols) * 100}%" y2="100%" stroke={gridColor} stroke-width="1.5" stroke-dasharray={gridLineStyle === 'dashed' ? '5 3' : 'none'} />
-          {/each}
-          <!-- Rows -->
-          {#each Array(rows - 1) as _, r}
-            <line x1="0" y1="{((r + 1) / rows) * 100}%" x2="100%" y2="{((r + 1) / rows) * 100}%" stroke={gridColor} stroke-width="1.5" stroke-dasharray={gridLineStyle === 'dashed' ? '5 3' : 'none'} />
-          {/each}
+            <svg class="absolute inset-0 w-full h-full pointer-events-none">
+              <!-- Frame Preview -->
+              {#if selectedFrame === 'square'}
+                <rect x="2%" y="3%" width="96%" height="94%" fill="none" stroke="#1f2937" stroke-width="3" />
+                <rect x="3.5%" y="5%" width="93%" height="90%" fill="none" stroke="#1f2937" stroke-width="1.5" />
+              {:else if selectedFrame === 'mosaic'}
+                <rect x="0" y="0" width="100%" height="100%" fill="none" stroke="#3b82f6" stroke-width="20" stroke-dasharray="15 5" opacity="0.85" />
+              {:else if selectedFrame !== 'none'}
+                <rect 
+                  x="0" 
+                  y="0" 
+                  width="100%" 
+                  height="100%" 
+                  fill="none" 
+                  stroke={selectedFrame === 'fire' ? '#ea580c' : selectedFrame === 'smoke' ? '#6b7280' : selectedFrame === 'golden' ? '#eab308' : '#3b82f6'} 
+                  stroke-width={frameThickness / 2} 
+                  stroke-dasharray={selectedFrame === 'smoke' ? '10 10' : 'none'}
+                  opacity="0.85" 
+                />
+              {/if}
 
-          <!-- Rule of Thirds Guides -->
-          {#if showRuleOfThirds}
-            <line x1="33.33%" y1="0" x2="33.33%" y2="100%" stroke="#eab308" stroke-width="1" stroke-dasharray="4 4" />
-            <line x1="66.66%" y1="0" x2="66.66%" y2="100%" stroke="#eab308" stroke-width="1" stroke-dasharray="4 4" />
-            <line x1="0" y1="33.33%" x2="100%" y2="33.33%" stroke="#eab308" stroke-width="1" stroke-dasharray="4 4" />
-            <line x1="0" y1="66.66%" x2="100%" y2="66.66%" stroke="#eab308" stroke-width="1" stroke-dasharray="4 4" />
-          {/if}
-
-          <!-- Center Diagonals -->
-          {#if showDiagonals}
-            <line x1="0" y1="0" x2="100%" y2="100%" stroke={gridColor} stroke-width="1" stroke-dasharray="3 3" opacity="0.7" />
-            <line x1="100%" y1="0" x2="0" y2="100%" stroke={gridColor} stroke-width="1" stroke-dasharray="3 3" opacity="0.7" />
-          {/if}
-
-          <!-- Coordinate Cell Labels -->
-          {#if showCoordinates}
-            {#each Array(rows) as _, r}
-              {#each Array(cols) as __, c}
-                <text 
-                  x="{((c + 0.05) * (100 / cols))}%" 
-                  y="{((r + 0.15) * (100 / rows))}%" 
-                  fill={gridColor} 
-                  opacity="0.8" 
-                  font-size="10" 
-                  font-family="monospace" 
-                  font-weight="bold"
-                >
-                  {colLetters[c] || 'X'}{r + 1}
-                </text>
+              <!-- Columns -->
+              {#each Array(cols - 1) as _, c}
+                <line x1="{((c + 1) / cols) * 100}%" y1="0" x2="{((c + 1) / cols) * 100}%" y2="100%" stroke={gridColor} stroke-width="1.5" stroke-dasharray={gridLineStyle === 'dashed' ? '5 3' : 'none'} />
               {/each}
-            {/each}
-          {/if}
+              <!-- Rows -->
+              {#each Array(rows - 1) as _, r}
+                <line x1="0" y1="{((r + 1) / rows) * 100}%" x2="100%" y2="{((r + 1) / rows) * 100}%" stroke={gridColor} stroke-width="1.5" stroke-dasharray={gridLineStyle === 'dashed' ? '5 3' : 'none'} />
+              {/each}
 
-          <!-- Custom Perspective Lines -->
-          {#each customLines as line}
-            <line x1="{line.x1}%" y1="{line.y1}%" x2="{line.x2}%" y2="{line.y2}%" stroke="#9333ea" stroke-width="2.5" />
-          {/each}
-          {#if tempLineStart}
-            <circle cx="{tempLineStart.x}%" cy="{tempLineStart.y}%" r="5" fill="#9333ea" stroke="#ffffff" stroke-width="2" />
-          {/if}
-        </svg>
+              <!-- Rule of Thirds Guides -->
+              {#if showRuleOfThirds}
+                <line x1="33.33%" y1="0" x2="33.33%" y2="100%" stroke="#eab308" stroke-width="1" stroke-dasharray="4 4" />
+                <line x1="66.66%" y1="0" x2="66.66%" y2="100%" stroke="#eab308" stroke-width="1" stroke-dasharray="4 4" />
+                <line x1="0" y1="33.33%" x2="100%" y2="33.33%" stroke="#eab308" stroke-width="1" stroke-dasharray="4 4" />
+                <line x1="0" y1="66.66%" x2="100%" y2="66.66%" stroke="#eab308" stroke-width="1" stroke-dasharray="4 4" />
+              {/if}
+
+              <!-- Center Diagonals -->
+              {#if showDiagonals}
+                <line x1="0" y1="0" x2="100%" y2="100%" stroke={gridColor} stroke-width="1" stroke-dasharray="3 3" opacity="0.7" />
+                <line x1="100%" y1="0" x2="0" y2="100%" stroke={gridColor} stroke-width="1" stroke-dasharray="3 3" opacity="0.7" />
+              {/if}
+
+              <!-- Coordinate Cell Labels -->
+              {#if showCoordinates}
+                {#each Array(rows) as _, r}
+                  {#each Array(cols) as __, c}
+                    <text 
+                      x="{((c + 0.05) * (100 / cols))}%" 
+                      y="{((r + 0.15) * (100 / rows))}%" 
+                      fill={gridColor} 
+                      opacity="0.8" 
+                      font-size="10" 
+                      font-family="monospace" 
+                      font-weight="bold"
+                    >
+                      {colLetters[c] || 'X'}{r + 1}
+                    </text>
+                  {/each}
+                {/each}
+              {/if}
+
+              <!-- Custom Perspective Lines -->
+              {#each customLines as line}
+                <line x1="{line.x1}%" y1="{line.y1}%" x2="{line.x2}%" y2="{line.y2}%" stroke="#9333ea" stroke-width="2.5" />
+              {/each}
+              {#if tempLineStart}
+                <circle cx="{tempLineStart.x}%" cy="{tempLineStart.y}%" r="5" fill="#9333ea" stroke="#ffffff" stroke-width="2" />
+              {/if}
+            </svg>
+          </div>
+        </div>
+
       </div>
     </div>
   {:else}

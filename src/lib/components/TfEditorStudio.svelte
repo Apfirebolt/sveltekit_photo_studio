@@ -642,7 +642,7 @@
       <button 
         type="button" 
         onclick={openFullscreenModal} 
-        class="absolute top-4 right-4 z-10 bg-white/90 hover:bg-white text-dark p-2 rounded-xl shadow-md border border-gray-200 transition cursor-pointer flex items-center gap-1 text-xs font-semibold"
+        class="absolute top-4 right-4 mt-2 z-10 bg-white/90 hover:bg-white text-dark p-2 rounded-xl shadow-md border border-gray-200 transition cursor-pointer flex items-center gap-1 text-xs font-semibold"
         title="View Fullscreen"
       >
         <Icon icon="mdi:fullscreen" class="text-base" /> Full View
