@@ -2,7 +2,7 @@ import { MongoClient } from 'mongodb';
 import { env } from '$env/dynamic/private';
 
 const uri = env.MONGODB_URI;
-const dbName = env.MONGODB_DB || 'svelte_kit_movies';
+const dbName = 'artist_studio';
 
 if (!uri) {
   throw new Error('Please define MONGODB_URI in your environment variables');
