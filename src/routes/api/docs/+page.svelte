@@ -20,7 +20,7 @@
 </script>
 
 <svelte:head>
-  <title>API Documentation | SvelteKit Movies</title>
+  <title>API Documentation | Sveltekit Photo Studio</title>
 </svelte:head>
 
 <div class="swagger-container min-h-screen bg-white">

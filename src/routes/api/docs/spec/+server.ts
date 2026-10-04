@@ -1,13 +1,13 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = () => {
   const spec = {
     openapi: '3.0.0',
     info: {
-      title: 'SvelteKit Movies API',
+      title: 'SvelteKit Photo Studio & Vibe API',
       version: '1.0.0',
-      description: 'API documentation for the SvelteKit Movies Application'
+      description: 'API documentation for the browser-based Photo/Art Studio application, managing canvas/tensor filters and MongoDB vector vibe searches.'
     },
     servers: [
       {
@@ -15,15 +15,19 @@ export const GET: RequestHandler = async () => {
         description: 'Current Environment'
       }
     ],
+    tags: [
+      { name: 'Filters', description: 'Operations related to 300+ studio filters' },
+      { name: 'AI Search', description: 'Semantic vector search endpoints' }
+    ],
     paths: {
-      '/api/users': {
+      '/api/filters': {
         get: {
-          summary: 'Retrieve all users',
-          description: 'Fetches all registered users from the MongoDB database, excluding password fields.',
-          tags: ['Users'],
+          summary: 'Retrieve all filters',
+          description: 'Fetches all registered filters from the MongoDB database, excluding heavy embedding arrays.',
+          tags: ['Filters'],
           responses: {
             '200': {
-              description: 'List of users fetched successfully',
+              description: 'List of filters fetched successfully',
               content: {
                 'application/json': {
                   schema: {
@@ -33,10 +37,14 @@ export const GET: RequestHandler = async () => {
                         type: 'boolean', 
                         example: true 
                       },
-                      data: {
+                      count: {
+                        type: 'integer',
+                        example: 300
+                      },
+                      filters: {
                         type: 'array',
                         items: {
-                          $ref: '#/components/schemas/User'
+                          $ref: '#/components/schemas/Filter'
                         }
                       }
                     }
@@ -49,17 +57,69 @@ export const GET: RequestHandler = async () => {
               content: {
                 'application/json': {
                   schema: {
+                    $ref: '#/components/schemas/ErrorResponse'
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      '/api/vibe-search': {
+        post: {
+          summary: 'Semantic Vibe Filtering',
+          description: 'Accepts a user vibe string, processes vector embeddings, and performs a MongoDB Atlas Vector Search to return the best-matching filter.',
+          tags: ['AI Search'],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['userVibe'],
+                  properties: {
+                    userVibe: {
+                      type: 'string',
+                      example: 'moody cyberpunk rainy night with neon glow'
+                    }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            '200': {
+              description: 'Best matching filter retrieved successfully',
+              content: {
+                'application/json': {
+                  schema: {
                     type: 'object',
                     properties: {
-                      success: { 
-                        type: 'boolean', 
-                        example: false 
-                      },
-                      error: { 
-                        type: 'string', 
-                        example: 'Failed to retrieve users' 
-                      }
+                      filterId: { type: 'string', example: 'cine_cyberpunk_neon' },
+                      type: { type: 'string', example: 'canvas' },
+                      css: { type: 'string', example: 'saturate(300%) contrast(150%)' },
+                      score: { type: 'number', example: 0.9234 }
                     }
+                  }
+                }
+              }
+            },
+            '400': {
+              description: 'Bad request (missing or invalid vibe text)',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ErrorResponse'
+                  }
+                }
+              }
+            },
+            '500': {
+              description: 'Internal server error',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ErrorResponse'
                   }
                 }
               }
@@ -70,25 +130,42 @@ export const GET: RequestHandler = async () => {
     },
     components: {
       schemas: {
-        User: {
+        Filter: {
           type: 'object',
           properties: {
             _id: { 
               type: 'string', 
               example: '6a836d58b3b5c50cb91ac1b6' 
             },
-            username: { 
+            filterId: { 
               type: 'string', 
-              example: 'Fernando' 
+              example: 'cine_cyberpunk_neon' 
             },
-            email: { 
+            title: { 
               type: 'string', 
-              format: 'email', 
-              example: 'fernando.torres@example.com' 
+              example: '⚡ Cyberpunk Neon District' 
             },
-            isAdmin: { 
-              type: 'boolean', 
-              example: false 
+            description: { 
+              type: 'string', 
+              example: 'High contrast, hot pink and electric blue tones.' 
+            },
+            category: {
+              type: 'string',
+              example: 'Cinematic & Film Grades'
+            },
+            type: { 
+              type: 'string', 
+              enum: ['canvas', 'tensorflow'],
+              example: 'canvas' 
+            },
+            css: {
+              type: 'string',
+              example: 'saturate(300%) contrast(150%)'
+            },
+            tags: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['cyberpunk', 'neon', 'dark']
             },
             createdAt: { 
               type: 'string', 
@@ -103,6 +180,19 @@ export const GET: RequestHandler = async () => {
             __v: { 
               type: 'integer', 
               example: 0 
+            }
+          }
+        },
+        ErrorResponse: {
+          type: 'object',
+          properties: {
+            success: { 
+              type: 'boolean', 
+              example: false 
+            },
+            error: { 
+              type: 'string', 
+              example: 'Valid vibe text is required' 
             }
           }
         }

@@ -1,53 +1,40 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getDb } from '$lib/server/db';
+import { getDb} from '$lib/server/db';
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
     const { userVibe } = await request.json();
+    if (!userVibe) return json({ error: 'Vibe text is required' }, { status: 400 });
 
-    if (!userVibe || typeof userVibe !== 'string') {
-      return json({ error: 'Valid vibe text is required' }, { status: 400 });
-    }
-
-    // 1. Convert user text string to vector embedding 
-    // (Hook up your server-side embedding generator or model pipeline here)
     const userEmbedding = await generateServerEmbedding(userVibe);
 
     const db = await getDb();
-    const collection = db.collection('filters');
+    // Fetch all filters including their embeddings
+    const filters = await db.collection('filters').find({}).toArray();
 
-    // 2. Query MongoDB Atlas Vector Search
-    const results = await collection.aggregate([
-      {
-        $vectorSearch: {
-          index: 'vector_index',
-          path: 'embedding',
-          queryVector: userEmbedding,
-          numCandidates: 20,
-          limit: 1
-        }
-      },
-      {
-        $project: {
-          filterId: 1,
-          title: 1,
-          type: 1,
-          css: 1,
-          score: { $meta: 'vectorSearchScore' }
-        }
+    if (filters.length === 0) {
+      return json({ filterId: 'normal' });
+    }
+
+    // Compute cosine similarity in-memory (works anywhere, no Atlas required!)
+    let bestMatch = filters[0];
+    let highestScore = -1;
+
+    for (const filter of filters) {
+      if (!filter.embedding) continue;
+      const score = cosineSimilarity(userEmbedding, filter.embedding);
+      if (score > highestScore) {
+        highestScore = score;
+        bestMatch = filter;
       }
-    ]).toArray();
-
-    if (results.length === 0) {
-      return json({ filterId: 'normal', type: 'canvas' });
     }
 
     return json({ 
-      filterId: results[0].filterId, 
-      type: results[0].type,
-      css: results[0].css,
-      score: results[0].score 
+      filterId: bestMatch.filterId, 
+      type: bestMatch.type,
+      css: bestMatch.css,
+      score: highestScore 
     });
 
   } catch (err) {
@@ -56,8 +43,19 @@ export const POST: RequestHandler = async ({ request }) => {
   }
 };
 
+// Standard math helper for vector dot product
+function cosineSimilarity(vecA: number[], vecB: number[]) {
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < vecA.length; i++) {
+    dotProduct += vecA[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
+  }
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
 async function generateServerEmbedding(text: string): Promise<number[]> {
-  // Placeholder: Return a 384-float array matching your model dimensions.
-  // In production, integrate your embedding generator function here.
   return Array.from({ length: 384 }, () => 0.1);
 }
