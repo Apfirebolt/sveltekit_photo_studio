@@ -1769,3 +1769,630 @@ const batchGraphiteFilters = [
     embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
   }
 ];
+
+// Batch 6
+
+const batchCharcoalFilters = [
+  {
+    filterId: 'charcoal_willow_pass',
+    title: '🪵 Willow Charcoal Pass',
+    description: 'Expressive willow charcoal pass with dark velvety blacks, organic smudge textures, and rich academic depth.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['charcoal', 'willow', 'dark', 'velvety', 'smudge', 'academic'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_compressed_vine_ink',
+    title: '🪵 Compressed Vine Ink',
+    description: 'Dense compressed vine ink lines offering deep shadow concentration and dramatic contrast presence.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['charcoal', 'compressed', 'vine ink', 'dense', 'shadow', 'contrast'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_deep_shadow_block',
+    title: '🪵 Deep Shadow Block',
+    description: 'Heavy shadow blocking filter designed to crush mid-tones into powerful, high-contrast silhouette blocks.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['charcoal', 'deep shadow', 'block', 'silhouette', 'high contrast', 'dark'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_rich_ink_wash',
+    title: '🪵 Rich Ink Wash',
+    description: 'Fluid sumi ink wash simulation featuring wet bleed edges, soft dilution gradients, and organic pooling.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['ink wash', 'sumi', 'fluid', 'wet bleed', 'gradients', 'organic'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_sumi_e_black_stroke',
+    title: '🪵 Sumi-E Black Stroke',
+    description: 'Traditional Japanese Sumi-E brush stroke rendering with expressive pressure variation and bold black ink.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['sumi-e', 'japanese', 'stroke', 'brush', 'bold ink', 'traditional'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_heavy_carbon_core',
+    title: '🪵 Heavy Carbon Core',
+    description: 'Intense carbon core rendering delivering impenetrable dark values and ultra-sharp core shadows.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['carbon', 'core', 'heavy', 'impenetrable', 'dark values', 'sharp shadows'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_smudged_charcoal_dust',
+    title: '🪵 Smudged Charcoal Dust',
+    description: 'Atmospheric charcoal dust smudging creating smoky backgrounds and hazy, dreamlike transitions.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['charcoal dust', 'smudged', 'atmospheric', 'smoky', 'hazy', 'dreamy'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_dark_monolith_pass',
+    title: '🪵 Dark Monolith Pass',
+    description: 'Monumental dark monolith pass creating solid, statuesque shadow masses with stark visual weight.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['monolith', 'dark', 'statuesque', 'shadow masses', 'visual weight'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_expressive_ink_splash',
+    title: '🪵 Expressive Ink Splash',
+    description: 'Dynamic ink splash and splatter simulation introducing chaotic artistic energy and raw contrast.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['ink splash', 'expressive', 'splatter', 'chaotic', 'artistic energy', 'raw'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_velvet_shadow_pass',
+    title: '🪵 Velvet Shadow Pass',
+    description: 'Luxurious velvet shadow pass softening the boundaries between darks and mid-tones with plush smoothness.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['velvet', 'shadow pass', 'luxurious', 'soft', 'smooth', 'mid-tones'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_deep_void_charcoal',
+    title: '🪵 Deep Void Charcoal',
+    description: 'Total blackness extraction filter pushing background zones into an infinite deep void of matte charcoal.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['deep void', 'charcoal', 'total black', 'infinite', 'matte', 'darkness'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_high_contrast_ink',
+    title: '🪵 High Contrast Ink',
+    description: 'Punchy high contrast ink style eliminating gray mud to leave stark black strokes against bright paper.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['high contrast', 'ink', 'stark', 'black and white', 'clean', 'graphic'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_raw_vine_charcoal',
+    title: '🪵 Raw Vine Charcoal',
+    description: 'Unrefined raw vine charcoal effect keeping the scratchy, brittle texture of natural organic sticks.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['raw', 'vine charcoal', 'unrefined', 'scratchy', 'brittle', 'organic'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_soft_carbon_blend',
+    title: '🪵 Soft Carbon Blend',
+    description: 'Gentle carbon blending filter producing clean, rounded tonal volumes with minimal harsh edge artifacts.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['soft carbon', 'blend', 'gentle', 'rounded volumes', 'clean'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_aggressive_charcoal_stroke',
+    title: '🪵 Aggressive Charcoal Stroke',
+    description: 'Fierce, energetic charcoal application with jagged contrast shifts and raw expressionist texture.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['aggressive', 'charcoal stroke', 'fierce', 'jagged', 'expressionist', 'raw'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_gothic_ink_pass',
+    title: '🪵 Gothic Ink Pass',
+    description: 'Dark, brooding Gothic ink pass optimized for dramatic architectural and atmospheric mood pieces.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['gothic', 'ink pass', 'brooding', 'dark', 'architectural', 'moody'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_deep_obsidian_shade',
+    title: '🪵 Deep Obsidian Shade',
+    description: 'Mirror-polished obsidian dark shading providing a sleek, glass-like dark tone aesthetic.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['obsidian', 'deep shade', 'polished', 'sleek', 'dark tone', 'glass-like'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_dense_carbon_matrix',
+    title: '🪵 Dense Carbon Matrix',
+    description: 'Mathematically dense carbon matrix grid overlaying complex pixel structures with dark ink weight.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['dense carbon', 'matrix', 'grid', 'pixel structure', 'ink weight'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_subtle_charcoal_wash',
+    title: '🪵 Subtle Charcoal Wash',
+    description: 'Light grey charcoal wash providing delicate, airy shadow undertones without crushing highlights.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['subtle', 'charcoal wash', 'light grey', 'airy', 'shadow undertones'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_intense_shadow_pass',
+    title: '🪵 Intense Shadow Pass',
+    description: 'Punchy shadow enhancement filter driving maximum depth into the darkest regions of the frame.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['intense shadow', 'pass', 'punchy', 'maximum depth', 'darkest regions'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_textured_vine_stroke',
+    title: '🪵 Textured Vine Stroke',
+    description: 'Rough vine stroke texturing simulating coarse paper tooth and broken charcoal particulate lines.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['textured vine', 'stroke', 'rough', 'paper tooth', 'broken lines'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_matte_carbon_layer',
+    title: '🪵 Matte Carbon Layer',
+    description: 'Flat matte carbon coating that removes all glossy sheen to leave a pure, chalky black finish.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['matte carbon', 'layer', 'flat', 'no gloss', 'chalky', 'black finish'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_rich_liquid_ink',
+    title: '🪵 Rich Liquid Ink',
+    description: 'Glossy wet liquid ink pass mimicking freshly pooled calligraphy ink drying on parchment.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['rich liquid ink', 'glossy', 'wet', 'calligraphy', 'drying', 'parchment'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_deep_monochromatic_core',
+    title: '🪵 Deep Monochromatic Core',
+    description: 'Centered monochromatic dark core establishing powerful focal gravity and high contrast framing.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['monochromatic core', 'deep', 'focal gravity', 'high contrast', 'framing'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_expressive_charcoal_pass',
+    title: '🪵 Expressive Charcoal Pass',
+    description: 'Freehand expressive charcoal pass combining organic finger smudges with bold sweeping strokes.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['expressive charcoal', 'freehand', 'organic', 'finger smudges', 'sweeping strokes'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_heavy_shadow_gradient',
+    title: '🪵 Heavy Shadow Gradient',
+    description: 'Graduated heavy shadow fade transitioning smoothly from impenetrable black to soft silver tones.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['heavy shadow', 'gradient', 'fade', 'smooth transition', 'black to silver'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_dark_contoured_ink',
+    title: '🪵 Dark Contoured Ink',
+    description: 'Heavy ink outlining following structural contours with commanding thickness and dark density.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['dark contoured', 'ink', 'outlining', 'structural', 'thickness', 'density'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'charcoal_velvety_vine_shade',
+    title: '🪵 Velvety Vine Shade',
+    description: 'Soft velvety vine shade providing luxurious tactile shading for classical portraiture.',
+    category: 'Tensor Charcoal & Ink',
+    type: 'tensorflow',
+    tags: ['velvety', 'vine shade', 'soft', 'tactile', 'classical portraiture'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  }
+];
+
+// Batch 7
+
+export const batchContourFilters = [
+  {
+    filterId: 'contour_fine_contour',
+    title: '🖊️ Fine Contour',
+    description: 'Delicate single-pixel fine contour line tracing outlining core shapes with precision and clarity.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['contour', 'fine', 'outline', 'precision', 'lines', 'delicate'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_clean_outline',
+    title: '🖊️ Clean Outline',
+    description: 'Crisp clean outline extraction filter isolating clean structural borders from background textures.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['outline', 'clean', 'borders', 'structural', 'crisp', 'isolation'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_soft_edge_study',
+    title: '🖊️ Soft Edge Study',
+    description: 'Soft edge study filter blending fine contour lines with gentle gradient shading for a harmonious look.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['edge', 'soft', 'study', 'gradient', 'shading', 'harmonious'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_bold_gesture_lines',
+    title: '🖊️ Bold Gesture Lines',
+    description: 'Thick, confident gesture lines capturing dynamic movement and expressive shape flow.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['gesture', 'bold', 'lines', 'dynamic', 'movement', 'expressive'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_minimal_contours',
+    title: '🖊️ Minimalist Contours',
+    description: 'Minimalist contour lines stripping away all non-essential data to highlight pure silhouette geometry.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['minimal', 'contours', 'geometry', 'silhouette', 'pure', 'clean'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_double_weight_outline',
+    title: '🖊️ Double-Weight Outline',
+    description: 'Layered double-weight outline effect providing a dual-stroke comic book ink definition.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['double weight', 'outline', 'comic book', 'ink', 'layered', 'stroke'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_portrait_contour',
+    title: '🖊️ Portrait Contour',
+    description: 'Specialized portrait contour tracing accentuating facial features, eyes, and jawlines.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['portrait', 'contour', 'facial features', 'tracing', 'jawline', 'eyes'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_architectural_contour',
+    title: '🖊️ Architectural Contour',
+    description: 'Rigid architectural contour drawing focusing on structural perspective and straight-edge precision.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['architectural', 'contour', 'perspective', 'precision', 'straight-edge'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_high_contrast_ink',
+    title: '🖊️ High-Contrast Ink Contour',
+    description: 'High-contrast ink contour rendering with solid black lines against stark white backgrounds.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['high-contrast', 'ink', 'contour', 'solid black', 'white background'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_loose_gesture_study',
+    title: '🖊️ Loose Gesture Study',
+    description: 'Loosely sketched contour lines with organic variation and playful hand-drawn imperfections.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['loose', 'gesture study', 'hand-drawn', 'organic', 'playful'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_whisper_thin_outline',
+    title: '🖊️ Whisper Thin Outline',
+    description: 'Extremely delicate whisper-thin outline tracing for subtle, ethereal illustration styles.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['whisper thin', 'outline', 'delicate', 'ethereal', 'subtle', 'illustration'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_confident_brush_contour',
+    title: '🖊️ Confident Brush Contour',
+    description: 'Variable-width ink brush contour simulating fluid calligraphic hand control.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['brush contour', 'variable-width', 'ink brush', 'calligraphic', 'fluid'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_broken_edge_drawing',
+    title: '🖊️ Broken Edge Drawing',
+    description: 'Textured broken edge contour lines simulating dashed and interrupted sketching strokes.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['broken edge', 'drawing', 'dashed', 'interrupted', 'textured strokes'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_continuous_line_study',
+    title: '🖊️ Continuous Line Study',
+    description: 'Unbroken continuous line contour rendering capturing form in a single sweeping path aesthetic.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['continuous line', 'study', 'unbroken', 'single path', 'form'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_soft_portrait_edges',
+    title: '🖊️ Soft Portrait Edges',
+    description: 'Gentle contour pass with blurred thresholding for soft portrait separation.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['soft portrait', 'edges', 'blurred threshold', 'separation', 'gentle'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_graphic_black_contour',
+    title: '🖊️ Graphic Black Contour',
+    description: 'Posterized graphic black contour lines optimized for pop art and modern illustration.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['graphic black', 'contour', 'posterized', 'pop art', 'modern illustration'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_expressive_face_lines',
+    title: '🖊️ Expressive Face Lines',
+    description: 'Dynamic contour lines focusing on facial structure and emotional expression topography.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['expressive face', 'lines', 'facial structure', 'emotion', 'topography'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_light_gesture_pass',
+    title: '🖊️ Light Gesture Pass',
+    description: 'Faint light gesture tracing providing foundational line art without visual clutter.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['light gesture', 'pass', 'faint', 'foundational', 'line art', 'clean'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_heavy_silhouette_ink',
+    title: '🖊️ Heavy Silhouette Ink',
+    description: 'Bold, thick outer silhouette contour wrapping around subjects with commanding weight.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['heavy silhouette', 'ink', 'bold', 'outer contour', 'commanding weight'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'contour_contour_detail_pass',
+    title: '🖊️ Contour Detail Pass',
+    description: 'Comprehensive contour detail pass capturing both outer margins and internal texture lines.',
+    category: 'Tensor Contour & Line',
+    type: 'tensorflow',
+    tags: ['contour detail', 'pass', 'margins', 'internal texture', 'comprehensive'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  }
+];
+
+// Batch 8
+
+export const batchHatchingFilters = [
+  {
+    filterId: 'hatch_single_diagonal',
+    title: '✒️ Single Diagonal Hatch',
+    description: 'Clean parallel diagonal hatching lines providing uniform tonal value and classic etching shade.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['hatch', 'diagonal', 'parallel', 'tonal value', 'etching', 'lines'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_fine_crosshatch',
+    title: '✒️ Fine Crosshatch',
+    description: 'Intricate fine crosshatching intersecting at acute angles to build rich, dense shadow depths.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['crosshatch', 'fine', 'intersecting', 'shadow depths', 'dense', 'ink'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_dense_crosshatch',
+    title: '✒️ Dense Crosshatch',
+    description: 'Heavy multi-layered crosshatching compressing mid-tones into dark, velvety shadow fields.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['crosshatch', 'dense', 'heavy', 'multi-layered', 'shadow fields', 'dark'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_loose_parallel',
+    title: '✒️ Loose Parallel Hatch',
+    description: 'Relaxed, spaced-out parallel hatch strokes giving an airy, hand-drawn illustrative feel.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['parallel hatch', 'loose', 'spaced', 'airy', 'hand-drawn', 'illustrative'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_four_way_ink',
+    title: '✒️ Four-Way Ink Hatch',
+    description: 'Complex four-way directional ink hatching for complete academic form modeling and contour shading.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['four-way', 'hatch', 'directional', 'academic', 'form modeling', 'contour'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_shadow_hatch',
+    title: '✒️ Shadow Hatch',
+    description: 'Targeted shadow hatching algorithm focusing exclusively on low-light regions to maximize depth.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['shadow hatch', 'targeted', 'low-light', 'depth', 'contrast'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_etching_hatch',
+    title: '✒️ Etching Hatch',
+    description: 'Copperplate-style etching hatch simulation with sharp, precision-grooved line patterns.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['etching hatch', 'copperplate', 'sharp', 'precision', 'line patterns'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_fine_nib',
+    title: '✒️ Fine Nib Hatching',
+    description: 'Ultra-fine nib pen hatching capturing microscopic textures and delicate skin gradations.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['fine nib', 'hatching', 'ultra-fine', 'microscopic', 'textures', 'delicate'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_bold_nib',
+    title: '✒️ Bold Nib Hatching',
+    description: 'Thick bold nib hatch marks delivering graphic impact and high-contrast comic book shadow style.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['bold nib', 'hatching', 'thick', 'graphic impact', 'comic book', 'shadow'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_illustration_crosshatch',
+    title: '✒️ Illustration Crosshatch',
+    description: 'Classic book illustration crosshatching providing balanced editorial tone and visual clarity.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['illustration', 'crosshatch', 'classic', 'book style', 'editorial', 'tone'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_wide_spaced',
+    title: '✒️ Wide-Spaced Hatch',
+    description: 'Wide-spaced line hatching for open, minimalist graphic art with plenty of breathing room.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['wide-spaced', 'hatch', 'open', 'minimalist', 'graphic art', 'clean'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_tight_shadow',
+    title: '✒️ Tight Shadow Crosshatch',
+    description: 'Extremely tight high-density crosshatching built for pitch-black shadow zones.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['tight shadow', 'crosshatch', 'high-density', 'pitch-black', 'shadow zones'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_light_pencil',
+    title: '✒️ Light Pencil Hatch',
+    description: 'Soft pencil hatching pass offering gentle, low-contrast tonal separation.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['light pencil', 'hatch', 'soft', 'low-contrast', 'tonal separation'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_heavy_ink',
+    title: '✒️ Heavy Ink Hatch',
+    description: 'Heavy ink hatch pass using saturated dark lines for intense dramatic contrast.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['heavy ink', 'hatch', 'saturated', 'dark lines', 'dramatic contrast'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_portrait_form',
+    title: '✒️ Portrait Form Hatching',
+    description: 'Anatomically aligned crosshatch shading wrapping smoothly around facial contours.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['portrait form', 'hatching', 'anatomical', 'facial contours', 'wrapping'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_angled_shade',
+    title: '✒️ Angled Shade Lines',
+    description: 'Dynamic angled shade lines creating directional momentum and stylistic perspective.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['angled shade', 'lines', 'dynamic', 'directional', 'momentum', 'perspective'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_layered_nib',
+    title: '✒️️ Layered Nib Crosshatch',
+    description: 'Multi-tiered nib crosshatching building sophisticated depth and textural complexity.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['layered nib', 'crosshatch', 'multi-tiered', 'sophisticated depth', 'textural'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_soft_parallel',
+    title: '✒️ Soft Parallel Shading',
+    description: 'Blurred soft parallel shading lines for hazy, atmospheric background transitions.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['soft parallel', 'shading', 'blurred', 'hazy', 'atmospheric', 'background'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_deep_black_crosshatch',
+    title: '✒️ Deep Black Crosshatch',
+    description: 'Deep black high-density crosshatching crushing highlights into maximum shadow drama.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['deep black', 'crosshatch', 'high-density', 'shadow drama', 'crushed highlights'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  },
+  {
+    filterId: 'hatch_open_line',
+    title: '✒️ Open Line Hatching',
+    description: 'Spacious open line hatching style allowing white paper luminosity to shine through.',
+    category: 'Tensor Pen Hatching',
+    type: 'tensorflow',
+    tags: ['open line', 'hatching', 'spacious', 'white paper', 'luminosity', 'clean'],
+    embedding: Array.from({ length: 384 }, () => parseFloat((Math.random() * 2 - 1).toFixed(4)))
+  }
+];
