@@ -14,28 +14,25 @@ export const POST: RequestHandler = async ({ request }) => {
     const filters = await db.collection('filters').find({}).toArray();
 
     if (filters.length === 0) {
-      return json({ filterId: 'normal' });
+      return json({ filterId: 'normal', results: [{ filterId: 'normal', score: 0 }] });
     }
 
-    // Compute cosine similarity in-memory (works anywhere, no Atlas required!)
-    let bestMatch = filters[0];
-    let highestScore = -1;
+    const ranked = filters
+      .filter((filter) => filter.embedding)
+      .map((filter) => ({
+        filterId: filter.filterId,
+        type: filter.type,
+        css: filter.css,
+        score: cosineSimilarity(userEmbedding, filter.embedding)
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
 
-    for (const filter of filters) {
-      if (!filter.embedding) continue;
-      const score = cosineSimilarity(userEmbedding, filter.embedding);
-      if (score > highestScore) {
-        highestScore = score;
-        bestMatch = filter;
-      }
+    if (ranked.length === 0) {
+      return json({ filterId: 'normal', results: [{ filterId: 'normal', score: 0 }] });
     }
 
-    return json({ 
-      filterId: bestMatch.filterId, 
-      type: bestMatch.type,
-      css: bestMatch.css,
-      score: highestScore 
-    });
+    return json({ ...ranked[0], results: ranked });
 
   } catch (err) {
     console.error('Vibe search error:', err);

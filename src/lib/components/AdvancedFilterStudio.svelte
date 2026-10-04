@@ -4,6 +4,7 @@
   import Icon from "@iconify/svelte";
   import ImageModal from "$lib/components/ImageModal.svelte";
   import FullImageModal from "$lib/components/FullImageModal.svelte";
+  import VibeSearchModal from "$lib/components/VibeSearchModal.svelte";
 
   let { rawImageObj }: { rawImageObj: HTMLImageElement | null } = $props();
 
@@ -24,6 +25,7 @@
 
   let isModalOpen = $state(false);
   let isFullImageModalOpen = $state(false);
+  let isVibeModalOpen = $state(false);
   let filteredDataUrl = $state('');
 
   let exportFormat = $state<'jpeg' | 'png' | 'pdf'>('jpeg');
@@ -828,6 +830,13 @@
     isModalOpen = true;
   };
 
+  const applyVibeFilter = async (filterId: string) => {
+    const match = filterCategories.flatMap(category => category.filters).find(filter => filter.id === filterId);
+    if (!match || !previewCanvas) return null;
+    await applyFilter(match.id, match.type);
+    return previewCanvas.toDataURL('image/jpeg', 0.85);
+  };
+
   const openFullImagePreview = () => {
     if (!previewCanvas) return;
     const mimeType = subjectMaskEnabled ? 'image/png' : 'image/jpeg';
@@ -1094,6 +1103,14 @@
       <div class="flex items-center gap-2">
         <button
           type="button"
+          onclick={() => isVibeModalOpen = true}
+          disabled={!rawImageObj}
+          class="px-4 py-1.5 bg-primary text-light rounded-lg text-xs font-bold transition shadow-xs hover:bg-primary-dark disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+        >
+          <Icon icon="mdi:auto-fix" /> Vibe Search
+        </button>
+        <button
+          type="button"
           onmousedown={() => showOriginal = true}
           onmouseup={() => showOriginal = false}
           onmouseleave={() => showOriginal = false}
@@ -1148,3 +1165,5 @@
 />
 
 <FullImageModal bind:isOpen={isFullImageModalOpen} imageSrc={filteredDataUrl} />
+
+<VibeSearchModal bind:isOpen={isVibeModalOpen} imageSrc={rawImageObj?.src || ''} onApply={applyVibeFilter} />
