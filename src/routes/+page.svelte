@@ -20,7 +20,7 @@
   let uploadError = $state('');
   let isTileActive = $state(false);
 
-  const headline = "Artist Studio & Pro Photo Suite";
+  const headline = "Softgenie Studio Photo Suite";
   let displayedText = "";
   let typeTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -94,14 +94,14 @@
 </svelte:head>
 
 <div class="min-h-screen bg-light text-dark flex flex-col selection:bg-primary selection:text-light font-sans overflow-x-hidden">
-  <HeaderComponent title="SvelteKit Studio" />
+  <HeaderComponent title="Softgenie Studio" />
 
   <!-- Hero Section -->
   <section class="relative bg-cover bg-center min-h-[150px] sm:min-h-[200px] flex items-center justify-center overflow-hidden border-b border-secondary/20" style="background-image: url('https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=1600&auto=format&fit=crop');">
     <div class="absolute inset-0 bg-gradient-to-b from-black/85 via-black/60 to-black/90 pointer-events-none" />
     <div class="relative z-10 max-w-4xl mx-auto text-center px-4 py-12 sm:py-16 text-light space-y-4">
       <h1 class="text-2xl sm:text-5xl font-black tracking-tight text-white min-h-[2.5rem]" in:fly={{ y: 25, duration: 400 }}>
-        Artist Studio & Pro Photo Suite
+        Softgenie Studio Photo Suite
       </h1>
       <p class="text-xs sm:text-base text-light/85 max-w-2xl mx-auto">
         Precise drawing grid overlays, custom tiles, tensor tone tools, and 300+ advanced filters.
@@ -155,7 +155,7 @@
       <div class="max-w-2xl mx-auto bg-white border-2 border-gray-300 rounded-3xl p-8 sm:p-12 text-center hover:border-primary transition shadow-sm space-y-3">
         <Icon icon="mdi:cloud-upload-outline" class="w-16 h-16 mx-auto text-gray-400" />
         <p class="text-dark font-bold text-base sm:text-lg mb-1">Drag & drop your reference photo</p>
-        <p class="text-xs text-gray-400 font-mono">Maximum file size allowed: 3 MB</p>
+        <p class="text-xs text-gray-400 font-mono">Maximum file size allowed: 10 MB</p>
         
         <label class="cursor-pointer bg-primary hover:bg-primary-dark text-light font-semibold py-3 px-8 rounded-xl shadow transition text-xs inline-block mt-2">
           Browse Image File

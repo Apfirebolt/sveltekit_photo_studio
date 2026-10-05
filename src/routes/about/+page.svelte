@@ -6,18 +6,18 @@
 </script>
 
 <svelte:head>
-  <title>About - Artist Studio & Pro Photo Suite</title>
+  <title>About - Softgenie Studio Photo Suite</title>
 </svelte:head>
 
 <div class="min-h-screen bg-light text-dark flex flex-col selection:bg-primary selection:text-light font-sans overflow-x-hidden">
-  <HeaderComponent title="Studio Suite" />
+  <HeaderComponent title="Softgenie Studio Photo Suite" />
 
   <!-- Hero Section -->
   <section class="relative bg-cover bg-center min-h-[320px] sm:min-h-[400px] flex items-center justify-center overflow-hidden border-b border-secondary/20" style="background-image: url('https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=1600&auto=format&fit=crop');">
     <div class="absolute inset-0 bg-gradient-to-b from-black/85 via-black/60 to-black/90 pointer-events-none" />
     <div class="relative z-10 max-w-4xl mx-auto text-center px-4 py-16 text-light space-y-4">
       <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-white min-h-[2.5rem]" in:fly={{ y: 25, duration: 400 }}>
-        About Artist Studio Suite
+        About Softgenie Studio Suite
       </h1>
       <p class="text-sm sm:text-base text-light/85 max-w-2xl mx-auto leading-relaxed">
         Bridging the gap between traditional fine art technique and browser-based artificial intelligence. Built for professional painters, sketch artists, and digital creators.
@@ -34,7 +34,7 @@
         <span class="text-xs font-mono font-bold uppercase tracking-wider text-primary bg-primary/10 px-3 py-1 rounded-full">Our Philosophy</span>
         <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-dark">Empowering Artists with Intelligent Tools</h2>
         <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
-          Creating accurate drawings and managing reference photos often requires jumping across heavy desktop software. Artist Studio Suite was engineered to provide a lightning-fast, zero-install, privacy-first workstation right inside your web browser.
+          Creating accurate drawings and managing reference photos often requires jumping across heavy desktop software. Softgenie Studio Suite was engineered to provide a lightning-fast, zero-install, privacy-first workstation right inside your web browser.
         </p>
       </div>
       <div class="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm space-y-4">
