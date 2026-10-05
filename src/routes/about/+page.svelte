@@ -10,7 +10,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-light text-dark flex flex-col selection:bg-primary selection:text-light font-sans overflow-x-hidden">
-  <HeaderComponent title="Softgenie Studio Photo Suite" />
+  <HeaderComponent title="Softgenie Studio" />
 
   <!-- Hero Section -->
   <section class="relative bg-cover bg-center min-h-[320px] sm:min-h-[400px] flex items-center justify-center overflow-hidden border-b border-secondary/20" style="background-image: url('https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=1600&auto=format&fit=crop');">
