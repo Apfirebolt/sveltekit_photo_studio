@@ -19,17 +19,23 @@
   let activePreset = $state<string>('normal');
   let uploadError = $state('');
   let isTileActive = $state(false);
+  let isDraggingImage = $state(false);
+  let dragDepth = 0;
 
   const headline = "Softgenie Studio";
   let displayedText = "";
   let typeTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const handleImageUpload = (e: Event) => {
-    const target = e.target as HTMLInputElement;
-    const file = target.files?.[0];
+  const loadImageFile = (file: File, target?: HTMLInputElement) => {
     if (!file) return;
 
     uploadError = '';
+    if (!file.type.startsWith('image/')) {
+      uploadError = 'Please upload an image file.';
+      if (target) target.value = '';
+      return;
+    }
+
     const MAX_SIZE_MB = 10;
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
       uploadError = `File size exceeds ${MAX_SIZE_MB}MB limit (${(file.size / (1024 * 1024)).toFixed(2)}MB). Please upload a smaller image.`;
@@ -37,12 +43,16 @@
       rawImageObj = null;
       masterImageSrc = '';
       originalImageSrc = '';
-      target.value = '';
+      if (target) target.value = '';
       return;
     }
 
     fileName = file.name;
     const reader = new FileReader();
+    reader.onerror = () => {
+      uploadError = 'The image could not be read. Please try another file.';
+      if (target) target.value = '';
+    };
     reader.onload = (event) => {
       if (typeof event.target?.result === 'string') {
         masterImageSrc = event.target.result;
@@ -53,10 +63,50 @@
           imageLoaded = true;
           isTileActive = false;
         };
+        img.onerror = () => {
+          uploadError = 'The selected file is not a supported image.';
+          if (target) target.value = '';
+        };
         img.src = event.target.result;
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleImageUpload = (event: Event) => {
+    const target = event.currentTarget as HTMLInputElement;
+    const file = target.files?.[0];
+    if (file) loadImageFile(file, target);
+  };
+
+  const handleWindowDragEnter = (event: DragEvent) => {
+    if (!Array.from(event.dataTransfer?.types ?? []).includes('Files')) return;
+    event.preventDefault();
+    dragDepth += 1;
+    isDraggingImage = true;
+  };
+
+  const handleWindowDragLeave = (event: DragEvent) => {
+    if (!Array.from(event.dataTransfer?.types ?? []).includes('Files')) return;
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) isDraggingImage = false;
+  };
+
+  const handleWindowDragOver = (event: DragEvent) => {
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+  };
+
+  const handleWindowDrop = (event: DragEvent) => {
+    event.preventDefault();
+    dragDepth = 0;
+    isDraggingImage = false;
+    const file = Array.from(event.dataTransfer?.files ?? []).find((item) => item.type.startsWith('image/'));
+    if (file) {
+      loadImageFile(file);
+    } else {
+      uploadError = 'Drop an image file to open it.';
+    }
   };
 
   // Handler to replace working image with a selected grid tile
@@ -89,11 +139,23 @@
   onDestroy(() => { if (typeTimer) clearTimeout(typeTimer); });
 </script>
 
+<svelte:window
+  ondragenter={handleWindowDragEnter}
+  ondragleave={handleWindowDragLeave}
+  ondragover={handleWindowDragOver}
+  ondrop={handleWindowDrop}
+/>
+
 <svelte:head>
   <title>Softgenie Studio - Reference Grid & Photo Suite</title>
 </svelte:head>
 
 <div class="min-h-screen bg-light text-dark flex flex-col selection:bg-primary selection:text-light font-sans overflow-x-hidden">
+  {#if isDraggingImage}
+    <div class="pointer-events-none fixed inset-3 z-100 flex items-center justify-center rounded-3xl border-4 border-dashed border-primary bg-white/90 text-primary shadow-2xl">
+      <span class="flex items-center gap-3 text-lg font-bold"><Icon icon="mdi:cloud-upload-outline" class="text-3xl" /> Drop image to open</span>
+    </div>
+  {/if}
   <HeaderComponent title="Softgenie Studio" />
 
   <!-- Hero Section -->

@@ -70,7 +70,7 @@
     <!-- Bottom Row: Copyright & Back to Top -->
     <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-light text-center sm:text-left">
       <p>
-        &copy; {year} Softgenie Studio. Built with SvelteKit & HTML5 Canvas.
+        &copy; {year} Softgenie Studio.
       </p>
       <div class="flex items-center gap-6">
         <a
