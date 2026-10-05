@@ -42,8 +42,13 @@
 
   // Aspect Ratio & Cropping State
   let aspectRatio = $state<"free" | "1:1" | "4:3" | "16:9" | "golden">("free");
+  let showCropWindow = $state(false);
+  let cropRect = $state({ x: 0, y: 0, width: 1, height: 1 });
   let croppedImageObj = $state<HTMLImageElement | null>(null);
   let croppedImageSrc = $state("");
+  let cropDrag: { mode: "move" | "draw"; startX: number; startY: number; rect: typeof cropRect } | null = null;
+  let previousCropSource: HTMLImageElement | null = null;
+  let cropRenderVersion = 0;
 
   // Frame States
   let selectedFrame = $state<
@@ -83,41 +88,106 @@
     "T",
   ];
 
+  const getDefaultCropRect = (image: HTMLImageElement) => {
+    if (aspectRatio === "free") return { x: 0, y: 0, width: 1, height: 1 };
+
+    const targetRatio = aspectRatio === "1:1" ? 1 : aspectRatio === "4:3" ? 4 / 3 : aspectRatio === "16:9" ? 16 / 9 : 1.618;
+    const normalizedRatio = targetRatio / (image.width / image.height);
+    const width = normalizedRatio > 1 ? 1 : normalizedRatio;
+    const height = normalizedRatio > 1 ? 1 / normalizedRatio : 1;
+    return { x: (1 - width) / 2, y: (1 - height) / 2, width, height };
+  };
+
+  const getCropPoint = (event: PointerEvent) => {
+    const bounds = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
+    return {
+      x: Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width)),
+      y: Math.min(1, Math.max(0, (event.clientY - bounds.top) / bounds.height)),
+    };
+  };
+
+  const handleCropPointerDown = (event: PointerEvent) => {
+    if (!rawImageObj) return;
+    const point = getCropPoint(event);
+    const isFullImageCrop = cropRect.x === 0 && cropRect.y === 0 && cropRect.width === 1 && cropRect.height === 1;
+    const insideCrop = !isFullImageCrop && point.x >= cropRect.x && point.x <= cropRect.x + cropRect.width &&
+      point.y >= cropRect.y && point.y <= cropRect.y + cropRect.height;
+    cropDrag = {
+      mode: insideCrop ? "move" : "draw",
+      startX: point.x,
+      startY: point.y,
+      rect: { ...cropRect },
+    };
+    (event.currentTarget as SVGSVGElement).setPointerCapture(event.pointerId);
+    if (!insideCrop) cropRect = { x: point.x, y: point.y, width: 0, height: 0 };
+  };
+
+  const handleCropPointerMove = (event: PointerEvent) => {
+    if (!cropDrag || !rawImageObj) return;
+    const point = getCropPoint(event);
+
+    if (cropDrag.mode === "move") {
+      cropRect = {
+        ...cropDrag.rect,
+        x: Math.min(1 - cropDrag.rect.width, Math.max(0, cropDrag.rect.x + point.x - cropDrag.startX)),
+        y: Math.min(1 - cropDrag.rect.height, Math.max(0, cropDrag.rect.y + point.y - cropDrag.startY)),
+      };
+      return;
+    }
+
+    let width = Math.abs(point.x - cropDrag.startX);
+    let height = Math.abs(point.y - cropDrag.startY);
+    if (aspectRatio !== "free") {
+      const targetRatio = aspectRatio === "1:1" ? 1 : aspectRatio === "4:3" ? 4 / 3 : aspectRatio === "16:9" ? 16 / 9 : 1.618;
+      const normalizedRatio = targetRatio / (rawImageObj.width / rawImageObj.height);
+      if (width > height * normalizedRatio) height = width / normalizedRatio;
+      else width = height * normalizedRatio;
+      const scale = Math.min(1, 1 / width, 1 / height);
+      width *= scale;
+      height *= scale;
+    }
+
+    const x = point.x < cropDrag.startX ? cropDrag.startX - width : cropDrag.startX;
+    const y = point.y < cropDrag.startY ? cropDrag.startY - height : cropDrag.startY;
+    cropRect = {
+      x: Math.min(1 - width, Math.max(0, x)),
+      y: Math.min(1 - height, Math.max(0, y)),
+      width,
+      height,
+    };
+  };
+
+  const handleCropPointerUp = (event: PointerEvent) => {
+    cropDrag = null;
+    (event.currentTarget as SVGSVGElement).releasePointerCapture(event.pointerId);
+  };
+
+  const setAspectRatio = (event: Event) => {
+    aspectRatio = (event.currentTarget as HTMLSelectElement).value as typeof aspectRatio;
+    if (rawImageObj) cropRect = getDefaultCropRect(rawImageObj);
+  };
+
   const updateCroppedImage = () => {
     if (!rawImageObj) return;
+    const renderVersion = ++cropRenderVersion;
 
-    if (aspectRatio === "free") {
+    if (cropRect.x === 0 && cropRect.y === 0 && cropRect.width === 1 && cropRect.height === 1) {
       croppedImageObj = rawImageObj;
       croppedImageSrc = originalImageSrc;
       return;
     }
+    if (cropRect.width < 0.005 || cropRect.height < 0.005) return;
 
-    const srcW = rawImageObj.width;
-    const srcH = rawImageObj.height;
-    let targetRatio = 1;
-
-    if (aspectRatio === "1:1") targetRatio = 1;
-    else if (aspectRatio === "4:3") targetRatio = 4 / 3;
-    else if (aspectRatio === "16:9") targetRatio = 16 / 9;
-    else if (aspectRatio === "golden") targetRatio = 1.618;
-
-    let cropW = srcW;
-    let cropH = srcH;
-
-    if (srcW / srcH > targetRatio) {
-      cropW = srcH * targetRatio;
-    } else {
-      cropH = srcW / targetRatio;
-    }
-
-    const startX = (srcW - cropW) / 2;
-    const startY = (srcH - cropH) / 2;
+    const startX = cropRect.x * rawImageObj.width;
+    const startY = cropRect.y * rawImageObj.height;
+    const cropW = cropRect.width * rawImageObj.width;
+    const cropH = cropRect.height * rawImageObj.height;
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    canvas.width = cropW;
-    canvas.height = cropH;
+    canvas.width = Math.max(1, Math.round(cropW));
+    canvas.height = Math.max(1, Math.round(cropH));
 
     ctx.drawImage(
       rawImageObj,
@@ -136,6 +206,7 @@
 
     const img = new Image();
     img.onload = () => {
+      if (renderVersion !== cropRenderVersion) return;
       croppedImageObj = img;
     };
     img.src = dataUrl;
@@ -404,7 +475,11 @@
 
   $effect(() => {
     if (rawImageObj) {
-      aspectRatio;
+      if (rawImageObj !== previousCropSource) {
+        previousCropSource = rawImageObj;
+        cropRect = getDefaultCropRect(rawImageObj);
+      }
+      cropRect;
       updateCroppedImage();
     }
   });
@@ -452,7 +527,8 @@
         >Crop Ratio</label
       >
       <select
-        bind:value={aspectRatio}
+        value={aspectRatio}
+        onchange={setAspectRatio}
         class="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-dark"
       >
         <option value="free">Freeform (Original)</option>
@@ -506,6 +582,66 @@
       </select>
     </div>
   </div>
+
+  {#if rawImageObj}
+    <label class="flex w-fit items-center gap-2 text-xs font-semibold text-dark cursor-pointer">
+      <input type="checkbox" bind:checked={showCropWindow} class="h-4 w-4 rounded accent-primary" />
+      Show crop window
+    </label>
+    {#if showCropWindow}
+      <section class="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-xs">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 class="text-sm font-bold text-dark">Crop Image</h3>
+          <p class="text-[11px] text-gray-500">Drag on the image to draw a crop area, or drag inside it to reposition.</p>
+        </div>
+        <button
+          type="button"
+          onclick={() => rawImageObj && (cropRect = getDefaultCropRect(rawImageObj))}
+          class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-dark transition hover:bg-gray-100 cursor-pointer"
+        >
+          Reset Crop
+        </button>
+      </div>
+      <div class="flex min-h-48 items-center justify-center overflow-hidden rounded-xl bg-gray-100 p-2">
+        <div class="relative inline-flex max-h-90 max-w-full touch-none select-none">
+          <img
+            src={originalImageSrc}
+            alt="Source to crop"
+            draggable="false"
+            class="block max-h-90 max-w-full object-contain"
+          />
+          <svg
+            viewBox="0 0 1000 1000"
+            preserveAspectRatio="none"
+            role="application"
+            aria-label="Crop selection. Drag to draw a crop area or move the current crop."
+            class="absolute inset-0 h-full w-full touch-none cursor-crosshair"
+            onpointerdown={handleCropPointerDown}
+            onpointermove={handleCropPointerMove}
+            onpointerup={handleCropPointerUp}
+            onpointercancel={handleCropPointerUp}
+          >
+            <rect x="0" y="0" width="1000" height={cropRect.y * 1000} fill="black" opacity="0.42" />
+            <rect x="0" y={(cropRect.y + cropRect.height) * 1000} width="1000" height={(1 - cropRect.y - cropRect.height) * 1000} fill="black" opacity="0.42" />
+            <rect x="0" y={cropRect.y * 1000} width={cropRect.x * 1000} height={cropRect.height * 1000} fill="black" opacity="0.42" />
+            <rect x={(cropRect.x + cropRect.width) * 1000} y={cropRect.y * 1000} width={(1 - cropRect.x - cropRect.width) * 1000} height={cropRect.height * 1000} fill="black" opacity="0.42" />
+            <rect
+              x={cropRect.x * 1000}
+              y={cropRect.y * 1000}
+              width={cropRect.width * 1000}
+              height={cropRect.height * 1000}
+              fill="transparent"
+              stroke="white"
+              stroke-width="4"
+              vector-effect="non-scaling-stroke"
+            />
+          </svg>
+        </div>
+      </div>
+      </section>
+    {/if}
+  {/if}
 
   <!-- Workspace Exposure & Contrast Adjustments Bar -->
   <div
