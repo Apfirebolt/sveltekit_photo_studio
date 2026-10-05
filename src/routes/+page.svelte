@@ -20,7 +20,7 @@
   let uploadError = $state('');
   let isTileActive = $state(false);
 
-  const headline = "Softgenie Studio Photo Suite";
+  const headline = "Softgenie Studio";
   let displayedText = "";
   let typeTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -90,7 +90,7 @@
 </script>
 
 <svelte:head>
-  <title>Artist Studio - Reference Grid & Photo Suite</title>
+  <title>Softgenie Studio - Reference Grid & Photo Suite</title>
 </svelte:head>
 
 <div class="min-h-screen bg-light text-dark flex flex-col selection:bg-primary selection:text-light font-sans overflow-x-hidden">

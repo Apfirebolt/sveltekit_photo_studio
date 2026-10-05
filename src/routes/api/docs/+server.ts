@@ -5,7 +5,7 @@ export const GET: RequestHandler = () => {
   const spec = {
     openapi: '3.0.3',
     info: {
-      title: 'Artist Studio & Pro Photo Suite API',
+      title: 'Softgenie Studio & Pro Photo Suite API',
       version: '1.1.0',
       description: 'API documentation for the browser-based Photo/Art Studio web application, supporting MongoDB filters and vector vibe matching.'
     },
