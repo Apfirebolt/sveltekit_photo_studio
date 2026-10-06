@@ -61,6 +61,9 @@
 
   let imageContainerRef = $state<HTMLDivElement | null>(null);
   let isLineToolActive = $state(false);
+  let isZoomTool = $state(false);
+  let zoomLevel = $state(3);
+  let zoomPoint = $state<{ x: number; y: number } | null>(null);
   let tempLineStart = $state<{ x: number; y: number } | null>(null);
   let customLines = $state<
     Array<{ x1: number; y1: number; x2: number; y2: number }>
@@ -319,6 +322,21 @@
     tileBrightness = 100;
     tileContrast = 100;
     isTileModalOpen = true;
+  };
+
+  const zoomStyle = $derived(
+    isZoomTool && zoomPoint
+      ? `transform: scale(${zoomLevel}); transform-origin: ${zoomPoint.x}% ${zoomPoint.y}%`
+      : "",
+  );
+
+  const handleZoomMove = (event: PointerEvent) => {
+    if (!isZoomTool) return;
+    const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    zoomPoint = {
+      x: Math.min(100, Math.max(0, ((event.clientX - bounds.left) / bounds.width) * 100)),
+      y: Math.min(100, Math.max(0, ((event.clientY - bounds.top) / bounds.height) * 100)),
+    };
   };
 
   const handleImageClick = (e: MouseEvent) => {
@@ -901,6 +919,33 @@
           >
             📏 Custom Line Tool: {isLineToolActive ? "ON" : "OFF"}
           </button>
+          <button
+            type="button"
+            aria-pressed={isZoomTool}
+            onclick={() => {
+              isZoomTool = !isZoomTool;
+              zoomPoint = null;
+            }}
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer {isZoomTool
+              ? 'bg-emerald-600 text-white'
+              : 'bg-white text-dark border border-gray-200 hover:bg-gray-100'}"
+          >
+            🔍 Pan & Zoom: {isZoomTool ? "ON" : "OFF"}
+          </button>
+          {#if isZoomTool}
+            <label class="flex items-center gap-1.5 text-[11px] font-semibold text-gray-600">
+              {zoomLevel}×
+              <input
+                type="range"
+                min="2"
+                max="8"
+                step="0.5"
+                bind:value={zoomLevel}
+                aria-label="Zoom level"
+                class="w-24 cursor-pointer accent-primary"
+              />
+            </label>
+          {/if}
           {#if tempLineStart}
             <span class="text-[11px] text-purple-600 font-semibold"
               >Click second point...</span
@@ -968,6 +1013,13 @@
             onclick={handleImageClick}
             bind:this={imageContainerRef}
           >
+            <div
+              role="presentation"
+              class="relative inline-block overflow-hidden"
+              onpointermove={handleZoomMove}
+              onpointerleave={() => (zoomPoint = null)}
+            >
+              <div class="relative transition-transform duration-100 ease-out" style={zoomStyle}>
             <img
               src={croppedImageSrc}
               alt="Reference Cropped"
@@ -1157,6 +1209,8 @@
                 />
               {/if}
             </svg>
+              </div>
+            </div>
           </div>
         </div>
       </div>
