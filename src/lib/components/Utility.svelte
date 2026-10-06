@@ -5,6 +5,9 @@
 
   type OutputFormat = "jpeg" | "webp" | "png" | "pdf";
   type NamingMode = "original" | "numeric" | "alpha" | "random";
+  type ResizeMode = "none" | "fit" | "fill" | "exact";
+  type WatermarkPos = "bottom-right" | "bottom-left" | "top-right" | "top-left" | "center";
+  type FilterMode = "none" | "grayscale" | "sepia" | "high-contrast";
   type QueuedImage = { id: number; file: File; previewUrl: string };
   type Summary = { count: number; originalBytes: number; outputBytes: number; fileName: string };
 
@@ -21,6 +24,23 @@
   let format = $state<OutputFormat>("jpeg");
   let naming = $state<NamingMode>("numeric");
   let prefix = $state("");
+
+  // New utility states
+  let resizeMode = $state<ResizeMode>("none");
+  let targetWidth = $state(1200);
+  let targetHeight = $state(1200);
+  let padColor = $state("#ffffff");
+
+  let watermarkText = $state("");
+  let watermarkPos = $state<WatermarkPos>("bottom-right");
+  let watermarkOpacity = $state(50);
+
+  let filterMode = $state<FilterMode>("none");
+  let brightness = $state(100);
+  let contrast = $state(100);
+
+  let stripExif = $state(true);
+
   let isDragging = $state(false);
   let isProcessing = $state(false);
   let progress = $state(0);
@@ -112,17 +132,100 @@
     return `${name}.${extension}`;
   };
 
-  const renderToCanvas = (bitmap: ImageBitmap, opaque: boolean) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas is not available in this browser.");
-    if (opaque) {
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const processCanvas = (bitmap: ImageBitmap) => {
+    let w = bitmap.width;
+    let h = bitmap.height;
+    let dx = 0;
+    let dy = 0;
+    let dw = w;
+    let dh = h;
+
+    let finalW = w;
+    let finalH = h;
+
+    if (resizeMode !== "none") {
+      const tw = targetWidth || w;
+      const th = targetHeight || h;
+
+      if (resizeMode === "exact") {
+        finalW = tw;
+        finalH = th;
+        dw = tw;
+        dh = th;
+      } else if (resizeMode === "fit") {
+        const ratio = Math.min(tw / w, th / h);
+        finalW = Math.round(w * ratio);
+        finalH = Math.round(h * ratio);
+        dw = finalW;
+        dh = finalH;
+      } else if (resizeMode === "fill") {
+        finalW = tw;
+        finalH = th;
+        const ratio = Math.max(tw / w, th / h);
+        dw = Math.round(w * ratio);
+        dh = Math.round(h * ratio);
+        dx = Math.round((tw - dw) / 2);
+        dy = Math.round((th - dh) / 2);
+      }
     }
-    ctx.drawImage(bitmap, 0, 0);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = finalW;
+    canvas.height = finalH;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas is not available.");
+
+    // Fill background (for JPEG/fill padding)
+    if (format === "jpeg" || resizeMode === "fill" || resizeMode === "exact") {
+      ctx.fillStyle = padColor;
+      ctx.fillRect(0, 0, finalW, finalH);
+    }
+
+    // Apply filters & adjustments via ctx properties
+    let filterString = "";
+    if (filterMode === "grayscale") filterString += "grayscale(100% )";
+    if (filterMode === "sepia") filterString += "sepia(100%)";
+    if (filterMode === "high-contrast") filterString += "contrast(150%)";
+    if (brightness !== 100) filterString += ` brightness(${brightness}%)`;
+    if (contrast !== 100) filterString += ` contrast(${contrast}%)`;
+    if (filterString) ctx.filter = filterString.trim();
+
+    ctx.drawImage(bitmap, dx, dy, dw, dh);
+    ctx.filter = "none"; // reset filter
+
+    // Apply Watermark
+    if (watermarkText.trim()) {
+      ctx.font = `${Math.max(12, Math.round(finalW * 0.03))}px sans-serif`;
+      ctx.fillStyle = `rgba(255, 255, 255, ${watermarkOpacity / 100})`;
+      ctx.strokeStyle = `rgba(0, 0, 0, ${watermarkOpacity / 100})`;
+      ctx.lineWidth = 2;
+
+      const metrics = ctx.measureText(watermarkText);
+      const textW = metrics.width;
+      const textH = 20;
+      const padding = 20;
+
+      let wx = padding;
+      let wy = finalH - padding;
+
+      if (watermarkPos === "bottom-right") {
+        wx = finalW - textW - padding;
+        wy = finalH - padding;
+      } else if (watermarkPos === "top-right") {
+        wx = finalW - textW - padding;
+        wy = padding + textH;
+      } else if (watermarkPos === "top-left") {
+        wx = padding;
+        wy = padding + textH;
+      } else if (watermarkPos === "center") {
+        wx = (finalW - textW) / 2;
+        wy = finalH / 2;
+      }
+
+      ctx.strokeText(watermarkText, wx, wy);
+      ctx.fillText(watermarkText, wx, wy);
+    }
+
     return canvas;
   };
 
@@ -146,7 +249,7 @@
 
     for (const [index, item] of queue.entries()) {
       const bitmap = await createImageBitmap(item.file);
-      const canvas = renderToCanvas(bitmap, format === "jpeg");
+      const canvas = processCanvas(bitmap);
       bitmap.close();
       const blob = await canvasToBlob(canvas, MIME[format as Exclude<OutputFormat, "pdf">], quality);
       outputs.push({ name: makeName(index, item.file, extensionFor(blob.type), used), blob });
@@ -162,7 +265,7 @@
 
     const zip = new JSZip();
     outputs.forEach((output) => zip.file(output.name, output.blob));
-    const zipName = `${sanitize(prefix)}compressed_images.zip`;
+    const zipName = `${sanitize(prefix)}processed_images.zip`;
     downloadBlob(await zip.generateAsync({ type: "blob" }), zipName);
     summary = { count: outputs.length, originalBytes, outputBytes, fileName: zipName };
   };
@@ -173,7 +276,7 @@
 
     for (const [index, item] of queue.entries()) {
       const bitmap = await createImageBitmap(item.file);
-      const canvas = renderToCanvas(bitmap, true);
+      const canvas = processCanvas(bitmap);
       bitmap.close();
       const { width, height } = canvas;
       const orientation = width >= height ? "landscape" : "portrait";
@@ -192,7 +295,7 @@
     summary = { count: queue.length, originalBytes, outputBytes: blob.size, fileName };
   };
 
-  const compressAll = async () => {
+  const processAll = async () => {
     if (images.length === 0 || isProcessing) return;
     isProcessing = true;
     progress = 0;
@@ -207,7 +310,7 @@
       if (format === "pdf") await exportPdf(queue, quality, originalBytes);
       else await exportImages(queue, quality, originalBytes);
     } catch (error) {
-      errorMessage = error instanceof Error ? error.message : "Compression failed.";
+      errorMessage = error instanceof Error ? error.message : "Processing failed.";
     } finally {
       isProcessing = false;
     }
@@ -217,6 +320,7 @@
 </script>
 
 <div class="space-y-6">
+  <!-- Dropzone -->
   <div
     role="presentation"
     ondragenter={(event) => { event.preventDefault(); isDragging = true; }}
@@ -227,7 +331,7 @@
   >
     <Icon icon="mdi:image-multiple-outline" class="mx-auto h-14 w-14 text-gray-400" />
     <p class="mt-2 text-base font-bold text-dark">Drag & drop multiple images here</p>
-    <p class="font-mono text-xs text-gray-400">Up to {MAX_FILE_MB} MB per image</p>
+    <p class="font-mono text-xs text-gray-400">Up to {MAX_FILE_MB} MB per image • EXIF data automatically cleaned</p>
     <label class="mt-3 inline-block cursor-pointer rounded-xl bg-primary px-8 py-3 text-xs font-semibold text-light shadow transition hover:bg-primary-dark">
       Select Images
       <input type="file" multiple accept="image/*" onchange={handleFileInput} class="hidden" />
@@ -239,6 +343,7 @@
   {/if}
 
   {#if images.length > 0}
+    <!-- Preview Grid -->
     <section class="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-xs">
       <div class="flex items-center justify-between">
         <h3 class="text-sm font-bold text-dark">
@@ -266,52 +371,121 @@
       </ul>
     </section>
 
+    <!-- Controls Panel -->
     <section class="grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-white p-4 text-xs shadow-xs md:grid-cols-2">
-      <div class="space-y-1">
-        <label for="bulk-reduction" class="block font-semibold text-gray-700">
-          Quality reduction: {reduction}% <span class="font-normal text-gray-500">(output quality {100 - reduction}%)</span>
-        </label>
-        <input id="bulk-reduction" type="range" min="0" max="95" bind:value={reduction} class="w-full cursor-pointer accent-primary" />
-        {#if format === "png"}
-          <p class="text-[11px] text-amber-600">PNG is lossless, so quality reduction has no effect on it.</p>
+      <!-- Compression & Format -->
+      <div class="space-y-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+        <h4 class="font-bold text-dark">Export & Quality</h4>
+        <div class="space-y-1">
+          <label for="bulk-reduction" class="block font-semibold text-gray-700">Quality reduction: {reduction}%</label>
+          <input id="bulk-reduction" type="range" min="0" max="95" bind:value={reduction} class="w-full cursor-pointer accent-primary" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="bulk-format" class="block font-semibold text-gray-700">Format</label>
+            <select id="bulk-format" bind:value={format} class="w-full rounded-xl border border-gray-200 bg-white p-2 font-medium text-dark">
+              <option value="jpeg">JPEG</option>
+              <option value="webp">WebP</option>
+              <option value="png">PNG</option>
+              <option value="pdf">PDF</option>
+            </select>
+          </div>
+          <div>
+            <label for="bulk-naming" class="block font-semibold text-gray-700">Naming</label>
+            <select id="bulk-naming" bind:value={naming} disabled={format === "pdf"} class="w-full rounded-xl border border-gray-200 bg-white p-2 font-medium text-dark disabled:opacity-50">
+              <option value="numeric">Numbers</option>
+              <option value="alpha">Letters</option>
+              <option value="random">Random</option>
+              <option value="original">Original</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resizing & Padding -->
+      <div class="space-y-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+        <h4 class="font-bold text-dark">Smart Resizing</h4>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="resize-mode" class="block font-semibold text-gray-700">Mode</label>
+            <select id="resize-mode" bind:value={resizeMode} class="w-full rounded-xl border border-gray-200 bg-white p-2 font-medium text-dark">
+              <option value="none">Original Size</option>
+              <option value="fit">Fit Within Bounds</option>
+              <option value="fill">Fill Canvas (Pad)</option>
+              <option value="exact">Exact Stretch</option>
+            </select>
+          </div>
+          {#if resizeMode !== "none"}
+            <div>
+              <label for="pad-color" class="block font-semibold text-gray-700">Padding Color</label>
+              <input id="pad-color" type="color" bind:value={padColor} class="h-9 w-full cursor-pointer rounded-xl border border-gray-200 bg-white p-1" />
+            </div>
+          {/if}
+        </div>
+        {#if resizeMode !== "none"}
+          <div class="grid grid-cols-2 gap-2">
+            <input type="number" bind:value={targetWidth} placeholder="Max Width (px)" class="rounded-xl border border-gray-200 bg-white p-2" />
+            <input type="number" bind:value={targetHeight} placeholder="Max Height (px)" class="rounded-xl border border-gray-200 bg-white p-2" />
+          </div>
         {/if}
       </div>
 
-      <div class="space-y-1">
-        <label for="bulk-format" class="block font-semibold text-gray-700">Output format</label>
-        <select id="bulk-format" bind:value={format} class="w-full rounded-xl border border-gray-200 bg-gray-50 p-2 font-medium text-dark">
-          <option value="jpeg">JPEG</option>
-          <option value="webp">WebP</option>
-          <option value="png">PNG</option>
-          <option value="pdf">PDF (all images in one file)</option>
-        </select>
+      <!-- Watermarking -->
+      <div class="space-y-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+        <h4 class="font-bold text-dark">Text Watermark</h4>
+        <input type="text" bind:value={watermarkText} placeholder="e.g. © My Brand" class="w-full rounded-xl border border-gray-200 bg-white p-2" />
+        {#if watermarkText.trim()}
+          <div class="grid grid-cols-2 gap-2">
+            <select bind:value={watermarkPos} class="rounded-xl border border-gray-200 bg-white p-2">
+              <option value="bottom-right">Bottom Right</option>
+              <option value="bottom-left">Bottom Left</option>
+              <option value="top-right">Top Right</option>
+              <option value="top-left">Top Left</option>
+              <option value="center">Center</option>
+            </select>
+            <div class="flex items-center gap-2">
+              <span class="text-gray-500">Opacity:</span>
+              <input type="range" min="10" max="100" bind:value={watermarkOpacity} class="w-full accent-primary" />
+            </div>
+          </div>
+        {/if}
       </div>
 
-      <div class="space-y-1">
-        <label for="bulk-naming" class="block font-semibold text-gray-700">File naming</label>
-        <select id="bulk-naming" bind:value={naming} disabled={format === "pdf"} class="w-full rounded-xl border border-gray-200 bg-gray-50 p-2 font-medium text-dark disabled:opacity-50">
-          <option value="numeric">Numbers (1, 2, 3...)</option>
-          <option value="alpha">Letters (A, B, C...)</option>
-          <option value="random">Random names</option>
-          <option value="original">Keep original names</option>
-        </select>
-      </div>
-
-      <div class="space-y-1">
-        <label for="bulk-prefix" class="block font-semibold text-gray-700">Name prefix (optional)</label>
-        <input id="bulk-prefix" type="text" bind:value={prefix} placeholder="e.g. holiday_" class="w-full rounded-xl border border-gray-200 bg-gray-50 p-2 text-dark" />
+      <!-- Filters & Adjustments -->
+      <div class="space-y-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+        <h4 class="font-bold text-dark">Filters & Adjustments</h4>
+        <div class="grid grid-cols-2 gap-2">
+          <select bind:value={filterMode} class="rounded-xl border border-gray-200 bg-white p-2">
+            <option value="none">No Filter</option>
+            <option value="grayscale">Grayscale</option>
+            <option value="sepia">Sepia</option>
+            <option value="high-contrast">High Contrast</option>
+          </select>
+          <input type="text" bind:value={prefix} placeholder="Name prefix (e.g. edited_)" class="rounded-xl border border-gray-200 bg-white p-2" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="space-y-1">
+            <span class="text-gray-500">Brightness: {brightness}%</span>
+            <input type="range" min="50" max="150" bind:value={brightness} class="w-full accent-primary" />
+          </div>
+          <div class="space-y-1">
+            <span class="text-gray-500">Contrast: {contrast}%</span>
+            <input type="range" min="50" max="150" bind:value={contrast} class="w-full accent-primary" />
+          </div>
+        </div>
       </div>
     </section>
 
+    <!-- Action Section -->
     <div class="space-y-3">
       <button
         type="button"
-        onclick={compressAll}
+        onclick={processAll}
         disabled={isProcessing}
         class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-xs font-semibold text-light shadow transition hover:bg-primary-dark disabled:opacity-60"
       >
         <Icon icon={isProcessing ? "mdi:loading" : "mdi:folder-zip-outline"} class={isProcessing ? "animate-spin text-base" : "text-base"} />
-        {isProcessing ? `Processing ${progress}%` : format === "pdf" ? "Combine into PDF & Download" : "Compress & Download"}
+        {isProcessing ? `Processing ${progress}%` : format === "pdf" ? "Combine into PDF & Download" : "Process & Download All"}
       </button>
 
       {#if isProcessing}
