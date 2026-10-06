@@ -1,22 +1,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Raleway:wght@400;700&display=swap');
-
 @import "tailwindcss";
+
+/* This line tells Tailwind v4 how to recognize the .dark class */
+@custom-variant dark (&:where(.dark, .dark *));
 
 body {
   font-family: 'Lato', sans-serif;
   background-color: #f0f4f8;
   color: #333;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
+
+/* Dark mode overrides when .dark is active on html or body */
+.dark body {
+  background-color: #0D1C42;
+  color: #EEEAD7;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Montserrat', sans-serif;
-}
-h1 {
-  font-size: 2.5rem;
-  font-weight: 700;
-}
-h2 {
-  font-size: 2rem;
-  font-weight: 700;
 }
 
 @theme {

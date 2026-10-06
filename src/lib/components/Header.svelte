@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from "@iconify/svelte";
   import { page } from "$app/stores";
+  import { onMount } from "svelte";
 
   export let title: string = "TV Maze";
 
@@ -10,6 +11,31 @@
   ];
 
   let isMenuOpen = false;
+  let isDarkMode = false;
+
+  onMount(() => {
+    const storedTheme = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    
+    isDarkMode = storedTheme === "dark" || (!storedTheme && prefersDark);
+    updateThemeClass();
+  });
+
+  function toggleTheme() {
+    isDarkMode = !isDarkMode;
+    localStorage.setItem("theme", isDarkMode ? "dark" : "light");
+    updateThemeClass();
+  }
+
+  function updateThemeClass() {
+    if (typeof document !== "undefined") {
+      if (isDarkMode) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    }
+  }
 
   function toggleMenu() {
     isMenuOpen = !isMenuOpen;
@@ -39,52 +65,78 @@
 
 <svelte:window on:keydown={handleWindowKeydown} />
 
-<header class="sticky top-0 z-40 bg-secondary/95 backdrop-blur-md border-b border-white/10 text-white shadow-md transition-all duration-200">
+<!-- Header with dark mode styling support -->
+<header class="sticky top-0 z-40 bg-white/95 dark:bg-dark/95 backdrop-blur-md border-b border-gray-200 dark:border-white/10 text-gray-800 dark:text-white shadow-md transition-all duration-200">
   <div class="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 h-16">
     
     <!-- Brand / Title -->
     <a
       href="/"
-      class="flex items-center gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-bermuda rounded-xl transition-transform active:scale-95"
+      class="flex items-center gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl transition-transform active:scale-95"
       aria-label="{title} Home"
     >
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary to-bermuda flex items-center justify-center text-white shadow-md shadow-primary/30 border border-white/20">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-white shadow-md shadow-primary/30 border border-white/20">
         <Icon icon="mdi:movie-open-play-outline" class="text-xl" />
       </div>
-      <span class="text-xl font-black tracking-tight text-white">
+      <span class="text-xl font-black tracking-tight text-gray-900 dark:text-white">
         {title}
       </span>
     </a>
 
-    <!-- Desktop Navigation -->
-    <nav class="hidden lg:flex items-center gap-1.5" aria-label="Main Navigation">
-      {#each menuItems as item (item.url)}
-        {@const active = isItemActive($page.url.pathname, item.url)}
-        <a
-          href={item.url}
-          data-sveltekit-preload-data="hover"
-          class="relative px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-bermuda flex items-center gap-1.5 {active
-            ? 'text-light bg-bermuda shadow-md shadow-bermuda/25 font-extrabold'
-            : 'text-white/80 hover:text-white hover:bg-white/10'}"
-          aria-current={active ? "page" : undefined}
-        >
-          <Icon icon={item.icon} class="text-sm {active ? 'text-dark' : 'text-white/60'}" />
-          <span>{item.name}</span>
-        </a>
-      {/each}
-    </nav>
+    <!-- Desktop Navigation & Theme Toggle -->
+    <div class="hidden lg:flex items-center gap-3">
+      <nav class="flex items-center gap-1.5" aria-label="Main Navigation">
+        {#each menuItems as item (item.url)}
+          {@const active = isItemActive($page.url.pathname, item.url)}
+          <a
+            href={item.url}
+            data-sveltekit-preload-data="hover"
+            class="relative px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary flex items-center gap-1.5 {active
+              ? 'text-white bg-primary shadow-md shadow-primary/25 font-extrabold'
+              : 'text-gray-600 dark:text-white/80 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10'}"
+            aria-current={active ? "page" : undefined}
+          >
+            <Icon icon={item.icon} class="text-sm {active ? 'text-white' : 'text-gray-400 dark:text-white/60'}" />
+            <span>{item.name}</span>
+          </a>
+        {/each}
+      </nav>
 
-    <!-- Mobile Hamburger Toggle -->
-    <button
-      type="button"
-      class="lg:hidden p-2 rounded-xl text-white hover:bg-white/10 active:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-bermuda transition-colors"
-      on:click={toggleMenu}
-      aria-label="Toggle navigation menu"
-      aria-expanded={isMenuOpen}
-      aria-controls="mobile-navigation-drawer"
-    >
-      <Icon icon="mdi:menu" class="text-2xl" />
-    </button>
+      <!-- Desktop Theme Toggle Button -->
+      <button
+        type="button"
+        class="p-2.5 rounded-xl bg-tertiary text-white dark:bg-white/10 hover:bg-gray-900 dark:hover:bg-white/20 dark:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        on:click={toggleTheme}
+        aria-label="Toggle light and dark theme"
+      >
+        <Icon icon={isDarkMode ? "mdi:weather-sunny" : "mdi:weather-night"} class="text-lg text-info" />
+      </button>
+    </div>
+
+    <!-- Mobile Header Actions -->
+    <div class="flex items-center gap-2 lg:hidden">
+      <!-- Mobile Theme Toggle Button -->
+      <button
+        type="button"
+        class="p-2 rounded-xl text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/20 focus:outline-none transition-colors"
+        on:click={toggleTheme}
+        aria-label="Toggle light and dark theme"
+      >
+        <Icon icon={isDarkMode ? "mdi:weather-sunny" : "mdi:weather-night"} class="text-xl text-info" />
+      </button>
+
+      <!-- Mobile Hamburger Toggle -->
+      <button
+        type="button"
+        class="p-2 rounded-xl text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/20 focus:outline-none transition-colors"
+        on:click={toggleMenu}
+        aria-label="Toggle navigation menu"
+        aria-expanded={isMenuOpen}
+        aria-controls="mobile-navigation-drawer"
+      >
+        <Icon icon="mdi:menu" class="text-2xl" />
+      </button>
+    </div>
   </div>
 </header>
 
@@ -102,23 +154,23 @@
 <!-- Mobile Navigation Slide-Over Drawer -->
 <aside
   id="mobile-navigation-drawer"
-  class="fixed top-0 right-0 z-50 h-full w-4/5 max-w-xs bg-primary text-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out lg:hidden"
+  class="fixed top-0 right-0 z-50 h-full w-4/5 max-w-xs bg-white dark:bg-primary text-gray-900 dark:text-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out lg:hidden"
   class:translate-x-0={isMenuOpen}
   class:translate-x-full={!isMenuOpen}
   aria-modal="true"
   aria-label="Mobile Navigation"
 >
   <!-- Drawer Header -->
-  <div class="flex items-center justify-between p-5 border-b border-white/10">
+  <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-white/10">
     <div class="flex items-center gap-2">
-      <div class="w-7 h-7 rounded-lg bg-bermuda/20 border border-bermuda/40 flex items-center justify-center text-bermuda">
+      <div class="w-7 h-7 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center text-primary dark:text-info">
         <Icon icon="mdi:movie-open-play-outline" class="text-base" />
       </div>
-      <span class="text-sm font-bold tracking-tight text-white">{title}</span>
+      <span class="text-sm font-bold tracking-tight">{title}</span>
     </div>
     <button
       type="button"
-      class="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white transition-colors"
+      class="p-2 rounded-xl text-gray-500 dark:text-white/80 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 focus:outline-none transition-colors"
       on:click={closeMenu}
       aria-label="Close navigation drawer"
     >
@@ -136,16 +188,16 @@
             href={item.url}
             data-sveltekit-preload-data="hover"
             class="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold tracking-wide transition-all {active
-              ? 'bg-bermuda text-white shadow-md shadow-bermuda/20'
-              : 'bg-white/5 text-white/90 hover:bg-white/10 hover:text-bermuda border border-white/5'}"
+              ? 'bg-primary text-white shadow-md shadow-primary/20'
+              : 'bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-white/90 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-primary dark:hover:text-info border border-gray-200 dark:border-white/5'}"
             aria-current={active ? "page" : undefined}
             on:click={closeMenu}
           >
             <div class="flex items-center gap-3">
-              <Icon icon={item.icon} class="text-lg {active ? 'text-dark' : 'text-white/60'}" />
+              <Icon icon={item.icon} class="text-lg {active ? 'text-white' : 'text-gray-400 dark:text-white/60'}" />
               <span>{item.name}</span>
             </div>
-            <Icon icon="mdi:chevron-right" class="text-base {active ? 'text-light' : 'text-white/40'}" />
+            <Icon icon="mdi:chevron-right" class="text-base {active ? 'text-white' : 'text-gray-400 dark:text-white/40'}" />
           </a>
         </li>
       {/each}
@@ -153,8 +205,9 @@
   </nav>
 
   <!-- Drawer Footer -->
-  <div class="p-4 border-t border-white/10 text-center text-2xs text-white/60 font-mono">
-    &copy; {new Date().getFullYear()} {title}
+  <div class="p-4 border-t border-gray-200 dark:border-white/10 flex items-center justify-between text-2xs text-gray-500 dark:text-white/60 font-mono">
+    <span>&copy; {new Date().getFullYear()} {title}</span>
+    <span class="capitalize font-semibold">{isDarkMode ? "Dark Mode" : "Light Mode"}</span>
   </div>
 </aside>
 
