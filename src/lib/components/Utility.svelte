@@ -9,7 +9,7 @@
   type NamingMode = "original" | "numeric" | "alpha" | "random";
   type ResizeMode = "none" | "fit" | "fill" | "exact";
   type WatermarkPos = "bottom-right" | "bottom-left" | "top-right" | "top-left" | "center";
-  type FrameStyle = "browser" | "iphone" | "ipad" | "macbook" | "polaroid" | "gallery" | "film" | "neon" | "border";
+  type FrameStyle = "browser" | "android" | "iphone" | "ipad" | "macbook" | "polaroid" | "gallery" | "film" | "neon" | "border" | "forest" | "glossy";
   type QueuedImage = { id: number; file: File; previewUrl: string };
   type Summary = { count: number; originalBytes: number; outputBytes: number; fileName: string };
 
@@ -18,6 +18,7 @@
   const FRAME_OPTIONS: { id: FrameStyle; label: string }[] = [
     { id: "browser", label: "Browser Window" },
     { id: "iphone", label: "iPhone Bezel" },
+    { id: "android", label: "Android Device" },
     { id: "ipad", label: "iPad Bezel" },
     { id: "macbook", label: "MacBook Pro" },
     { id: "polaroid", label: "Polaroid Print" },
@@ -25,6 +26,9 @@
     { id: "film", label: "Film Strip" },
     { id: "neon", label: "Neon Glow" },
     { id: "border", label: "Clean White Border" },
+    { id: "forest", label: "Forest Frame" },
+    { id: "glossy", label: "Glossy Frame" },
+    // add more frame options 
   ];
   const MIME: Record<RasterFormat, string> = {
     jpeg: "image/jpeg",
@@ -498,6 +502,22 @@
         ctx.fill();
         return canvas;
       }
+      case "android": {
+        const bezel = 24 * u;
+        const { canvas, ctx } = stage(w + bezel * 2 + pad * 2, h + bezel * 2 + pad * 2, "#0f172a", "#334155");
+        lift(ctx, 40, 20, 0.5, () => {
+          ctx.fillStyle = "#1e293b";
+          ctx.beginPath();
+          ctx.roundRect(pad, pad, w + bezel * 2, h + bezel * 2, 44 * u);
+          ctx.fill();
+        });
+        place(ctx, pad + bezel, pad + bezel, 28 * u);
+        ctx.fillStyle = "#000000";
+        ctx.beginPath();
+        ctx.roundRect(pad + bezel + w * 0.36, pad + bezel + 12 * u, w * 0.28, 26 * u, 13 * u);
+        ctx.fill();
+        return canvas;
+      }
       case "ipad": {
         const bezel = 30 * u;
         const { canvas, ctx } = stage(w + bezel * 2 + pad * 2, h + bezel * 2 + pad * 2, "#cbd5e1", "#94a3b8");
@@ -593,6 +613,40 @@
           ctx.fill();
         }
         place(ctx, pad + side, pad + edge);
+        return canvas;
+      }
+      case "forest": {
+        const m = pad + 24 * u;
+        const { canvas, ctx } = stage(w + m * 2, h + m * 2, "#0b2e0b", "#1a2e1a");
+        place(ctx, m, m);
+        const glow = (color: string, inset: number, width: number, blur: number) => {
+          ctx.save();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = width * u;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = blur * u;
+          ctx.strokeRect(m - inset * u, m - inset * u, w + inset * 2 * u, h + inset * 2 * u);
+          ctx.restore();
+        };
+        glow("#22c55e", 8, 5, 30);
+        glow("#16a34a", 18, 3, 24);
+        return canvas;
+      }
+      case "glossy": {
+        const m = pad + 24 * u;
+        const { canvas, ctx } = stage(w + m * 2, h + m * 2, "#1a1a1a", "#333333");
+        place(ctx, m, m);
+        const glow = (color: string, inset: number, width: number, blur: number) => {
+          ctx.save();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = width * u;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = blur * u;
+          ctx.strokeRect(m - inset * u, m - inset * u, w + inset * 2 * u, h + inset * 2 * u);
+          ctx.restore();
+        };
+        glow("#ffffff", 8, 5, 30);
+        glow("#cccccc", 18, 3, 24);
         return canvas;
       }
       case "neon": {
