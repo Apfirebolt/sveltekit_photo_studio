@@ -7,7 +7,6 @@
   type NamingMode = "original" | "numeric" | "alpha" | "random";
   type ResizeMode = "none" | "fit" | "fill" | "exact";
   type WatermarkPos = "bottom-right" | "bottom-left" | "top-right" | "top-left" | "center";
-  type FilterMode = "none" | "grayscale" | "sepia" | "high-contrast";
   type QueuedImage = { id: number; file: File; previewUrl: string };
   type Summary = { count: number; originalBytes: number; outputBytes: number; fileName: string };
 
@@ -18,6 +17,157 @@
     png: "image/png",
   };
 
+  // Filter categories with TensorFlow entries automatically ignored / filtered to canvas type only
+  const filterCategories = [
+    {
+      name: "Sketch & Drawing Styles",
+      filters: [
+        { id: 'sketch_graphite', name: '📝 Soft Graphite Pencil', type: 'canvas', css: 'grayscale(100%) contrast(140%) brightness(110%) blur(0.5px)' },
+        { id: 'sketch_crosshatch', name: '✒️ Fine Ink Pen & Hatch', type: 'canvas', css: 'grayscale(100%) contrast(220%) brightness(95%) invert(15%)' },
+        { id: 'sketch_charcoal', name: '🪵 Deep Charcoal Sketch', type: 'canvas', css: 'grayscale(100%) contrast(250%) brightness(85%) blur(0.8px)' },
+        { id: 'sketch_calligraphy', name: '✒️ Heavy Calligraphy Nib Ink', type: 'canvas', css: 'grayscale(100%) contrast(300%) brightness(90%)' },
+        { id: 'sketch_gestural', name: '⚡ Gestural Quick Contour', type: 'canvas', css: 'grayscale(100%) contrast(190%) brightness(115%) blur(0.4px)' },
+        { id: 'sketch_architectural', name: '📐 Precise Drafting Line', type: 'canvas', css: 'grayscale(100%) contrast(240%) brightness(105%) invert(5%)' },
+        { id: 'sketch_vellum', name: '📜 Translucent Vellum Pencil', type: 'canvas', css: 'grayscale(100%) sepia(30%) contrast(150%) brightness(110%)' },
+        { id: 'sketch_newsprint', name: '📰 Newsprint Quick Sketch', type: 'canvas', css: 'grayscale(100%) sepia(20%) contrast(170%) brightness(100%)' },
+        { id: 'cs_01', name: '🖋️ 2H Hard Technical Pencil', type: 'canvas', css: 'grayscale(100%) contrast(130%) brightness(120%)' },
+        { id: 'cs_02', name: '✏️ 4B Soft Dark Graphite', type: 'canvas', css: 'grayscale(100%) contrast(190%) brightness(85%) blur(0.4px)' },
+        { id: 'cs_03', name: '🪵 6B Extra Dark Charcoal', type: 'canvas', css: 'grayscale(100%) contrast(280%) brightness(75%) blur(0.7px)' },
+        { id: 'cs_04', name: '✒️ Archival Micron Pen 0.1', type: 'canvas', css: 'grayscale(100%) contrast(250%) brightness(95%)' },
+        { id: 'cs_05', name: '🖋️ Archival Micron Pen 0.5', type: 'canvas', css: 'grayscale(100%) contrast(210%) brightness(100%)' },
+        { id: 'cs_06', name: '🖌️ Chinese Bamboo Brush Ink', type: 'canvas', css: 'grayscale(100%) contrast(320%) brightness(80%) blur(0.9px)' },
+        { id: 'cs_07', name: '✒️ Japanese Sumi-E Ink Wash', type: 'canvas', css: 'grayscale(100%) contrast(180%) brightness(110%) blur(1.2px)' },
+        { id: 'cs_08', name: '📜 Antique Parchment Sketch', type: 'canvas', css: 'grayscale(100%) sepia(70%) contrast(160%) brightness(105%)' },
+        { id: 'cs_09', name: '🏛️ Renaissance Silverpoint', type: 'canvas', css: 'grayscale(100%) sepia(20%) contrast(140%) brightness(115%)' },
+        { id: 'cs_10', name: '📐 Blueprint Cyanotype', type: 'canvas', css: 'grayscale(100%) invert(95%) hue-rotate(190deg) contrast(220%)' },
+        { id: 'cs_11', name: '📐 Sepia Architectural Draft', type: 'canvas', css: 'grayscale(100%) invert(90%) sepia(100%) hue-rotate(-30deg) contrast(200%)' },
+        { id: 'cs_12', name: '📝 Vintage Ledger Pencil', type: 'canvas', css: 'grayscale(100%) sepia(45%) contrast(150%) brightness(108%)' },
+        { id: 'cs_13', name: '📰 Rough Newsprint Etching', type: 'canvas', css: 'grayscale(100%) contrast(210%) brightness(102%) sepia(10%)' },
+        { id: 'cs_14', name: '🖊️️ Ballpoint Pen Blue Sketch', type: 'canvas', css: 'saturate(300%) hue-rotate(210deg) contrast(170%) brightness(95%)' },
+        { id: 'cs_15', name: '🖊️ Ballpoint Pen Red Sketch', type: 'canvas', css: 'saturate(300%) hue-rotate(330deg) contrast(180%) brightness(90%)' },
+        { id: 'cs_16', name: '🪵 Compressed Willow Charcoal', type: 'canvas', css: 'grayscale(100%) contrast(300%) brightness(70%) blur(1px)' },
+        { id: 'cs_17', name: '🪵 White Chalk on Black Board', type: 'canvas', css: 'grayscale(100%) invert(100%) contrast(250%) brightness(110%)' },
+        { id: 'cs_18', name: '🪵 Sanguine Red Chalk Study', type: 'canvas', css: 'grayscale(100%) sepia(100%) hue-rotate(-35deg) saturate(250%) contrast(140%)' },
+        { id: 'cs_19', name: '🪵 Conte Crayon Noir', type: 'canvas', css: 'grayscale(100%) contrast(260%) brightness(82%) blur(0.6px)' },
+        { id: 'cs_20', name: '🌾 Tinted Tone Paper Sketch', type: 'canvas', css: 'grayscale(100%) sepia(35%) contrast(165%) brightness(102%)' },
+        { id: 'cs_21', name: '✏️ Cross-Hatch Fine Shade', type: 'canvas', css: 'grayscale(100%) contrast(240%) brightness(90%)' },
+        { id: 'cs_22', name: '✏️ Diagonal Parallel Hatch', type: 'canvas', css: 'grayscale(100%) contrast(190%) brightness(105%) blur(0.3px)' },
+        { id: 'cs_23', name: '✒️ Contour Line Drawing', type: 'canvas', css: 'grayscale(100%) contrast(280%) brightness(98%)' },
+        { id: 'cs_24', name: '🖋️ Minimalist Gesture Pen', type: 'canvas', css: 'grayscale(100%) contrast(170%) brightness(112%)' },
+        { id: 'cs_25', name: '📝 Rough Aesthetic Scribble', type: 'canvas', css: 'grayscale(100%) contrast(200%) brightness(105%) blur(0.5px)' },
+        { id: 'cs_26', name: '🖌️ Gouache Line & Wash', type: 'canvas', css: 'grayscale(100%) contrast(160%) brightness(110%) saturate(120%)' },
+        { id: 'cs_27', name: '✒️ Fountain Pen Fluid Stroke', type: 'canvas', css: 'grayscale(100%) contrast(220%) brightness(95%)' },
+        { id: 'cs_28', name: '🖋️ Dip Pen & Liquid Ink', type: 'canvas', css: 'grayscale(100%) contrast(290%) brightness(88%)' },
+        { id: 'cs_29', name: '📝 Editorial Cartoon Ink', type: 'canvas', css: 'grayscale(100%) contrast(270%) brightness(102%)' },
+        { id: 'cs_30', name: '🪵 Academic Life Drawing Charcoal', type: 'canvas', css: 'grayscale(100%) contrast(210%) brightness(88%) blur(0.6px)' },
+        { id: 'cs_31', name: '📜 Antique Manuscript Quill', type: 'canvas', css: 'grayscale(100%) sepia(85%) contrast(190%) brightness(95%)' },
+        { id: 'cs_32', name: '📐 Mechanical Draftsman Pen', type: 'canvas', css: 'grayscale(100%) contrast(230%) brightness(108%)' },
+        { id: 'cs_33', name: '✒️ Comic Book Inker Pro', type: 'canvas', css: 'grayscale(100%) contrast(310%) brightness(90%)' },
+        { id: 'cs_34', name: '🖋️ Manga Speed Pen Stroke', type: 'canvas', css: 'grayscale(100%) contrast(280%) brightness(100%)' },
+        { id: 'cs_35', name: '📝 Storyboard Rough Pencil', type: 'canvas', css: 'grayscale(100%) contrast(150%) brightness(115%) blur(0.7px)' },
+        { id: 'cs_36', name: '✏️️ Hard Pastel Pencil Sketch', type: 'canvas', css: 'grayscale(100%) contrast(135%) brightness(125%)' },
+        { id: 'cs_37', name: '🪵 Soft Pastel Sketch Shade', type: 'canvas', css: 'grayscale(100%) contrast(175%) brightness(105%) blur(0.8px)' },
+        { id: 'cs_38', name: '✒️ Copperplate Calligraphy Ink', type: 'canvas', css: 'grayscale(100%) contrast(300%) brightness(85%)' },
+        { id: 'cs_39', name: '🖋️ Gothic Blackletter Ink', type: 'canvas', css: 'grayscale(100%) contrast(340%) brightness(75%)' },
+        { id: 'cs_40', name: '📝 Italic Nib Handwriting', type: 'canvas', css: 'grayscale(100%) contrast(220%) brightness(96%)' },
+        { id: 'cs_41', name: '📐 Engineering Isometric Grid', type: 'canvas', css: 'grayscale(100%) contrast(190%) brightness(110%) invert(8%)' },
+        { id: 'cs_42', name: '🏛️ Etching Plate Copperline', type: 'canvas', css: 'grayscale(100%) contrast(210%) brightness(98%) sepia(15%)' },
+        { id: 'cs_43', name: '🏛️ Woodcut Block Print', type: 'canvas', css: 'grayscale(100%) contrast(350%) brightness(70%)' },
+        { id: 'cs_44', name: '🏛️ Linocut Impression', type: 'canvas', css: 'grayscale(100%) contrast(280%) brightness(85%)' },
+        { id: 'cs_45', name: '🏛️ Mezzotint Tone Shading', type: 'canvas', css: 'grayscale(100%) contrast(170%) brightness(92%) blur(0.5px)' },
+        { id: 'cs_46', name: '🏛️ Aquatint Fine Etch', type: 'canvas', css: 'grayscale(100%) contrast(160%) brightness(102%) blur(0.4px)' },
+        { id: 'cs_47', name: '📜 Papyrus Sketch Texture', type: 'canvas', css: 'grayscale(100%) sepia(60%) contrast(140%) brightness(112%)' },
+        { id: 'cs_48', name: '🌾 Rice Paper Sumi Wash', type: 'canvas', css: 'grayscale(100%) sepia(15%) contrast(130%) brightness(118%) blur(0.6px)' },
+        { id: 'cs_49', name: '✏️ Designer Concept Sketch', type: 'canvas', css: 'grayscale(100%) contrast(160%) brightness(110%) blur(0.3px)' },
+        { id: 'cs_50', name: '✒️ Master Illustrator Lineart', type: 'canvas', css: 'grayscale(100%) contrast(260%) brightness(98%)' }
+      ]
+    },
+    {
+      name: "Cinematic & Film Grades",
+      filters: [
+        { id: 'cine_technicolor_35', name: '🎬 1935 Technicolor Two-Strip', type: 'canvas', css: 'sepia(40%) saturate(220%) hue-rotate(-15deg) contrast(120%)' },
+        { id: 'cine_blade_runner', name: '🌧️ Blade Runner Amber & Teal', type: 'canvas', css: 'contrast(130%) saturate(140%) hue-rotate(25deg) sepia(20%)' },
+        { id: 'cine_matrix_green', name: '💻 The Matrix Terminal Code', type: 'canvas', css: 'grayscale(100%) sepia(100%) hue-rotate(85deg) saturate(400%) contrast(150%)' },
+        { id: 'cine_cyberpunk_neon', name: '⚡ Cyberpunk Neon District', type: 'canvas', css: 'saturate(300%) contrast(150%) hue-rotate(290deg)' },
+        { id: 'cine_kodachrome_64', name: '🎞️ Classic Kodachrome 64', type: 'canvas', css: 'contrast(140%) saturate(160%) sepia(15%) brightness(105%)' },
+        { id: 'cine_panavision_noir', name: '🕵️️ Panavision High-Contrast Noir', type: 'canvas', css: 'grayscale(100%) contrast(210%) brightness(85%)' },
+        { id: 'cine_bleach_bypass', name: '🧪 Silver Bleach Bypass Film', type: 'canvas', css: 'grayscale(50%) contrast(190%) brightness(110%)' },
+        { id: 'cine_cross_process', name: '🧪 Cross-Processed Slide Stock', type: 'canvas', css: 'saturate(200%) hue-rotate(320deg) contrast(130%)' },
+        { id: 'cine_teal_orange', name: '🎬 Hollywood Blockbuster Teal & Orange', type: 'canvas', css: 'contrast(125%) saturate(150%) hue-rotate(15deg)' },
+        { id: 'cine_vintage_70s', name: '📻 1970s Warm Fade Film', type: 'canvas', css: 'sepia(60%) contrast(85%) brightness(110%) saturate(75%)' },
+        { id: 'cine_nordic_ice', name: '❄️ Nordic Noir Cold Frost', type: 'canvas', css: 'hue-rotate(195deg) saturate(70%) contrast(120%) brightness(105%)' },
+        { id: 'cine_sunset_noir', name: '🌇 Golden Hour Sunset Drama', type: 'canvas', css: 'sepia(45%) saturate(180%) hue-rotate(-25deg) contrast(130%)' },
+        { id: 'cine_sepia_dream', name: '📜 Antique Sepia Cinema', type: 'canvas', css: 'sepia(90%) contrast(120%) brightness(105%)' },
+        { id: 'cine_polaroid_600', name: '📸 Vintage Polaroid Fade', type: 'canvas', css: 'contrast(90%) brightness(120%) saturate(70%) sepia(25%)' },
+        { id: 'cine_super_8', name: '📼 Super 8 Home Movie Grain', type: 'canvas', css: 'contrast(150%) saturate(120%) sepia(40%) blur(0.3px)' },
+        { id: 'cine_technicolor_3strip', name: '🎨 Technicolor 3-Strip Vibrant', type: 'canvas', css: 'saturate(240%) contrast(130%) brightness(102%)' },
+        { id: 'cine_ghibli_anime', name: '🌸 Anime Studio Ghibli Vibrant', type: 'canvas', css: 'brightness(112%) saturate(160%) contrast(105%) hue-rotate(5deg)' },
+        { id: 'cine_sin_city', name: '❤ Sin City Selective Red', type: 'canvas', css: 'grayscale(100%) contrast(250%) saturate(500%) hue-rotate(-40deg)' },
+        { id: 'cine_fuji_velvia', name: '🌲 Fujifilm Velvia Landscape', type: 'canvas', css: 'saturate(220%) contrast(135%) brightness(98%)' },
+        { id: 'cine_edward_hopper', name: '🎨 Cinematic Painterly Light', type: 'canvas', css: 'contrast(115%) saturate(130%) sepia(15%) brightness(108%)' }
+      ]
+    },
+    {
+      name: "Professional Studio & Retouch",
+      filters: [
+        { id: 'normal', name: '🌟 Original Studio', type: 'canvas', css: 'none' },
+        { id: 'studio_soft', name: '✨ Soft Portrait Glow', type: 'canvas', css: 'brightness(105%) contrast(95%) blur(0.3px) saturate(105%)' },
+        { id: 'studio_crisp', name: '💎 High Definition Edge', type: 'canvas', css: 'contrast(135%) saturate(110%) brightness(102%)' },
+        { id: 'matte_film', name: '🎞 Matte Cinematic Film', type: 'canvas', css: 'contrast(90%) brightness(105%) saturate(85%) sepia(15%)' },
+        { id: 'rich_shadows', name: '🌑 Rich Shadow Balance', type: 'canvas', css: 'contrast(120%) brightness(95%) saturate(115%)' },
+        { id: 'studio_clarity', name: '🔍 Ultra Clarity & Definition', type: 'canvas', css: 'contrast(150%) saturate(120%) brightness(105%)' },
+        { id: 'retouch_porcelain', name: '🧖‍♀️ Porcelain Skin Softening', type: 'canvas', css: 'brightness(108%) contrast(90%) blur(0.4px) saturate(98%)' },
+        { id: 'retouch_high_fashion', name: '👠 High Fashion Editorial Contrast', type: 'canvas', css: 'contrast(160%) saturate(110%) brightness(102%) grayscale(10%)' },
+        { id: 'retouch_warm_ivory', name: '🦢 Warm Ivory Portrait Tone', type: 'canvas', css: 'sepia(18%) brightness(106%) saturate(105%) contrast(102%)' },
+        { id: 'retouch_cool_porcelain', name: '❄️ Cool Porcelain Skin Balance', type: 'canvas', css: 'hue-rotate(185deg) saturate(85%) contrast(105%) brightness(104%)' },
+        { id: 'retouch_bronze_tan', name: '🏽 Sun-Kissed Bronze Glow', type: 'canvas', css: 'sepia(35%) saturate(130%) contrast(110%) brightness(98%)' },
+        { id: 'retouch_caramel_skin', name: '🍮 Caramel Tone Retouch', type: 'canvas', css: 'sepia(25%) saturate(120%) contrast(108%) brightness(102%)' },
+        { id: 'retouch_matte_skin', name: '🧊 Anti-Shine Matte Finish', type: 'canvas', css: 'contrast(115%) brightness(96%) saturate(90%)' },
+        { id: 'retouch_airbrushed', name: '💨 Studio Airbrushed Look', type: 'canvas', css: 'brightness(110%) contrast(92%) blur(0.6px) saturate(102%)' },
+        { id: 'retouch_commercial_pop', name: '🏷️ Commercial Product Pop', type: 'canvas', css: 'contrast(140%) saturate(130%) brightness(104%)' },
+        { id: 'retouch_clean_headshot', name: '👤 Clean Corporate Headshot', type: 'canvas', css: 'contrast(115%) brightness(105%) saturate(102%)' },
+        { id: 'retouch_beautifying', name: '🌸 Soft Focus Beautifying', type: 'canvas', css: 'brightness(107%) contrast(95%) blur(0.5px)' },
+        { id: 'retouch_vibrant_lips', name: '💄 Rich Accent Saturation', type: 'canvas', css: 'saturate(145%) contrast(115%) brightness(102%)' },
+        { id: 'retouch_deep_tan', name: '🏽 Deep Sunlit Retouch', type: 'canvas', css: 'sepia(40%) saturate(140%) contrast(112%) brightness(95%)' },
+        { id: 'retouch_silk_skin', name: '🧵 Silk Texture Smoothness', type: 'canvas', css: 'brightness(106%) contrast(94%) blur(0.45px)' },
+        { id: 'retouch_glamour_glow', name: '✨ 90s Glamour Glow', type: 'canvas', css: 'brightness(115%) contrast(88%) blur(0.8px) saturate(110%)' },
+        { id: 'retouch_studio_key', name: '💡 High Key Studio Lighting', type: 'canvas', css: 'brightness(125%) contrast(95%) saturate(95%)' },
+        { id: 'retouch_low_key', name: '🔦 Low Key Dramatic Shadows', type: 'canvas', css: 'brightness(75%) contrast(170%) saturate(110%)' },
+        { id: 'retouch_rim_light', name: '⚡ Edge Rim Light Enhancement', type: 'canvas', css: 'contrast(165%) brightness(108%) saturate(120%)' },
+        { id: 'retouch_studio_fill', name: '🛋️ Balanced Studio Fill Light', type: 'canvas', css: 'brightness(110%) contrast(100%) saturate(105%)' },
+        { id: 'retouch_neutral_bal', name: '⚖️ Neutral Gray Balancer', type: 'canvas', css: 'grayscale(20%) contrast(110%) brightness(102%)' },
+        { id: 'retouch_sharp_eyes', name: '👁️ High-Frequency Detail Sharp', type: 'canvas', css: 'contrast(155%) saturate(110%)' },
+        { id: 'retouch_subtle_warm', name: '🌤️ Subtle Morning Warmth', type: 'canvas', css: 'sepia(12%) brightness(103%) saturate(108%)' },
+        { id: 'retouch_cool_tone', name: '🧊 Crisp Architectural White', type: 'canvas', css: 'hue-rotate(190deg) saturate(90%) brightness(105%)' },
+        { id: 'retouch_golden_skin', name: '🍯 Golden Hour Portrait Balance', type: 'canvas', css: 'sepia(30%) saturate(135%) contrast(105%)' },
+        { id: 'retouch_peachy_glow', name: '🍑 Soft Peachy Glow', type: 'canvas', css: 'sepia(15%) hue-rotate(-10deg) saturate(120%) brightness(106%)' },
+        { id: 'retouch_rose_complexion', name: '🌹 Rose Complexion Tint', type: 'canvas', css: 'hue-rotate(345deg) saturate(125%) brightness(104%)' },
+        { id: 'retouch_olive_skin', name: '🫒 Olive Skin Complexion', type: 'canvas', css: 'hue-rotate(45deg) saturate(90%) contrast(105%)' },
+        { id: 'retouch_espresso_tone', name: '☕ Rich Espresso Tone', type: 'canvas', css: 'sepia(50%) contrast(130%) brightness(90%)' },
+        { id: 'retouch_alabaster', name: '🦢 Alabaster White Balance', type: 'canvas', css: 'brightness(112%) contrast(92%) saturate(95%)' },
+        { id: 'retouch_ivory_glow', name: '✨ Polished Ivory Glow', type: 'canvas', css: 'brightness(108%) contrast(98%) sepia(10%)' },
+        { id: 'retouch_velvet_skin', name: '🧸 Velvet Texture Tone', type: 'canvas', css: 'contrast(105%) brightness(102%) blur(0.25px)' },
+        { id: 'retouch_satin_finish', name: '🎗️ Satin Gloss Finish', type: 'canvas', css: 'contrast(120%) brightness(104%) saturate(105%)' },
+        { id: 'retouch_crystal_clear', name: '💎 Crystal Clear Retouch', type: 'canvas', css: 'contrast(140%) brightness(105%) saturate(112%)' },
+        { id: 'retouch_studio_master', name: '👑 Master Studio Grade', type: 'canvas', css: 'contrast(130%) brightness(103%) saturate(110%)' },
+        { id: 'retouch_natural_balance', name: '🌿 True-to-Life Natural', type: 'canvas', css: 'contrast(105%) brightness(101%) saturate(102%)' },
+        { id: 'retouch_pro_portrait', name: '📷 Professional Portrait Polish', type: 'canvas', css: 'contrast(118%) brightness(104%) saturate(106%)' },
+        { id: 'retouch_soft_contrast', name: '☁️️ Soft Contrast Enhancer', type: 'canvas', css: 'contrast(92%) brightness(106%) saturate(102%)' },
+        { id: 'retouch_dynamic_range', name: '📈 Dynamic Range Recovery', type: 'canvas', css: 'contrast(110%) brightness(105%) saturate(115%)' },
+        { id: 'retouch_highlight_saver', name: '☀️ Highlight Tone Optimizer', type: 'canvas', css: 'brightness(95%) contrast(125%) saturate(105%)' },
+        { id: 'retouch_shadow_lift', name: '🔦 Shadow Detail Enhancer', type: 'canvas', css: 'brightness(115%) contrast(90%) saturate(105%)' },
+        { id: 'retouch_midtone_punch', name: '🎯 Midtone Structural Punch', type: 'canvas', css: 'contrast(145%) brightness(101%)' },
+        { id: 'retouch_editorial_clean', name: '📰 Editorial Clean Finish', type: 'canvas', css: 'contrast(122%) brightness(103%) saturate(98%)' },
+        { id: 'retouch_catalog_look', name: '📖 Studio Catalog Standard', type: 'canvas', css: 'contrast(115%) brightness(105%) saturate(105%)' },
+        { id: 'retouch_magazine_cover', name: '🌟 Magazine Cover Grade', type: 'canvas', css: 'contrast(135%) brightness(102%) saturate(118%)' },
+        { id: 'retouch_skin_perfection', name: '💖 Ultimate Skin Perfection', type: 'canvas', css: 'brightness(106%) contrast(93%) blur(0.35px) saturate(102%)' }
+      ]
+    }
+  ];
+
+  // Flattened list of valid canvas filters for easy random selection / lookup
+  const allCanvasFilters = filterCategories.flatMap((cat) => cat.filters);
+
   let nextId = 0;
   let images = $state<QueuedImage[]>([]);
   let reduction = $state(30);
@@ -25,7 +175,12 @@
   let naming = $state<NamingMode>("numeric");
   let prefix = $state("");
 
-  // New utility states
+  // Filter selection states
+  let filterSearchQuery = $state("");
+  let selectedFilterId = $state("normal");
+  let feelingLucky = $state(false);
+
+  // Other utility states
   let resizeMode = $state<ResizeMode>("none");
   let targetWidth = $state(1200);
   let targetHeight = $state(1200);
@@ -35,17 +190,22 @@
   let watermarkPos = $state<WatermarkPos>("bottom-right");
   let watermarkOpacity = $state(50);
 
-  let filterMode = $state<FilterMode>("none");
   let brightness = $state(100);
   let contrast = $state(100);
-
-  let stripExif = $state(true);
 
   let isDragging = $state(false);
   let isProcessing = $state(false);
   let progress = $state(0);
   let errorMessage = $state("");
   let summary = $state<Summary | null>(null);
+
+  // Filter categories filtered by search query
+  const filteredCategories = $derived(
+    filterCategories.map((cat) => ({
+      ...cat,
+      filters: cat.filters.filter((f) => f.name.toLowerCase().includes(filterSearchQuery.toLowerCase())),
+    })).filter((cat) => cat.filters.length > 0)
+  );
 
   const formatBytes = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -132,7 +292,7 @@
     return `${name}.${extension}`;
   };
 
-  const processCanvas = (bitmap: ImageBitmap) => {
+  const processCanvas = (bitmap: ImageBitmap, activeCssFilter?: string) => {
     let w = bitmap.width;
     let h = bitmap.height;
     let dx = 0;
@@ -175,25 +335,22 @@
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Canvas is not available.");
 
-    // Fill background (for JPEG/fill padding)
     if (format === "jpeg" || resizeMode === "fill" || resizeMode === "exact") {
       ctx.fillStyle = padColor;
       ctx.fillRect(0, 0, finalW, finalH);
     }
 
-    // Apply filters & adjustments via ctx properties
+    // Compose filters (Preset Filter CSS + Manual Sliders)
     let filterString = "";
-    if (filterMode === "grayscale") filterString += "grayscale(100% )";
-    if (filterMode === "sepia") filterString += "sepia(100%)";
-    if (filterMode === "high-contrast") filterString += "contrast(150%)";
-    if (brightness !== 100) filterString += ` brightness(${brightness}%)`;
-    if (contrast !== 100) filterString += ` contrast(${contrast}%)`;
-    if (filterString) ctx.filter = filterString.trim();
+    if (activeCssFilter && activeCssFilter !== "none") filterString += `${activeCssFilter} `;
+    if (brightness !== 100) filterString += `brightness(${brightness}%) `;
+    if (contrast !== 100) filterString += `contrast(${contrast}%) `;
+    if (filterString.trim()) ctx.filter = filterString.trim();
 
     ctx.drawImage(bitmap, dx, dy, dw, dh);
-    ctx.filter = "none"; // reset filter
+    ctx.filter = "none";
 
-    // Apply Watermark
+    // Watermark
     if (watermarkText.trim()) {
       ctx.font = `${Math.max(12, Math.round(finalW * 0.03))}px sans-serif`;
       ctx.fillStyle = `rgba(255, 255, 255, ${watermarkOpacity / 100})`;
@@ -249,7 +406,18 @@
 
     for (const [index, item] of queue.entries()) {
       const bitmap = await createImageBitmap(item.file);
-      const canvas = processCanvas(bitmap);
+      
+      // Determine active CSS filter based on selection or "I'm feeling lucky" random choice
+      let cssToApply = "none";
+      if (feelingLucky) {
+        const randomFilter = allCanvasFilters[Math.floor(Math.random() * allCanvasFilters.length)];
+        cssToApply = randomFilter.css;
+      } else {
+        const found = allCanvasFilters.find((f) => f.id === selectedFilterId);
+        if (found) cssToApply = found.css;
+      }
+
+      const canvas = processCanvas(bitmap, cssToApply);
       bitmap.close();
       const blob = await canvasToBlob(canvas, MIME[format as Exclude<OutputFormat, "pdf">], quality);
       outputs.push({ name: makeName(index, item.file, extensionFor(blob.type), used), blob });
@@ -276,7 +444,17 @@
 
     for (const [index, item] of queue.entries()) {
       const bitmap = await createImageBitmap(item.file);
-      const canvas = processCanvas(bitmap);
+      
+      let cssToApply = "none";
+      if (feelingLucky) {
+        const randomFilter = allCanvasFilters[Math.floor(Math.random() * allCanvasFilters.length)];
+        cssToApply = randomFilter.css;
+      } else {
+        const found = allCanvasFilters.find((f) => f.id === selectedFilterId);
+        if (found) cssToApply = found.css;
+      }
+
+      const canvas = processCanvas(bitmap, cssToApply);
       bitmap.close();
       const { width, height } = canvas;
       const orientation = width >= height ? "landscape" : "portrait";
@@ -402,7 +580,7 @@
         </div>
       </div>
 
-      <!-- Resizing & Padding -->
+      <!-- Smart Resizing -->
       <div class="space-y-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3">
         <h4 class="font-bold text-dark">Smart Resizing</h4>
         <div class="grid grid-cols-2 gap-2">
@@ -430,39 +608,45 @@
         {/if}
       </div>
 
-      <!-- Watermarking -->
+      <!-- Filter Selection & Search -->
       <div class="space-y-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3">
-        <h4 class="font-bold text-dark">Text Watermark</h4>
-        <input type="text" bind:value={watermarkText} placeholder="e.g. © My Brand" class="w-full rounded-xl border border-gray-200 bg-white p-2" />
-        {#if watermarkText.trim()}
-          <div class="grid grid-cols-2 gap-2">
-            <select bind:value={watermarkPos} class="rounded-xl border border-gray-200 bg-white p-2">
-              <option value="bottom-right">Bottom Right</option>
-              <option value="bottom-left">Bottom Left</option>
-              <option value="top-right">Top Right</option>
-              <option value="top-left">Top Left</option>
-              <option value="center">Center</option>
+        <div class="flex items-center justify-between">
+          <h4 class="font-bold text-dark">Preset Filters</h4>
+          <label class="flex cursor-pointer items-center gap-1.5 font-semibold text-primary">
+            <input type="checkbox" bind:checked={feelingLucky} class="rounded accent-primary" />
+            🎲 I'm Feeling Lucky
+          </label>
+        </div>
+
+        {#if !feelingLucky}
+          <div class="space-y-2">
+            <input
+              type="text"
+              bind:value={filterSearchQuery}
+              placeholder="🔍 Search filters..."
+              class="w-full rounded-xl border border-gray-200 bg-white p-2 text-dark"
+            />
+            <select bind:value={selectedFilterId} class="w-full rounded-xl border border-gray-200 bg-white p-2 font-medium text-dark">
+              {#each filteredCategories as category}
+                <optgroup label={category.name}>
+                  {#each category.filters as filter}
+                    <option value={filter.id}>{filter.name}</option>
+                  {/each}
+                </optgroup>
+              {/each}
             </select>
-            <div class="flex items-center gap-2">
-              <span class="text-gray-500">Opacity:</span>
-              <input type="range" min="10" max="100" bind:value={watermarkOpacity} class="w-full accent-primary" />
-            </div>
           </div>
+        {:else}
+          <p class="rounded-xl border border-primary/30 bg-primary/5 p-3 text-center text-primary font-medium">
+            ✨ Random canvas filters will be applied to each image automatically upon export!
+          </p>
         {/if}
       </div>
 
-      <!-- Filters & Adjustments -->
+      <!-- Watermarking & Adjustments -->
       <div class="space-y-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3">
-        <h4 class="font-bold text-dark">Filters & Adjustments</h4>
-        <div class="grid grid-cols-2 gap-2">
-          <select bind:value={filterMode} class="rounded-xl border border-gray-200 bg-white p-2">
-            <option value="none">No Filter</option>
-            <option value="grayscale">Grayscale</option>
-            <option value="sepia">Sepia</option>
-            <option value="high-contrast">High Contrast</option>
-          </select>
-          <input type="text" bind:value={prefix} placeholder="Name prefix (e.g. edited_)" class="rounded-xl border border-gray-200 bg-white p-2" />
-        </div>
+        <h4 class="font-bold text-dark">Watermark & Adjustments</h4>
+        <input type="text" bind:value={watermarkText} placeholder="© Watermark text (optional)" class="w-full rounded-xl border border-gray-200 bg-white p-2" />
         <div class="grid grid-cols-2 gap-2">
           <div class="space-y-1">
             <span class="text-gray-500">Brightness: {brightness}%</span>
