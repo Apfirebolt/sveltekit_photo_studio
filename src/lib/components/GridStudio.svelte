@@ -43,6 +43,7 @@
   // Aspect Ratio & Cropping State
   let aspectRatio = $state<"free" | "1:1" | "4:3" | "16:9" | "golden">("free");
   let showCropWindow = $state(false);
+  let cropShape = $state<CropShape>("rectangle");
   let cropRect = $state({ x: 0, y: 0, width: 1, height: 1 });
   let croppedImageObj = $state<HTMLImageElement | null>(null);
   let croppedImageSrc = $state("");
@@ -87,6 +88,71 @@
     "S",
     "T",
   ];
+
+  type CropShape = "rectangle" | "square" | "circle" | "ellipse" | "rounded" | "triangle" | "hexagon" | "star" | "heart";
+
+  const CROP_SHAPES: { id: CropShape; label: string }[] = [
+    { id: "rectangle", label: "▭ Rectangle" },
+    { id: "square", label: "◻ Square" },
+    { id: "circle", label: "◯ Circle" },
+    { id: "ellipse", label: "⬭ Ellipse" },
+    { id: "rounded", label: "▢ Rounded" },
+    { id: "triangle", label: "△ Triangle" },
+    { id: "hexagon", label: "⬡ Hexagon" },
+    { id: "star", label: "☆ Star" },
+    { id: "heart", label: "♡ Heart" },
+  ];
+
+  const isSquareShape = (shape: CropShape) => shape === "square" || shape === "circle";
+
+  // Outside a non-rectangular shape the pixels are transparent, which JPEG can't store.
+  const isShapedCrop = $derived(cropShape !== "rectangle" && cropShape !== "square");
+  const imageMime = $derived(isShapedCrop ? "image/png" : "image/jpeg");
+  const imageExt = $derived(isShapedCrop ? "png" : "jpg");
+
+  const shapePath = (shape: CropShape, x: number, y: number, w: number, h: number) => {
+    const P = (px: number, py: number) => `${x + px * w} ${y + py * h}`;
+    switch (shape) {
+      case "circle":
+      case "ellipse":
+        return `M${P(0, 0.5)}A${w / 2} ${h / 2} 0 1 0 ${P(1, 0.5)}A${w / 2} ${h / 2} 0 1 0 ${P(0, 0.5)}Z`;
+      case "rounded": {
+        const r = Math.min(w, h) * 0.18;
+        return `M${x + r} ${y}H${x + w - r}A${r} ${r} 0 0 1 ${x + w} ${y + r}V${y + h - r}A${r} ${r} 0 0 1 ${x + w - r} ${y + h}H${x + r}A${r} ${r} 0 0 1 ${x} ${y + h - r}V${y + r}A${r} ${r} 0 0 1 ${x + r} ${y}Z`;
+      }
+      case "triangle":
+        return `M${P(0.5, 0)}L${P(1, 1)}L${P(0, 1)}Z`;
+      case "hexagon":
+        return `M${[P(0.25, 0), P(0.75, 0), P(1, 0.5), P(0.75, 1), P(0.25, 1), P(0, 0.5)].join("L")}Z`;
+      case "star": {
+        const points = Array.from({ length: 10 }, (_, index) => {
+          const angle = -Math.PI / 2 + (index * Math.PI) / 5;
+          const radius = index % 2 === 0 ? 0.5 : 0.2;
+          return P(0.5 + Math.cos(angle) * radius, 0.5 + Math.sin(angle) * radius);
+        });
+        return `M${points.join("L")}Z`;
+      }
+      case "heart":
+        return `M${P(0.5, 1)}C${P(0.2, 0.75)} ${P(0, 0.55)} ${P(0, 0.3)}C${P(0, 0.12)} ${P(0.14, 0)} ${P(0.28, 0)}C${P(0.4, 0)} ${P(0.47, 0.07)} ${P(0.5, 0.15)}C${P(0.53, 0.07)} ${P(0.6, 0)} ${P(0.72, 0)}C${P(0.86, 0)} ${P(1, 0.12)} ${P(1, 0.3)}C${P(1, 0.55)} ${P(0.8, 0.75)} ${P(0.5, 1)}Z`;
+      default:
+        return `M${x} ${y}H${x + w}V${y + h}H${x}Z`;
+    }
+  };
+
+  const cropOverlayPath = $derived(
+    shapePath(cropShape, cropRect.x * 1000, cropRect.y * 1000, cropRect.width * 1000, cropRect.height * 1000),
+  );
+
+  const setCropShape = (shape: CropShape) => {
+    const wasSquare = isSquareShape(cropShape);
+    cropShape = shape;
+    if (isSquareShape(shape)) {
+      aspectRatio = "1:1";
+      if (rawImageObj) cropRect = getDefaultCropRect(rawImageObj);
+    } else if (wasSquare) {
+      aspectRatio = "free";
+    }
+  };
 
   const getDefaultCropRect = (image: HTMLImageElement) => {
     if (aspectRatio === "free") return { x: 0, y: 0, width: 1, height: 1 };
@@ -171,7 +237,8 @@
     if (!rawImageObj) return;
     const renderVersion = ++cropRenderVersion;
 
-    if (cropRect.x === 0 && cropRect.y === 0 && cropRect.width === 1 && cropRect.height === 1) {
+    const isFullCrop = cropRect.x === 0 && cropRect.y === 0 && cropRect.width === 1 && cropRect.height === 1;
+    if (isFullCrop && !isShapedCrop) {
       croppedImageObj = rawImageObj;
       croppedImageSrc = originalImageSrc;
       return;
@@ -189,6 +256,8 @@
     canvas.width = Math.max(1, Math.round(cropW));
     canvas.height = Math.max(1, Math.round(cropH));
 
+    if (isShapedCrop) ctx.clip(new Path2D(shapePath(cropShape, 0, 0, canvas.width, canvas.height)));
+
     ctx.drawImage(
       rawImageObj,
       startX,
@@ -201,7 +270,7 @@
       cropH,
     );
 
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+    const dataUrl = canvas.toDataURL(imageMime, 0.95);
     croppedImageSrc = dataUrl;
 
     const img = new Image();
@@ -238,7 +307,7 @@
           tileWidth,
           tileHeight,
         );
-        pieces.push(canvas.toDataURL("image/jpeg", 0.95));
+        pieces.push(canvas.toDataURL(imageMime, 0.95));
       }
     }
     gridPieces = pieces;
@@ -292,7 +361,7 @@
 
     if (customB === 100 && customC === 100) {
       const link = document.createElement("a");
-      link.download = `tile_${colLabel}${rowLabel}.jpg`;
+      link.download = `tile_${colLabel}${rowLabel}.${imageExt}`;
       link.href = pieceDataUrl;
       link.click();
       return;
@@ -310,8 +379,8 @@
       ctx.drawImage(img, 0, 0);
 
       const link = document.createElement("a");
-      link.download = `tile_${colLabel}${rowLabel}_edited.jpg`;
-      link.href = canvas.toDataURL("image/jpeg", 0.95);
+      link.download = `tile_${colLabel}${rowLabel}_edited.${imageExt}`;
+      link.href = canvas.toDataURL(imageMime, 0.95);
       link.click();
     };
     img.src = pieceDataUrl;
@@ -453,8 +522,8 @@
     }
 
     const link = document.createElement("a");
-    link.download = `artist_grid_pro_${rows}x${cols}.jpg`;
-    link.href = canvas.toDataURL("image/jpeg", 0.95);
+    link.download = `artist_grid_pro_${rows}x${cols}.${imageExt}`;
+    link.href = canvas.toDataURL(imageMime, 0.95);
     link.click();
   };
 
@@ -464,7 +533,7 @@
     const folder = zip.folder("grid_tiles");
     gridPieces.forEach((piece, i) => {
       folder?.file(
-        `tile_${colLetters[i % cols]}${Math.floor(i / cols) + 1}.jpg`,
+        `tile_${colLetters[i % cols]}${Math.floor(i / cols) + 1}.${imageExt}`,
         piece.replace(/^data:image\/(png|jpeg);base64,/, ""),
         { base64: true },
       );
@@ -480,6 +549,7 @@
         cropRect = getDefaultCropRect(rawImageObj);
       }
       cropRect;
+      cropShape;
       updateCroppedImage();
     }
   });
@@ -529,7 +599,9 @@
       <select
         value={aspectRatio}
         onchange={setAspectRatio}
-        class="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-dark"
+        disabled={isSquareShape(cropShape)}
+        title={isSquareShape(cropShape) ? "Square and circle crops are always 1:1" : undefined}
+        class="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-dark disabled:opacity-50"
       >
         <option value="free">Freeform (Original)</option>
         <option value="1:1">1:1 Square</option>
@@ -603,6 +675,21 @@
           Reset Crop
         </button>
       </div>
+      <div class="flex flex-wrap gap-1.5" role="group" aria-label="Crop shape">
+        {#each CROP_SHAPES as shape}
+          <button
+            type="button"
+            aria-pressed={cropShape === shape.id}
+            onclick={() => setCropShape(shape.id)}
+            class="rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer {cropShape === shape.id ? 'border-primary bg-primary text-light' : 'border-gray-200 bg-gray-50 text-dark hover:bg-gray-100'}"
+          >
+            {shape.label}
+          </button>
+        {/each}
+      </div>
+      {#if isShapedCrop}
+        <p class="text-[11px] text-gray-500">Areas outside the shape are transparent, so shaped crops are saved as PNG.</p>
+      {/if}
       <div class="flex min-h-48 items-center justify-center overflow-hidden rounded-xl bg-gray-100 p-2">
         <div class="relative inline-flex max-h-90 max-w-full touch-none select-none">
           <img
@@ -622,15 +709,9 @@
             onpointerup={handleCropPointerUp}
             onpointercancel={handleCropPointerUp}
           >
-            <rect x="0" y="0" width="1000" height={cropRect.y * 1000} fill="black" opacity="0.42" />
-            <rect x="0" y={(cropRect.y + cropRect.height) * 1000} width="1000" height={(1 - cropRect.y - cropRect.height) * 1000} fill="black" opacity="0.42" />
-            <rect x="0" y={cropRect.y * 1000} width={cropRect.x * 1000} height={cropRect.height * 1000} fill="black" opacity="0.42" />
-            <rect x={(cropRect.x + cropRect.width) * 1000} y={cropRect.y * 1000} width={(1 - cropRect.x - cropRect.width) * 1000} height={cropRect.height * 1000} fill="black" opacity="0.42" />
-            <rect
-              x={cropRect.x * 1000}
-              y={cropRect.y * 1000}
-              width={cropRect.width * 1000}
-              height={cropRect.height * 1000}
+            <path d="M0 0H1000V1000H0Z {cropOverlayPath}" fill="black" fill-rule="evenodd" opacity="0.42" />
+            <path
+              d={cropOverlayPath}
               fill="transparent"
               stroke="white"
               stroke-width="4"

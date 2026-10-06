@@ -9,7 +9,7 @@
   type NamingMode = "original" | "numeric" | "alpha" | "random";
   type ResizeMode = "none" | "fit" | "fill" | "exact";
   type WatermarkPos = "bottom-right" | "bottom-left" | "top-right" | "top-left" | "center";
-  type FrameStyle = "browser" | "android" | "iphone" | "ipad" | "macbook" | "polaroid" | "gallery" | "film" | "neon" | "border" | "forest" | "glossy";
+  type FrameStyle = "browser" | "android" | "iphone" | "ipad" | "macbook" | "polaroid" | "gallery" | "film" | "neon" | "border" | "forest" | "glossy" | "circular" | "aqua" | "marine" | "sand" | "mars" | "space";
   type QueuedImage = { id: number; file: File; previewUrl: string };
   type Summary = { count: number; originalBytes: number; outputBytes: number; fileName: string };
 
@@ -28,6 +28,13 @@
     { id: "border", label: "Clean White Border" },
     { id: "forest", label: "Forest Frame" },
     { id: "glossy", label: "Glossy Frame" },
+    { id: "circular", label: "Circular Frame" },
+    { id: "aqua", label: "Aqua Frame" },
+    { id: "marine", label: "Marine Frame" },
+    { id: "sand", label: "Sand Frame" },
+    { id: "mars", label: "Mars Frame" },
+    { id: "space", label: "Space Frame" },
+
     // add more frame options 
   ];
   const MIME: Record<RasterFormat, string> = {
@@ -532,6 +539,142 @@
         ctx.beginPath();
         ctx.arc(pad + bezel + w / 2, pad + bezel / 2, 4 * u, 0, Math.PI * 2);
         ctx.fill();
+        return canvas;
+      }
+      case "circular": {
+        const border = 16 * u;
+        const diameter = Math.max(w, h);
+        const size = diameter + border * 2 + pad * 2;
+        const { canvas, ctx } = stage(size, size, "#3b82f6", "#1d4ed8");
+        
+        const centerX = size / 2;
+        const centerY = size / 2;
+        const radius = diameter / 2;
+
+        // Drop shadow lift
+        lift(ctx, 35, 18, 0.4, () => {
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius + border, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // Outer circular border/bezel
+        ctx.fillStyle = "#1e293b";
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius + border, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Clip and place content into a circular viewport
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.clip();
+        
+        // Place content centered within the circle
+        place(ctx, centerX - w / 2, centerY - h / 2, 0);
+        ctx.restore();
+
+        return canvas;
+      }
+      case "aqua": {
+        const bezel = 22 * u;
+        const r = 16 * u;
+        const { canvas, ctx } = stage(w + bezel * 2 + pad * 2, h + bezel * 2 + pad * 2, "#06b6d4", "#14b8a6");
+        lift(ctx, 35, 18, 0.4, () => {
+          ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+          ctx.beginPath();
+          ctx.roundRect(pad, pad, w + bezel * 2, h + bezel * 2, r + bezel);
+          ctx.fill();
+        });
+        ctx.fillStyle = "rgba(14, 165, 233, 0.5)";
+        ctx.beginPath();
+        ctx.roundRect(pad, pad, w + bezel * 2, h + bezel * 2, r + bezel);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.roundRect(pad + bezel, pad + bezel, w, h, r);
+        ctx.fill();
+        place(ctx, pad + bezel, pad + bezel, r);
+        return canvas;
+      }
+      case "sand": {
+        const bezel = 24 * u;
+        const r = 14 * u;
+        const { canvas, ctx } = stage(w + bezel * 2 + pad * 2, h + bezel * 2 + pad * 2, "#fde047", "#ca8a04");
+        lift(ctx, 30, 15, 0.35, () => {
+          ctx.fillStyle = "#fef3c7";
+          ctx.beginPath();
+          ctx.roundRect(pad, pad, w + bezel * 2, h + bezel * 2, r + bezel);
+          ctx.fill();
+        });
+        ctx.fillStyle = "#f59e0b";
+        ctx.beginPath();
+        ctx.roundRect(pad + bezel * 0.5, pad + bezel * 0.5, w + bezel, h + bezel, r);
+        ctx.fill();
+        ctx.fillStyle = "#fffbeb";
+        ctx.beginPath();
+        ctx.roundRect(pad + bezel, pad + bezel, w, h, r);
+        ctx.fill();
+        place(ctx, pad + bezel, pad + bezel, r);
+        return canvas;
+      }
+      case "marine": {
+        const bezel = 20 * u;
+        const r = 18 * u;
+        const { canvas, ctx } = stage(w + bezel * 2 + pad * 2, h + bezel * 2 + pad * 2, "#0369a1", "#0c4a6e");
+        lift(ctx, 40, 20, 0.5, () => {
+          ctx.fillStyle = "#0284c7";
+          ctx.beginPath();
+          ctx.roundRect(pad, pad, w + bezel * 2, h + bezel * 2, r + bezel);
+          ctx.fill();
+        });
+        ctx.fillStyle = "#075985";
+        ctx.beginPath();
+        ctx.roundRect(pad + bezel, pad + bezel, w, h, r);
+        ctx.fill();
+        place(ctx, pad + bezel, pad + bezel, r);
+        return canvas;
+      }
+      case "space": {
+        const bezel = 24 * u;
+        const r = 20 * u;
+        const { canvas, ctx } = stage(w + bezel * 2 + pad * 2, h + bezel * 2 + pad * 2, "#4c1d95", "#0f172a");
+        lift(ctx, 45, 22, 0.55, () => {
+          ctx.fillStyle = "#1e1b4b";
+          ctx.beginPath();
+          ctx.roundRect(pad, pad, w + bezel * 2, h + bezel * 2, r + bezel);
+          ctx.fill();
+        });
+        // Sprinkle a few star dots in the bezel
+        ctx.fillStyle = "#facc15";
+        [[10, 15], [85, 20], [15, 80], [90, 85]].forEach(([px, py]) => {
+          ctx.beginPath();
+          ctx.arc(pad + (w + bezel * 2) * (px / 100), pad + (h + bezel * 2) * (py / 100), 2 * u, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.fillStyle = "#09090b";
+        ctx.beginPath();
+        ctx.roundRect(pad + bezel, pad + bezel, w, h, r);
+        ctx.fill();
+        place(ctx, pad + bezel, pad + bezel, r);
+        return canvas;
+      }
+      case "mars": {
+        const bezel = 22 * u;
+        const r = 12 * u;
+        const { canvas, ctx } = stage(w + bezel * 2 + pad * 2, h + bezel * 2 + pad * 2, "#ea580c", "#7c2d12");
+        lift(ctx, 35, 18, 0.45, () => {
+          ctx.fillStyle = "#9a3412";
+          ctx.beginPath();
+          ctx.roundRect(pad, pad, w + bezel * 2, h + bezel * 2, r + bezel);
+          ctx.fill();
+        });
+        ctx.fillStyle = "#c2410c";
+        ctx.beginPath();
+        ctx.roundRect(pad + bezel, pad + bezel, w, h, r);
+        ctx.fill();
+        place(ctx, pad + bezel, pad + bezel, r);
         return canvas;
       }
       case "macbook": {
