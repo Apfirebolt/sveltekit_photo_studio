@@ -64,6 +64,8 @@
   let isZoomTool = $state(false);
   let zoomLevel = $state(3);
   let zoomPoint = $state<{ x: number; y: number } | null>(null);
+  let zoomSaveButton = $state<HTMLButtonElement | null>(null);
+  let zoomLocked = $state(false);
   let tempLineStart = $state<{ x: number; y: number } | null>(null);
   let customLines = $state<
     Array<{ x1: number; y1: number; x2: number; y2: number }>
@@ -331,12 +333,110 @@
   );
 
   const handleZoomMove = (event: PointerEvent) => {
-    if (!isZoomTool) return;
+    if (!isZoomTool || zoomLocked) return;
+    // Freeze the view near the button so the area doesn't drift toward the corner while you reach for it.
+    if (zoomSaveButton) {
+      const button = zoomSaveButton.getBoundingClientRect();
+      const margin = 40;
+      if (
+        event.clientX >= button.left - margin &&
+        event.clientX <= button.right + margin &&
+        event.clientY >= button.top - margin &&
+        event.clientY <= button.bottom + margin
+      ) {
+        return;
+      }
+    }
     const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
     zoomPoint = {
       x: Math.min(100, Math.max(0, ((event.clientX - bounds.left) / bounds.width) * 100)),
       y: Math.min(100, Math.max(0, ((event.clientY - bounds.top) / bounds.height) * 100)),
     };
+  };
+
+  const saveZoomedSection = () => {
+    if (!croppedImageObj || !zoomPoint) return;
+    const image = croppedImageObj;
+    const span = 1 / zoomLevel;
+    const left = (zoomPoint.x / 100) * (1 - span);
+    const top = (zoomPoint.y / 100) * (1 - span);
+    const sourceW = image.width * span;
+    const sourceH = image.height * span;
+    const sourceY = top * image.height;
+    // The preview mirrors the image inside its box, so the visible span maps to the opposite side of the source.
+    const sourceX = (isFlipped ? 1 - left - span : left) * image.width;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(sourceW));
+    canvas.height = Math.max(1, Math.round(sourceH));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    if (isFlipped) {
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.filter = `${isGrayscale ? "grayscale(100%) contrast(125%) " : ""}brightness(${gridBrightness}%) contrast(${gridContrast}%)`;
+    ctx.drawImage(image, sourceX, sourceY, sourceW, sourceH, 0, 0, canvas.width, canvas.height);
+
+    const link = document.createElement("a");
+    link.download = `zoomed_section.${imageExt}`;
+    link.href = canvas.toDataURL(imageMime, 0.95);
+    link.click();
+  };
+
+  const clampPercent = (value: number) => Math.min(100, Math.max(0, value));
+
+  // Clicking pins the zoomed area; clicking again releases it and panning follows the pointer again.
+  const toggleZoomLock = (event: MouseEvent) => {
+    if (!isZoomTool || isLineToolActive) return;
+    const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    if (zoomLocked) {
+      zoomLocked = false;
+      zoomPoint = {
+        x: clampPercent(((event.clientX - bounds.left) / bounds.width) * 100),
+        y: clampPercent(((event.clientY - bounds.top) / bounds.height) * 100),
+      };
+      return;
+    }
+    zoomPoint ??= {
+      x: clampPercent(((event.clientX - bounds.left) / bounds.width) * 100),
+      y: clampPercent(((event.clientY - bounds.top) / bounds.height) * 100),
+    };
+    zoomLocked = true;
+  };
+
+  const handleZoomKeydown = (event: KeyboardEvent) => {
+    if (!isZoomTool) return;
+    const step = event.shiftKey ? 15 : 5;
+    const moves: Record<string, [number, number]> = {
+      ArrowLeft: [-step, 0],
+      ArrowRight: [step, 0],
+      ArrowUp: [0, -step],
+      ArrowDown: [0, step],
+    };
+
+    if (moves[event.key]) {
+      event.preventDefault();
+      const current = zoomPoint ?? { x: 50, y: 50 };
+      zoomPoint = { x: clampPercent(current.x + moves[event.key][0]), y: clampPercent(current.y + moves[event.key][1]) };
+      zoomLocked = true;
+    } else if (event.key === "Escape") {
+      zoomLocked = false;
+      zoomPoint = null;
+    } else if ((event.key === "s" || event.key === "S") && zoomPoint) {
+      event.preventDefault();
+      saveZoomedSection();
+    } else if ((event.key === "Enter" || event.key === " ") && event.target === event.currentTarget) {
+      event.preventDefault();
+      if (zoomLocked) {
+        zoomLocked = false;
+        zoomPoint = null;
+      } else {
+        zoomPoint ??= { x: 50, y: 50 };
+        zoomLocked = true;
+      }
+    }
   };
 
   const handleImageClick = (e: MouseEvent) => {
@@ -925,6 +1025,7 @@
             onclick={() => {
               isZoomTool = !isZoomTool;
               zoomPoint = null;
+              zoomLocked = false;
             }}
             class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer {isZoomTool
               ? 'bg-emerald-600 text-white'
@@ -945,6 +1046,7 @@
                 class="w-24 cursor-pointer accent-primary"
               />
             </label>
+            <span class="hidden text-[11px] text-gray-500 lg:inline">Click image to pin · click again to release</span>
           {/if}
           {#if tempLineStart}
             <span class="text-[11px] text-purple-600 font-semibold"
@@ -1013,11 +1115,18 @@
             onclick={handleImageClick}
             bind:this={imageContainerRef}
           >
+            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
             <div
-              role="presentation"
-              class="relative inline-block overflow-hidden"
+              role="application"
+              tabindex="0"
+              aria-label="Zoomed image. Press Enter to pin the zoom, arrow keys to move it, S to save the zoomed section, Escape to release."
+              class="relative inline-block overflow-hidden focus-visible:outline-2 focus-visible:outline-emerald-500"
               onpointermove={handleZoomMove}
-              onpointerleave={() => (zoomPoint = null)}
+              onpointerleave={() => {
+                if (!zoomLocked) zoomPoint = null;
+              }}
+              onclick={toggleZoomLock}
+              onkeydown={handleZoomKeydown}
             >
               <div class="relative transition-transform duration-100 ease-out" style={zoomStyle}>
             <img
@@ -1210,6 +1319,26 @@
               {/if}
             </svg>
               </div>
+              {#if isZoomTool && zoomPoint}
+                {#if zoomLocked}
+                  <span class="pointer-events-none absolute left-2 top-2 z-10 rounded bg-emerald-600/90 px-2 py-0.5 text-[10px] font-bold text-white">
+                    Pinned · click or Esc to release
+                  </span>
+                {/if}
+                <button
+                  type="button"
+                  title="Save the zoomed section (S)"
+                  aria-keyshortcuts="S"
+                  bind:this={zoomSaveButton}
+                  onclick={(event) => {
+                    event.stopPropagation();
+                    saveZoomedSection();
+                  }}
+                  class="absolute bottom-2 right-2 z-10 flex cursor-pointer items-center gap-1 rounded-lg bg-black/70 px-3 py-1.5 text-[11px] font-bold text-white shadow transition hover:bg-black/85"
+                >
+                  <Icon icon="mdi:download" class="text-sm" /> Save Image
+                </button>
+              {/if}
             </div>
           </div>
         </div>

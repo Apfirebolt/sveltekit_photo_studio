@@ -8,6 +8,8 @@
     { name: "Custom Lines", url: "#", icon: "mdi:vector-line" },
     { name: "Tile Slicer", url: "#", icon: "mdi:shape-rectangle-plus" },
     { name: "Photo Editor", url: "#", icon: "mdi:palette-swatch-outline" },
+    { name: "Bulk Handler", url: "#", icon: "mdi:file-multiple-outline" },
+    { name: "AI Filters", url: "#", icon: "mdi:auto-fix" },
   ];
 
   const socialLinks = [
@@ -34,7 +36,7 @@
           <span>Softgenie <span class="text-success"> Studio</span></span>
         </a>
         <p class="text-xs text-light/70 font-sans max-w-sm">
-          A high-performance, client-side browser studio combining reference grids, custom line geometry, and 300+ curated artistic styles.
+          A high-performance, client-side browser studio combining reference grids, bulk file handling, 200+ advanced filters, AI-powered enhancements, and 300+ curated artistic styles.
         </p>
       </div>
 
