@@ -9,19 +9,29 @@
   type NamingMode = "original" | "numeric" | "alpha" | "random";
   type ResizeMode = "none" | "fit" | "fill" | "exact";
   type WatermarkPos = "bottom-right" | "bottom-left" | "top-right" | "top-left" | "center";
+  type FrameStyle = "browser" | "iphone" | "ipad" | "macbook" | "polaroid" | "gallery" | "film" | "neon" | "border";
   type QueuedImage = { id: number; file: File; previewUrl: string };
   type Summary = { count: number; originalBytes: number; outputBytes: number; fileName: string };
 
   const MAX_FILE_MB = 25;
-  // Tracing cost grows with pixel count; the SVG scales, so tracing a smaller copy loses nothing visible.
   const SVG_TRACE_MAX_PX = 1000;
+  const FRAME_OPTIONS: { id: FrameStyle; label: string }[] = [
+    { id: "browser", label: "Browser Window" },
+    { id: "iphone", label: "iPhone Bezel" },
+    { id: "ipad", label: "iPad Bezel" },
+    { id: "macbook", label: "MacBook Pro" },
+    { id: "polaroid", label: "Polaroid Print" },
+    { id: "gallery", label: "Gallery Wood Frame" },
+    { id: "film", label: "Film Strip" },
+    { id: "neon", label: "Neon Glow" },
+    { id: "border", label: "Clean White Border" },
+  ];
   const MIME: Record<RasterFormat, string> = {
     jpeg: "image/jpeg",
     webp: "image/webp",
     png: "image/png",
   };
 
-  // Filter categories with TensorFlow entries automatically ignored / filtered to canvas type only
   const filterCategories = [
     {
       name: "Sketch & Drawing Styles",
@@ -47,7 +57,7 @@
         { id: 'cs_11', name: '📐 Sepia Architectural Draft', type: 'canvas', css: 'grayscale(100%) invert(90%) sepia(100%) hue-rotate(-30deg) contrast(200%)' },
         { id: 'cs_12', name: '📝 Vintage Ledger Pencil', type: 'canvas', css: 'grayscale(100%) sepia(45%) contrast(150%) brightness(108%)' },
         { id: 'cs_13', name: '📰 Rough Newsprint Etching', type: 'canvas', css: 'grayscale(100%) contrast(210%) brightness(102%) sepia(10%)' },
-        { id: 'cs_14', name: '🖊️️ Ballpoint Pen Blue Sketch', type: 'canvas', css: 'saturate(300%) hue-rotate(210deg) contrast(170%) brightness(95%)' },
+        { id: 'cs_14', name: '🖊 Ballpoint Pen Blue Sketch', type: 'canvas', css: 'saturate(300%) hue-rotate(210deg) contrast(170%) brightness(95%)' },
         { id: 'cs_15', name: '🖊️ Ballpoint Pen Red Sketch', type: 'canvas', css: 'saturate(300%) hue-rotate(330deg) contrast(180%) brightness(90%)' },
         { id: 'cs_16', name: '🪵 Compressed Willow Charcoal', type: 'canvas', css: 'grayscale(100%) contrast(300%) brightness(70%) blur(1px)' },
         { id: 'cs_17', name: '🪵 White Chalk on Black Board', type: 'canvas', css: 'grayscale(100%) invert(100%) contrast(250%) brightness(110%)' },
@@ -69,13 +79,13 @@
         { id: 'cs_33', name: '✒️ Comic Book Inker Pro', type: 'canvas', css: 'grayscale(100%) contrast(310%) brightness(90%)' },
         { id: 'cs_34', name: '🖋️ Manga Speed Pen Stroke', type: 'canvas', css: 'grayscale(100%) contrast(280%) brightness(100%)' },
         { id: 'cs_35', name: '📝 Storyboard Rough Pencil', type: 'canvas', css: 'grayscale(100%) contrast(150%) brightness(115%) blur(0.7px)' },
-        { id: 'cs_36', name: '✏️️ Hard Pastel Pencil Sketch', type: 'canvas', css: 'grayscale(100%) contrast(135%) brightness(125%)' },
+        { id: 'cs_36', name: '✏ Hard Pastel Pencil Sketch', type: 'canvas', css: 'grayscale(100%) contrast(135%) brightness(125%)' },
         { id: 'cs_37', name: '🪵 Soft Pastel Sketch Shade', type: 'canvas', css: 'grayscale(100%) contrast(175%) brightness(105%) blur(0.8px)' },
         { id: 'cs_38', name: '✒️ Copperplate Calligraphy Ink', type: 'canvas', css: 'grayscale(100%) contrast(300%) brightness(85%)' },
         { id: 'cs_39', name: '🖋️ Gothic Blackletter Ink', type: 'canvas', css: 'grayscale(100%) contrast(340%) brightness(75%)' },
         { id: 'cs_40', name: '📝 Italic Nib Handwriting', type: 'canvas', css: 'grayscale(100%) contrast(220%) brightness(96%)' },
         { id: 'cs_41', name: '📐 Engineering Isometric Grid', type: 'canvas', css: 'grayscale(100%) contrast(190%) brightness(110%) invert(8%)' },
-        { id: 'cs_42', name: '🏛️ Etching Plate Copperline', type: 'canvas', css: 'grayscale(100%) contrast(210%) brightness(98%) sepia(15%)' },
+        { id: 'cs_42', name: '🏛️️ Etching Plate Copperline', type: 'canvas', css: 'grayscale(100%) contrast(210%) brightness(98%) sepia(15%)' },
         { id: 'cs_43', name: '🏛️ Woodcut Block Print', type: 'canvas', css: 'grayscale(100%) contrast(350%) brightness(70%)' },
         { id: 'cs_44', name: '🏛️ Linocut Impression', type: 'canvas', css: 'grayscale(100%) contrast(280%) brightness(85%)' },
         { id: 'cs_45', name: '🏛️ Mezzotint Tone Shading', type: 'canvas', css: 'grayscale(100%) contrast(170%) brightness(92%) blur(0.5px)' },
@@ -94,7 +104,7 @@
         { id: 'cine_matrix_green', name: '💻 The Matrix Terminal Code', type: 'canvas', css: 'grayscale(100%) sepia(100%) hue-rotate(85deg) saturate(400%) contrast(150%)' },
         { id: 'cine_cyberpunk_neon', name: '⚡ Cyberpunk Neon District', type: 'canvas', css: 'saturate(300%) contrast(150%) hue-rotate(290deg)' },
         { id: 'cine_kodachrome_64', name: '🎞️ Classic Kodachrome 64', type: 'canvas', css: 'contrast(140%) saturate(160%) sepia(15%) brightness(105%)' },
-        { id: 'cine_panavision_noir', name: '🕵️️ Panavision High-Contrast Noir', type: 'canvas', css: 'grayscale(100%) contrast(210%) brightness(85%)' },
+        { id: 'cine_panavision_noir', name: '🕵 Panavision High-Contrast Noir', type: 'canvas', css: 'grayscale(100%) contrast(210%) brightness(85%)' },
         { id: 'cine_bleach_bypass', name: '🧪 Silver Bleach Bypass Film', type: 'canvas', css: 'grayscale(50%) contrast(190%) brightness(110%)' },
         { id: 'cine_cross_process', name: '🧪 Cross-Processed Slide Stock', type: 'canvas', css: 'saturate(200%) hue-rotate(320deg) contrast(130%)' },
         { id: 'cine_teal_orange', name: '🎬 Hollywood Blockbuster Teal & Orange', type: 'canvas', css: 'contrast(125%) saturate(150%) hue-rotate(15deg)' },
@@ -156,7 +166,7 @@
         { id: 'retouch_studio_master', name: '👑 Master Studio Grade', type: 'canvas', css: 'contrast(130%) brightness(103%) saturate(110%)' },
         { id: 'retouch_natural_balance', name: '🌿 True-to-Life Natural', type: 'canvas', css: 'contrast(105%) brightness(101%) saturate(102%)' },
         { id: 'retouch_pro_portrait', name: '📷 Professional Portrait Polish', type: 'canvas', css: 'contrast(118%) brightness(104%) saturate(106%)' },
-        { id: 'retouch_soft_contrast', name: '☁️️ Soft Contrast Enhancer', type: 'canvas', css: 'contrast(92%) brightness(106%) saturate(102%)' },
+        { id: 'retouch_soft_contrast', name: '☁ Soft Contrast Enhancer', type: 'canvas', css: 'contrast(92%) brightness(106%) saturate(102%)' },
         { id: 'retouch_dynamic_range', name: '📈 Dynamic Range Recovery', type: 'canvas', css: 'contrast(110%) brightness(105%) saturate(115%)' },
         { id: 'retouch_highlight_saver', name: '☀️ Highlight Tone Optimizer', type: 'canvas', css: 'brightness(95%) contrast(125%) saturate(105%)' },
         { id: 'retouch_shadow_lift', name: '🔦 Shadow Detail Enhancer', type: 'canvas', css: 'brightness(115%) contrast(90%) saturate(105%)' },
@@ -169,7 +179,6 @@
     }
   ];
 
-  // Flattened list of valid canvas filters for easy random selection / lookup
   const allCanvasFilters = filterCategories.flatMap((cat) => cat.filters);
 
   let nextId = 0;
@@ -179,6 +188,11 @@
   let naming = $state<NamingMode>("numeric");
   let prefix = $state("");
   let svgColors = $state(16);
+
+  // Frame options
+  let addFrame = $state(false);
+  let frameStyle = $state<FrameStyle>("browser");
+  let framePadding = $state(48);
 
   // Filter selection states
   let filterSearchQuery = $state("");
@@ -205,7 +219,6 @@
   let errorMessage = $state("");
   let summary = $state<Summary | null>(null);
 
-  // Filter categories filtered by search query
   const filteredCategories = $derived(
     filterCategories.map((cat) => ({
       ...cat,
@@ -346,7 +359,6 @@
       ctx.fillRect(0, 0, finalW, finalH);
     }
 
-    // Compose filters (Preset Filter CSS + Manual Sliders)
     let filterString = "";
     if (activeCssFilter && activeCssFilter !== "none") filterString += `${activeCssFilter} `;
     if (brightness !== 100) filterString += `brightness(${brightness}%) `;
@@ -356,7 +368,6 @@
     ctx.drawImage(bitmap, dx, dy, dw, dh);
     ctx.filter = "none";
 
-    // Watermark
     if (watermarkText.trim()) {
       ctx.font = `${Math.max(12, Math.round(finalW * 0.03))}px sans-serif`;
       ctx.fillStyle = `rgba(255, 255, 255, ${watermarkOpacity / 100})`;
@@ -365,7 +376,6 @@
 
       const metrics = ctx.measureText(watermarkText);
       const textW = metrics.width;
-      const textH = 20;
       const padding = 20;
 
       let wx = padding;
@@ -376,10 +386,10 @@
         wy = finalH - padding;
       } else if (watermarkPos === "top-right") {
         wx = finalW - textW - padding;
-        wy = padding + textH;
+        wy = padding + 20;
       } else if (watermarkPos === "top-left") {
         wx = padding;
-        wy = padding + textH;
+        wy = padding + 20;
       } else if (watermarkPos === "center") {
         wx = (finalW - textW) / 2;
         wy = finalH / 2;
@@ -389,18 +399,11 @@
       ctx.fillText(watermarkText, wx, wy);
     }
 
-    return canvas;
+    return addFrame ? applyFrame(canvas) : canvas;
   };
 
-  const canvasToBlob = (canvas: HTMLCanvasElement, type: string, quality: number) =>
-    new Promise<Blob>((resolve, reject) =>
-      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Image encoding failed."))), type, quality),
-    );
-
   const traceToSvg = async (canvas: HTMLCanvasElement) => {
-    // Let the progress bar paint before the synchronous trace blocks the thread.
     await new Promise((resolve) => setTimeout(resolve, 0));
-
     const scale = Math.min(1, SVG_TRACE_MAX_PX / Math.max(canvas.width, canvas.height));
     const source = document.createElement("canvas");
     source.width = Math.max(1, Math.round(canvas.width * scale));
@@ -415,6 +418,217 @@
     });
     return new Blob([svg], { type: "image/svg+xml" });
   };
+
+  const applyFrame = (src: HTMLCanvasElement) => {
+    const w = src.width;
+    const h = src.height;
+    // Decoration sizes scale with image size so frames look the same at any resolution.
+    const u = Math.max(0.5, Math.max(w, h) / 1000);
+    const pad = Math.round(framePadding * u);
+
+    const stage = (width: number, height: number, from: string, to = from) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(width);
+      canvas.height = Math.round(height);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas is not available.");
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, from);
+      gradient.addColorStop(1, to);
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      return { canvas, ctx };
+    };
+
+    const lift = (ctx: CanvasRenderingContext2D, blur: number, offsetY: number, alpha: number, draw: () => void) => {
+      ctx.save();
+      ctx.shadowColor = `rgba(0, 0, 0, ${alpha})`;
+      ctx.shadowBlur = blur * u;
+      ctx.shadowOffsetY = offsetY * u;
+      draw();
+      ctx.restore();
+    };
+
+    const place = (ctx: CanvasRenderingContext2D, x: number, y: number, radius: number | number[] = 0) => {
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, radius);
+      ctx.clip();
+      ctx.drawImage(src, x, y);
+      ctx.restore();
+    };
+
+    switch (frameStyle) {
+      case "browser": {
+        const bar = 40 * u;
+        const r = 12 * u;
+        const { canvas, ctx } = stage(w + pad * 2, h + bar + pad * 2, "#4f46e5", "#9333ea");
+        lift(ctx, 30, 15, 0.35, () => {
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.roundRect(pad, pad, w, h + bar, r);
+          ctx.fill();
+        });
+        ctx.fillStyle = "#f3f4f6";
+        ctx.beginPath();
+        ctx.roundRect(pad, pad, w, bar, [r, r, 0, 0]);
+        ctx.fill();
+        ["#ef4444", "#f59e0b", "#10b981"].forEach((color, index) => {
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(pad + (20 + index * 20) * u, pad + bar / 2, 5 * u, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        place(ctx, pad, pad + bar, [0, 0, r, r]);
+        return canvas;
+      }
+      case "iphone": {
+        const bezel = 24 * u;
+        const { canvas, ctx } = stage(w + bezel * 2 + pad * 2, h + bezel * 2 + pad * 2, "#0f172a", "#334155");
+        lift(ctx, 40, 20, 0.5, () => {
+          ctx.fillStyle = "#1e293b";
+          ctx.beginPath();
+          ctx.roundRect(pad, pad, w + bezel * 2, h + bezel * 2, 44 * u);
+          ctx.fill();
+        });
+        place(ctx, pad + bezel, pad + bezel, 28 * u);
+        ctx.fillStyle = "#000000";
+        ctx.beginPath();
+        ctx.roundRect(pad + bezel + w * 0.36, pad + bezel + 12 * u, w * 0.28, 26 * u, 13 * u);
+        ctx.fill();
+        return canvas;
+      }
+      case "ipad": {
+        const bezel = 30 * u;
+        const { canvas, ctx } = stage(w + bezel * 2 + pad * 2, h + bezel * 2 + pad * 2, "#cbd5e1", "#94a3b8");
+        lift(ctx, 36, 18, 0.4, () => {
+          ctx.fillStyle = "#111827";
+          ctx.beginPath();
+          ctx.roundRect(pad, pad, w + bezel * 2, h + bezel * 2, 36 * u);
+          ctx.fill();
+        });
+        place(ctx, pad + bezel, pad + bezel, 14 * u);
+        ctx.fillStyle = "#374151";
+        ctx.beginPath();
+        ctx.arc(pad + bezel + w / 2, pad + bezel / 2, 4 * u, 0, Math.PI * 2);
+        ctx.fill();
+        return canvas;
+      }
+      case "macbook": {
+        const top = 36 * u;
+        const side = 72 * u;
+        const baseH = 30 * u;
+        const { canvas, ctx } = stage(w + side * 2 + pad * 2, pad + top + h + 12 * u + baseH + pad, "#1e1b4b", "#312e81");
+        const x = pad + side;
+        const y = pad + top;
+        lift(ctx, 35, 15, 0.4, () => {
+          ctx.fillStyle = "#0f172a";
+          ctx.beginPath();
+          ctx.roundRect(x - 12 * u, y - 12 * u, w + 24 * u, h + 24 * u, 12 * u);
+          ctx.fill();
+        });
+        place(ctx, x, y);
+        ctx.fillStyle = "#cbd5e1";
+        ctx.beginPath();
+        ctx.roundRect(x - 60 * u, y + h + 12 * u, w + 120 * u, baseH, [0, 0, 8 * u, 8 * u]);
+        ctx.fill();
+        return canvas;
+      }
+      case "polaroid": {
+        const edge = 28 * u;
+        const bottom = 100 * u;
+        const { canvas, ctx } = stage(w + edge * 2 + pad * 2, h + edge + bottom + pad * 2, "#e7e5e4", "#d6d3d1");
+        lift(ctx, 28, 12, 0.3, () => {
+          ctx.fillStyle = "#fafaf9";
+          ctx.beginPath();
+          ctx.roundRect(pad, pad, w + edge * 2, h + edge + bottom, 4 * u);
+          ctx.fill();
+        });
+        place(ctx, pad + edge, pad + edge);
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
+        ctx.lineWidth = u;
+        ctx.strokeRect(pad + edge, pad + edge, w, h);
+        return canvas;
+      }
+      case "gallery": {
+        const wood = 28 * u;
+        const mat = 40 * u;
+        const frameW = w + (wood + mat) * 2;
+        const frameH = h + (wood + mat) * 2;
+        const { canvas, ctx } = stage(frameW + pad * 2, frameH + pad * 2, "#f5f5f4", "#e7e5e4");
+        lift(ctx, 30, 14, 0.4, () => {
+          const grain = ctx.createLinearGradient(pad, pad, pad + frameW, pad + frameH);
+          grain.addColorStop(0, "#a16207");
+          grain.addColorStop(1, "#713f12");
+          ctx.fillStyle = grain;
+          ctx.fillRect(pad, pad, frameW, frameH);
+        });
+        ctx.fillStyle = "#fafaf9";
+        ctx.fillRect(pad + wood, pad + wood, frameW - wood * 2, frameH - wood * 2);
+        ctx.strokeStyle = "#451a03";
+        ctx.lineWidth = 2 * u;
+        ctx.strokeRect(pad + wood, pad + wood, frameW - wood * 2, frameH - wood * 2);
+        place(ctx, pad + wood + mat, pad + wood + mat);
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.25)";
+        ctx.strokeRect(pad + wood + mat, pad + wood + mat, w, h);
+        return canvas;
+      }
+      case "film": {
+        const side = 64 * u;
+        const edge = 22 * u;
+        const stripW = w + side * 2;
+        const stripH = h + edge * 2;
+        const { canvas, ctx } = stage(stripW + pad * 2, stripH + pad * 2, "#27272a", "#18181b");
+        lift(ctx, 24, 10, 0.5, () => {
+          ctx.fillStyle = "#0a0a0a";
+          ctx.fillRect(pad, pad, stripW, stripH);
+        });
+        const holeW = 22 * u;
+        const holeH = 30 * u;
+        ctx.fillStyle = "#e5e7eb";
+        for (let y = pad + 16 * u; y + holeH <= pad + stripH - 8 * u; y += 52 * u) {
+          ctx.beginPath();
+          ctx.roundRect(pad + (side - holeW) / 2, y, holeW, holeH, 5 * u);
+          ctx.roundRect(pad + side + w + (side - holeW) / 2, y, holeW, holeH, 5 * u);
+          ctx.fill();
+        }
+        place(ctx, pad + side, pad + edge);
+        return canvas;
+      }
+      case "neon": {
+        const m = pad + 24 * u;
+        const { canvas, ctx } = stage(w + m * 2, h + m * 2, "#0b1020", "#1a0b2e");
+        place(ctx, m, m);
+        const glow = (color: string, inset: number, width: number, blur: number) => {
+          ctx.save();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = width * u;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = blur * u;
+          ctx.strokeRect(m - inset * u, m - inset * u, w + inset * 2 * u, h + inset * 2 * u);
+          ctx.restore();
+        };
+        glow("#22d3ee", 8, 5, 30);
+        glow("#e879f9", 18, 3, 24);
+        return canvas;
+      }
+      default: {
+        const { canvas, ctx } = stage(w + pad * 2, h + pad * 2, "#ffffff");
+        lift(ctx, 16, 6, 0.2, () => {
+          ctx.drawImage(src, pad, pad);
+        });
+        ctx.strokeStyle = "#e5e7eb";
+        ctx.lineWidth = u;
+        ctx.strokeRect(pad, pad, w, h);
+        return canvas;
+      }
+    }
+  };
+
+  const canvasToBlob = (canvas: HTMLCanvasElement, type: string, quality: number) =>
+    new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Image encoding failed."))), type, quality),
+    );
 
   const downloadBlob = (blob: Blob, fileName: string) => {
     const url = URL.createObjectURL(blob);
@@ -443,6 +657,7 @@
         format === "svg"
           ? await traceToSvg(canvas)
           : await canvasToBlob(canvas, MIME[format as RasterFormat], quality);
+
       outputs.push({ name: makeName(index, item.file, extensionFor(blob.type), used), blob });
       progress = Math.round(((index + 1) / queue.length) * 100);
     }
@@ -522,7 +737,7 @@
   >
     <Icon icon="mdi:image-multiple-outline" class="mx-auto h-14 w-14 text-gray-400" />
     <p class="mt-2 text-base font-bold text-dark">Drag & drop multiple images here</p>
-    <p class="font-mono text-xs text-gray-400">Up to {MAX_FILE_MB} MB per image • EXIF data automatically cleaned</p>
+    <p class="font-mono text-xs text-gray-400">Up to {MAX_FILE_MB} MB per image</p>
     <label class="mt-3 inline-block cursor-pointer rounded-xl bg-primary px-8 py-3 text-xs font-semibold text-light shadow transition hover:bg-primary-dark">
       Select Images
       <input type="file" multiple accept="image/*" onchange={handleFileInput} class="hidden" />
@@ -575,7 +790,7 @@
           <div class="space-y-1">
             <label for="svg-colors" class="block font-semibold text-gray-700">SVG colors: {svgColors}</label>
             <input id="svg-colors" type="range" min="2" max="64" bind:value={svgColors} class="w-full cursor-pointer accent-primary" />
-            <p class="text-[11px] text-gray-500">Photos are traced into vector shapes, so more colors means more detail and a larger file. Quality reduction doesn't apply.</p>
+            <p class="text-[11px] text-gray-500">Photos are traced into vector shapes, so more colors means more detail and larger files.</p>
           </div>
         {/if}
         <div class="grid grid-cols-2 gap-2">
@@ -668,6 +883,34 @@
               ✨ Random canvas filters will be applied to each image automatically upon export!
             </p>
           {/if}
+        {/if}
+      </div>
+
+      <!-- Frames -->
+      <div class="space-y-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+        <div class="flex items-center justify-between">
+          <h4 class="font-bold text-dark">Frames</h4>
+          <label class="flex cursor-pointer items-center gap-1.5 font-semibold text-dark">
+            <input type="checkbox" bind:checked={addFrame} class="rounded accent-primary" />
+            Add a frame
+          </label>
+        </div>
+        {#if addFrame}
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label for="frame-style" class="block font-semibold text-gray-700">Style</label>
+              <select id="frame-style" bind:value={frameStyle} class="w-full rounded-xl border border-gray-200 bg-white p-2 font-medium text-dark">
+                {#each FRAME_OPTIONS as option}
+                  <option value={option.id}>{option.label}</option>
+                {/each}
+              </select>
+            </div>
+            <div>
+              <label for="frame-pad" class="block font-semibold text-gray-700">Margin: {framePadding}</label>
+              <input id="frame-pad" type="range" min="8" max="100" bind:value={framePadding} class="w-full cursor-pointer accent-primary" />
+            </div>
+          </div>
+          <p class="text-[11px] text-gray-500">Applied after resizing, filter and watermark, and works with every output format.</p>
         {/if}
       </div>
 
