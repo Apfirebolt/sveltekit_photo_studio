@@ -6,9 +6,10 @@
   import GridStudio from "$lib/components/GridStudio.svelte";
   import TfEditorStudio from "$lib/components/TfEditorStudio.svelte";
   import AdvancedFiltersStudio from "$lib/components/AdvancedFilterStudio.svelte";
+  import Utility from "$lib/components/Utility.svelte";
   import Icon from "@iconify/svelte";
 
-  let activeTab = $state<'splitter' | 'editor' | 'filters'>('splitter');
+  let activeTab = $state<'splitter' | 'editor' | 'filters' | 'bulk'>('splitter');
   let imageLoaded = $state(false);
   let fileName = $state('');
   
@@ -80,6 +81,7 @@
   };
 
   const handleWindowDragEnter = (event: DragEvent) => {
+    if (activeTab === 'bulk') return;
     if (!Array.from(event.dataTransfer?.types ?? []).includes('Files')) return;
     event.preventDefault();
     dragDepth += 1;
@@ -101,6 +103,7 @@
     event.preventDefault();
     dragDepth = 0;
     isDraggingImage = false;
+    if (activeTab === 'bulk') return;
     const file = Array.from(event.dataTransfer?.files ?? []).find((item) => item.type.startsWith('image/'));
     if (file) {
       loadImageFile(file);
@@ -197,6 +200,14 @@
       >
         <Icon icon="mdi:palette-advanced" /> Filter Library
       </button>
+
+      <button 
+        type="button"
+        class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer flex items-center gap-2 {activeTab === 'bulk' ? 'bg-primary text-light shadow-sm' : 'bg-light text-dark hover:bg-gray-100 border border-gray-200'}" 
+        onclick={() => activeTab = 'bulk'}
+      >
+        <Icon icon="mdi:image-multiple" /> Bulk Tools
+      </button>
     </div>
   </div>
 
@@ -213,6 +224,11 @@
       </div>
     {/if}
 
+    <div class:hidden={activeTab !== 'bulk'}>
+      <Utility />
+    </div>
+
+    <div class:hidden={activeTab === 'bulk'}>
     {#if !imageLoaded}
       <div class="max-w-2xl mx-auto bg-white border-2 border-gray-300 rounded-3xl p-8 sm:p-12 text-center hover:border-primary transition shadow-sm space-y-3">
         <Icon icon="mdi:cloud-upload-outline" class="w-16 h-16 mx-auto text-gray-400" />
@@ -276,6 +292,7 @@
         <AdvancedFiltersStudio {rawImageObj} />
       </div>
     {/if}
+    </div>
   </main>
 
   <FooterComponent />
