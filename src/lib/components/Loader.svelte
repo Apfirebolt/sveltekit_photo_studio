@@ -1,8 +1,9 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
+  import Icon from "@iconify/svelte";
 
-  export let text: string = "Loading Content";
-  export let subtext: string = "Fetching data from TV Maze";
+  export let text: string = "Softgenie Studio";
+  export let subtext: string = "Processing asset geometry & filters...";
   export let fullScreen: boolean = true;
 </script>
 
@@ -17,11 +18,13 @@
   <div class="glow-orb" />
 
   <div class="loader-card">
-    <!-- Concentric Dual-Ring Spinner -->
+    <!-- Studio Icon Badge + Concentric Dual-Ring Spinner -->
     <div class="spinner-assembly">
       <div class="spinner-track" />
       <div class="spinner-glow" />
-      <div class="spinner-pulse" />
+      <div class="spinner-core">
+        <Icon icon="mdi:drawing-box" class="text-success text-sm" />
+      </div>
     </div>
 
     <!-- Status Typography -->
@@ -47,7 +50,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: radial-gradient(circle at 50% 40%, rgba(15, 23, 42, 0.78) 0%, rgba(2, 6, 23, 0.94) 100%);
+    background: radial-gradient(circle at 50% 40%, rgba(13, 28, 66, 0.88) 0%, rgba(5, 12, 30, 0.96) 100%);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     overflow: hidden;
@@ -55,11 +58,11 @@
 
   .glow-orb {
     position: absolute;
-    width: 280px;
-    height: 280px;
+    width: 300px;
+    height: 300px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(20, 184, 166, 0.22) 0%, rgba(99, 102, 241, 0.12) 50%, transparent 70%);
-    filter: blur(48px);
+    background: radial-gradient(circle, rgba(91, 145, 59, 0.2) 0%, rgba(49, 91, 140, 0.15) 50%, transparent 70%);
+    filter: blur(52px);
     pointer-events: none;
     animation: pulse-glow 3s ease-in-out infinite alternate;
   }
@@ -71,17 +74,17 @@
     align-items: center;
     gap: 1.25rem;
     padding: 2.25rem 2.75rem;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(13, 28, 66, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 1.5rem;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
 
   /* Spinner Assembly */
   .spinner-assembly {
     position: relative;
-    width: 62px;
-    height: 62px;
+    width: 66px;
+    height: 66px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -99,17 +102,21 @@
     inset: 0;
     border-radius: 50%;
     border: 3px solid transparent;
-    border-top-color: #14b8a6; /* Bermudan / Teal theme accent */
-    border-right-color: #6366f1; /* Indigo theme accent */
+    border-top-color: #5B913B; /* Success Accent */
+    border-right-color: #315B8C; /* Secondary Accent */
     animation: spin 0.85s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
   }
 
-  .spinner-pulse {
-    width: 12px;
-    height: 12px;
+  .spinner-core {
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
-    background: #14b8a6;
-    box-shadow: 0 0 14px rgba(20, 184, 166, 0.9);
+    background: rgba(91, 145, 59, 0.2);
+    border: 1px solid rgba(91, 145, 59, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 12px rgba(91, 145, 59, 0.4);
     animation: core-pulse 1.3s ease-in-out infinite alternate;
   }
 
@@ -133,12 +140,12 @@
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #f8fafc;
+    color: #EEEAD7; /* Light Theme Token */
   }
 
   .status-subtext {
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: #CADABF; /* Accent Dark Token */
     margin: 0;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
@@ -154,7 +161,7 @@
     width: 3.5px;
     height: 3.5px;
     border-radius: 50%;
-    background-color: #14b8a6;
+    background-color: #5B913B;
     animation: dot-wave 1.4s infinite ease-in-out both;
   }
 
@@ -168,8 +175,8 @@
   }
 
   @keyframes core-pulse {
-    0% { transform: scale(0.75); opacity: 0.5; }
-    100% { transform: scale(1.15); opacity: 1; }
+    0% { transform: scale(0.9); opacity: 0.7; }
+    100% { transform: scale(1.1); opacity: 1; }
   }
 
   @keyframes pulse-glow {

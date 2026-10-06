@@ -684,10 +684,10 @@
 <div class="space-y-6">
   <!-- Controls Panel -->
   <div
-    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-xs"
+    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 bg-white dark:bg-dark dark:text-light p-6 rounded-2xl border border-gray-200 shadow-xs"
   >
     <div>
-      <label class="block text-xs font-semibold mb-1 text-gray-700"
+      <label class="block text-xs font-semibold mb-1 text-gray-700 dark:text-light"
         >Rows: {rows}</label
       >
       <input
@@ -699,7 +699,7 @@
       />
     </div>
     <div>
-      <label class="block text-xs font-semibold mb-1 text-gray-700"
+      <label class="block text-xs font-semibold mb-1 text-gray-700 dark:text-light"
         >Columns: {cols}</label
       >
       <input
@@ -711,7 +711,7 @@
       />
     </div>
     <div>
-      <label class="block text-xs font-semibold mb-1 text-gray-700"
+      <label class="block text-xs font-semibold mb-1 text-gray-700 dark:text-light"
         >Crop Ratio</label
       >
       <select
@@ -729,7 +729,7 @@
       </select>
     </div>
     <div>
-      <label class="block text-xs font-semibold mb-1 text-gray-700"
+      <label class="block text-xs font-semibold mb-1 text-gray-700 dark:text-light"
         >Line Color</label
       >
       <select
@@ -743,7 +743,7 @@
       </select>
     </div>
     <div>
-      <label class="block text-xs font-semibold mb-1 text-gray-700"
+      <label class="block text-xs font-semibold mb-1 text-gray-700 dark:text-light"
         >Line Style</label
       >
       <select
@@ -755,7 +755,7 @@
       </select>
     </div>
     <div>
-      <label class="block text-xs font-semibold mb-1 text-gray-700"
+      <label class="block text-xs font-semibold mb-1 text-gray-700 dark:text-light"
         >Photo Frame</label
       >
       <select
@@ -844,10 +844,10 @@
 
   <!-- Workspace Exposure & Contrast Adjustments Bar -->
   <div
-    class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs grid grid-cols-1 md:grid-cols-2 gap-4 text-xs"
+    class="bg-white dark:bg-dark dark:text-light p-4 rounded-2xl border border-gray-200 shadow-xs grid grid-cols-1 md:grid-cols-2 gap-4 text-xs"
   >
     <div>
-      <div class="flex justify-between font-semibold mb-1 text-gray-700">
+      <div class="flex justify-between font-semibold mb-1 text-gray-700 dark:text-light">
         <span>Workspace Brightness: {gridBrightness}%</span>
         {#if gridBrightness !== 100}
           <button
@@ -866,7 +866,7 @@
       />
     </div>
     <div>
-      <div class="flex justify-between font-semibold mb-1 text-gray-700">
+      <div class="flex justify-between font-semibold mb-1 text-gray-700 dark:text-light">
         <span>Workspace Contrast: {gridContrast}%</span>
         {#if gridContrast !== 100}
           <button
@@ -888,11 +888,11 @@
 
   <!-- Artist Advanced Tools Toolbar -->
   <div
-    class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs flex flex-wrap items-center justify-between gap-4 text-xs"
+    class="bg-white dark:bg-dark dark:text-light p-4 rounded-2xl border border-gray-200 shadow-xs flex flex-wrap items-center justify-between gap-4 text-xs"
   >
     <div class="flex flex-wrap items-center gap-4">
       <label
-        class="flex items-center gap-1.5 font-medium cursor-pointer text-gray-700"
+        class="flex items-center gap-1.5 font-medium cursor-pointer text-gray-700 dark:text-light"
       >
         <input
           type="checkbox"
@@ -902,7 +902,7 @@
         <span>Value Study (B&W)</span>
       </label>
       <label
-        class="flex items-center gap-1.5 font-medium cursor-pointer text-gray-700"
+        class="flex items-center gap-1.5 font-medium cursor-pointer text-gray-700 dark:text-light"
       >
         <input
           type="checkbox"
@@ -912,7 +912,7 @@
         <span>Mirror View (Flip H)</span>
       </label>
       <label
-        class="flex items-center gap-1.5 font-medium cursor-pointer text-gray-700"
+        class="flex items-center gap-1.5 font-medium cursor-pointer text-gray-700 dark:text-light"
       >
         <input
           type="checkbox"
@@ -922,7 +922,7 @@
         <span>Grid Labels (A1, B2)</span>
       </label>
       <label
-        class="flex items-center gap-1.5 font-medium cursor-pointer text-purple-700 font-semibold"
+        class="flex items-center gap-1.5 font-medium cursor-pointer text-purple-700 dark:text-light font-semibold"
       >
         <input
           type="checkbox"
@@ -934,15 +934,15 @@
     </div>
 
     <div class="flex items-center gap-3">
-      <span class="font-mono text-gray-500"
-        >Total Cells: <strong class="text-dark">{cols * rows}</strong></span
+      <span class="font-mono text-gray-500 dark:text-light"
+        >Total Cells: <strong class="text-dark dark:text-light">{cols * rows}</strong></span
       >
     </div>
   </div>
 
   <!-- Mode & Export Bar -->
   <div
-    class="flex flex-wrap justify-between items-center gap-4 bg-white p-4 rounded-2xl border border-gray-200 shadow-xs"
+    class="flex flex-wrap justify-between items-center gap-4 bg-white dark:bg-dark p-4 rounded-2xl border border-gray-200 shadow-xs"
   >
     <div class="flex gap-2">
       <button
@@ -969,7 +969,7 @@
 
     <div class="flex items-center gap-4 flex-wrap">
       <label
-        class="flex items-center gap-1.5 text-xs font-medium cursor-pointer text-gray-700"
+        class="flex items-center gap-1.5 text-xs font-medium cursor-pointer text-gray-700 dark:text-light"
       >
         <input
           type="checkbox"
@@ -979,7 +979,7 @@
         <span>Center Diagonals</span>
       </label>
       <label
-        class="flex items-center gap-1.5 text-xs font-medium cursor-pointer text-gray-700"
+        class="flex items-center gap-1.5 text-xs font-medium cursor-pointer text-gray-700 dark:text-light"
       >
         <input
           type="checkbox"
@@ -1001,7 +1001,7 @@
   <!-- Overlay Mode Workspace (Single or Split View) -->
   {#if gridMode === "overlay"}
     <div
-      class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm flex flex-col items-center"
+      class="bg-white dark:bg-dark p-6 rounded-3xl border border-gray-200 shadow-sm flex flex-col items-center"
     >
       <div
         class="w-full max-w-4xl flex justify-between items-center mb-3 bg-gray-50 p-3 rounded-xl border border-gray-200"
@@ -1078,7 +1078,7 @@
               >Clean Reference Photo</span
             >
             <div
-              class="relative w-full flex justify-center bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 p-2"
+              class="relative w-full flex justify-center bg-white dark:bg-dark rounded-xl overflow-hidden shadow-sm border border-gray-200 p-2"
             >
               <img
                 src={croppedImageSrc}

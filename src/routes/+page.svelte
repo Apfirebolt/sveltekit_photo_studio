@@ -241,9 +241,9 @@
         </label>
       </div>
     {:else}
-      <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-2xl border border-gray-200 shadow-xs mb-8 gap-3">
+      <div class="flex flex-col sm:flex-row justify-between items-center bg-white dark:bg-dark dark:text-light p-4 rounded-2xl border border-gray-200 shadow-xs mb-8 gap-3">
         <div class="flex items-center gap-3">
-          <span class="text-xs font-medium text-gray-700 truncate max-w-full">Active File: <strong class="text-dark">{fileName}</strong></span>
+          <span class="text-xs font-medium text-gray-700 dark:text-light truncate max-w-full">Active File: <strong class="text-dark dark:text-light">{fileName}</strong></span>
           {#if isTileActive}
             <button 
               type="button" 
