@@ -1,9 +1,11 @@
 <script lang="ts">
   import Icon from "@iconify/svelte";
   import JSZip from "jszip";
+  import ImageTracer from "imagetracerjs";
   import { onDestroy } from "svelte";
 
-  type OutputFormat = "jpeg" | "webp" | "png" | "pdf";
+  type OutputFormat = "jpeg" | "webp" | "png" | "pdf" | "svg";
+  type RasterFormat = "jpeg" | "webp" | "png";
   type NamingMode = "original" | "numeric" | "alpha" | "random";
   type ResizeMode = "none" | "fit" | "fill" | "exact";
   type WatermarkPos = "bottom-right" | "bottom-left" | "top-right" | "top-left" | "center";
@@ -11,7 +13,9 @@
   type Summary = { count: number; originalBytes: number; outputBytes: number; fileName: string };
 
   const MAX_FILE_MB = 25;
-  const MIME: Record<Exclude<OutputFormat, "pdf">, string> = {
+  // Tracing cost grows with pixel count; the SVG scales, so tracing a smaller copy loses nothing visible.
+  const SVG_TRACE_MAX_PX = 1000;
+  const MIME: Record<RasterFormat, string> = {
     jpeg: "image/jpeg",
     webp: "image/webp",
     png: "image/png",
@@ -174,9 +178,11 @@
   let format = $state<OutputFormat>("jpeg");
   let naming = $state<NamingMode>("numeric");
   let prefix = $state("");
+  let svgColors = $state(16);
 
   // Filter selection states
   let filterSearchQuery = $state("");
+  let applyFilter = $state(false);
   let selectedFilterId = $state("normal");
   let feelingLucky = $state(false);
 
@@ -277,7 +283,7 @@
   const sanitize = (value: string) => value.replace(/[\\/:*?"<>|]+/g, "_").trim();
 
   const extensionFor = (mimeType: string) =>
-    mimeType === "image/jpeg" ? "jpg" : mimeType === "image/webp" ? "webp" : "png";
+    mimeType === "image/jpeg" ? "jpg" : mimeType === "image/webp" ? "webp" : mimeType === "image/svg+xml" ? "svg" : "png";
 
   const makeName = (index: number, file: File, extension: string, used: Set<string>) => {
     const original = file.name.replace(/\.[^.]+$/, "") || file.name;
@@ -391,6 +397,25 @@
       canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Image encoding failed."))), type, quality),
     );
 
+  const traceToSvg = async (canvas: HTMLCanvasElement) => {
+    // Let the progress bar paint before the synchronous trace blocks the thread.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const scale = Math.min(1, SVG_TRACE_MAX_PX / Math.max(canvas.width, canvas.height));
+    const source = document.createElement("canvas");
+    source.width = Math.max(1, Math.round(canvas.width * scale));
+    source.height = Math.max(1, Math.round(canvas.height * scale));
+    const ctx = source.getContext("2d");
+    if (!ctx) throw new Error("Canvas is not available.");
+    ctx.drawImage(canvas, 0, 0, source.width, source.height);
+
+    const svg = ImageTracer.imagedataToSVG(ctx.getImageData(0, 0, source.width, source.height), {
+      numberofcolors: svgColors,
+      viewbox: true,
+    });
+    return new Blob([svg], { type: "image/svg+xml" });
+  };
+
   const downloadBlob = (blob: Blob, fileName: string) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -400,26 +425,24 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
+  const pickFilterCss = () => {
+    if (!applyFilter) return "none";
+    if (feelingLucky) return allCanvasFilters[Math.floor(Math.random() * allCanvasFilters.length)].css;
+    return allCanvasFilters.find((filter) => filter.id === selectedFilterId)?.css ?? "none";
+  };
+
   const exportImages = async (queue: QueuedImage[], quality: number, originalBytes: number) => {
     const used = new Set<string>();
     const outputs: { name: string; blob: Blob }[] = [];
 
     for (const [index, item] of queue.entries()) {
       const bitmap = await createImageBitmap(item.file);
-      
-      // Determine active CSS filter based on selection or "I'm feeling lucky" random choice
-      let cssToApply = "none";
-      if (feelingLucky) {
-        const randomFilter = allCanvasFilters[Math.floor(Math.random() * allCanvasFilters.length)];
-        cssToApply = randomFilter.css;
-      } else {
-        const found = allCanvasFilters.find((f) => f.id === selectedFilterId);
-        if (found) cssToApply = found.css;
-      }
-
-      const canvas = processCanvas(bitmap, cssToApply);
+      const canvas = processCanvas(bitmap, pickFilterCss());
       bitmap.close();
-      const blob = await canvasToBlob(canvas, MIME[format as Exclude<OutputFormat, "pdf">], quality);
+      const blob =
+        format === "svg"
+          ? await traceToSvg(canvas)
+          : await canvasToBlob(canvas, MIME[format as RasterFormat], quality);
       outputs.push({ name: makeName(index, item.file, extensionFor(blob.type), used), blob });
       progress = Math.round(((index + 1) / queue.length) * 100);
     }
@@ -444,17 +467,7 @@
 
     for (const [index, item] of queue.entries()) {
       const bitmap = await createImageBitmap(item.file);
-      
-      let cssToApply = "none";
-      if (feelingLucky) {
-        const randomFilter = allCanvasFilters[Math.floor(Math.random() * allCanvasFilters.length)];
-        cssToApply = randomFilter.css;
-      } else {
-        const found = allCanvasFilters.find((f) => f.id === selectedFilterId);
-        if (found) cssToApply = found.css;
-      }
-
-      const canvas = processCanvas(bitmap, cssToApply);
+      const canvas = processCanvas(bitmap, pickFilterCss());
       bitmap.close();
       const { width, height } = canvas;
       const orientation = width >= height ? "landscape" : "portrait";
@@ -556,8 +569,15 @@
         <h4 class="font-bold text-dark">Export & Quality</h4>
         <div class="space-y-1">
           <label for="bulk-reduction" class="block font-semibold text-gray-700">Quality reduction: {reduction}%</label>
-          <input id="bulk-reduction" type="range" min="0" max="95" bind:value={reduction} class="w-full cursor-pointer accent-primary" />
+          <input id="bulk-reduction" type="range" min="0" max="95" bind:value={reduction} disabled={format === "svg"} class="w-full cursor-pointer accent-primary disabled:opacity-50" />
         </div>
+        {#if format === "svg"}
+          <div class="space-y-1">
+            <label for="svg-colors" class="block font-semibold text-gray-700">SVG colors: {svgColors}</label>
+            <input id="svg-colors" type="range" min="2" max="64" bind:value={svgColors} class="w-full cursor-pointer accent-primary" />
+            <p class="text-[11px] text-gray-500">Photos are traced into vector shapes, so more colors means more detail and a larger file. Quality reduction doesn't apply.</p>
+          </div>
+        {/if}
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label for="bulk-format" class="block font-semibold text-gray-700">Format</label>
@@ -566,6 +586,7 @@
               <option value="webp">WebP</option>
               <option value="png">PNG</option>
               <option value="pdf">PDF</option>
+              <option value="svg">SVG (traced vector)</option>
             </select>
           </div>
           <div>
@@ -612,34 +633,41 @@
       <div class="space-y-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3">
         <div class="flex items-center justify-between">
           <h4 class="font-bold text-dark">Preset Filters</h4>
-          <label class="flex cursor-pointer items-center gap-1.5 font-semibold text-primary">
-            <input type="checkbox" bind:checked={feelingLucky} class="rounded accent-primary" />
-            🎲 I'm Feeling Lucky
+          <label class="flex cursor-pointer items-center gap-1.5 font-semibold text-dark">
+            <input type="checkbox" bind:checked={applyFilter} class="rounded accent-primary" />
+            Apply a filter
           </label>
         </div>
 
-        {#if !feelingLucky}
-          <div class="space-y-2">
-            <input
-              type="text"
-              bind:value={filterSearchQuery}
-              placeholder="🔍 Search filters..."
-              class="w-full rounded-xl border border-gray-200 bg-white p-2 text-dark"
-            />
-            <select bind:value={selectedFilterId} class="w-full rounded-xl border border-gray-200 bg-white p-2 font-medium text-dark">
-              {#each filteredCategories as category}
-                <optgroup label={category.name}>
-                  {#each category.filters as filter}
-                    <option value={filter.id}>{filter.name}</option>
-                  {/each}
-                </optgroup>
-              {/each}
-            </select>
-          </div>
-        {:else}
-          <p class="rounded-xl border border-primary/30 bg-primary/5 p-3 text-center text-primary font-medium">
-            ✨ Random canvas filters will be applied to each image automatically upon export!
-          </p>
+        {#if applyFilter}
+          <label class="flex w-fit cursor-pointer items-center gap-1.5 font-semibold text-primary">
+            <input type="checkbox" bind:checked={feelingLucky} class="rounded accent-primary" />
+            🎲 I'm Feeling Lucky
+          </label>
+
+          {#if !feelingLucky}
+            <div class="space-y-2">
+              <input
+                type="text"
+                bind:value={filterSearchQuery}
+                placeholder="🔍 Search filters..."
+                class="w-full rounded-xl border border-gray-200 bg-white p-2 text-dark"
+              />
+              <select bind:value={selectedFilterId} class="w-full rounded-xl border border-gray-200 bg-white p-2 font-medium text-dark">
+                {#each filteredCategories as category}
+                  <optgroup label={category.name}>
+                    {#each category.filters as filter}
+                      <option value={filter.id}>{filter.name}</option>
+                    {/each}
+                  </optgroup>
+                {/each}
+              </select>
+            </div>
+          {:else}
+            <p class="rounded-xl border border-primary/30 bg-primary/5 p-3 text-center text-primary font-medium">
+              ✨ Random canvas filters will be applied to each image automatically upon export!
+            </p>
+          {/if}
         {/if}
       </div>
 
@@ -679,10 +707,11 @@
       {/if}
 
       {#if summary}
+        {@const change = summary.originalBytes > 0 ? Math.round((1 - summary.outputBytes / summary.originalBytes) * 100) : 0}
         <p class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800">
           Saved <strong>{summary.fileName}</strong> ({summary.count} image{summary.count === 1 ? "" : "s"}):
           {formatBytes(summary.originalBytes)} → {formatBytes(summary.outputBytes)}
-          ({summary.originalBytes > 0 ? Math.round((1 - summary.outputBytes / summary.originalBytes) * 100) : 0}% smaller)
+          ({Math.abs(change)}% {change >= 0 ? "smaller" : "larger"})
         </p>
       {/if}
     </div>
