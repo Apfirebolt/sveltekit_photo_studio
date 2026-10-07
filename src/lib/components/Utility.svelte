@@ -12,7 +12,9 @@
   type FrameStyle = "browser" | "android" | "iphone" | "ipad" | "macbook" | "polaroid" | "gallery" | "film" | "neon" | "border" | "forest" | "glossy" | "circular" | "aqua" | "marine" | "sand" | "mars" | "space";
   type QueuedImage = { id: number; file: File; previewUrl: string };
   type Summary = { count: number; originalBytes: number; outputBytes: number; fileName: string };
+  type Mode = "bulk" | "collage";
 
+  let appMode = $state<Mode>("bulk");  
   const MAX_FILE_MB = 25;
   const SVG_TRACE_MAX_PX = 1000;
   const FRAME_OPTIONS: { id: FrameStyle; label: string }[] = [
@@ -230,6 +232,13 @@
   let errorMessage = $state("");
   let summary = $state<Summary | null>(null);
 
+  // Collage-specific states
+  let collageCols = $state(2);
+  let collageGap = $state(16);
+  let collageBgColor = $state("#ffffff");
+  let collagePadding = $state(24);  
+  let collagePreviewUrl = $state("");
+
   const filteredCategories = $derived(
     filterCategories.map((cat) => ({
       ...cat,
@@ -429,6 +438,89 @@
     });
     return new Blob([svg], { type: "image/svg+xml" });
   };
+
+  // Re-generate preview whenever collage settings or images change
+  // Re-generate preview whenever collage settings or images change
+  $effect(() => {
+    // 1. Read reactive variables synchronously so Svelte 5 tracks them
+    const colsSetting = collageCols;
+    const gapSetting = collageGap;
+    const padSetting = collagePadding;
+    const bgSetting = collageBgColor;
+    const currentMode = appMode;
+    const currentImages = images;
+
+    if (currentMode !== "collage" || currentImages.length === 0) {
+      if (collagePreviewUrl) URL.revokeObjectURL(collagePreviewUrl);
+      collagePreviewUrl = "";
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const bitmaps = await Promise.all(currentImages.map((img) => createImageBitmap(img.file)));
+        const cols = Math.min(colsSetting, bitmaps.length);
+        const rows = Math.ceil(bitmaps.length / cols);
+
+        const sampleW = bitmaps[0].width;
+        const sampleH = bitmaps[0].height;
+        const cellW = Math.round(sampleW / (cols > 1 ? 1.2 : 1));
+        const cellH = Math.round(sampleH / (cols > 1 ? 1.2 : 1));
+
+        const totalW = padSetting * 2 + cols * cellW + (cols - 1) * gapSetting;
+        const totalH = padSetting * 2 + rows * cellH + (rows - 1) * gapSetting;
+
+        const canvas = document.createElement("canvas");
+        canvas.width = totalW;
+        canvas.height = totalH;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        ctx.fillStyle = bgSetting;
+        ctx.fillRect(0, 0, totalW, totalH);
+
+        bitmaps.forEach((bmp, index) => {
+          const r = Math.floor(index / cols);
+          const c = index % cols;
+          const x = padSetting + c * (cellW + gapSetting);
+          const y = padSetting + r * (cellH + gapSetting);
+
+          ctx.save();
+          ctx.fillStyle = "#ffffff";
+          ctx.shadowColor = "rgba(0, 0, 0, 0.15)";
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetY = 4;
+          ctx.beginPath();
+          ctx.roundRect(x, y, cellW, cellH, 12);
+          ctx.fill();
+          ctx.clip();
+
+          const ratio = Math.max(cellW / bmp.width, cellH / bmp.height);
+          const dw = bmp.width * ratio;
+          const dh = bmp.height * ratio;
+          const dx = x + (cellW - dw) / 2;
+          const dy = y + (cellH - dh) / 2;
+
+          ctx.drawImage(bmp, dx, dy, dw, dh);
+          ctx.restore();
+          bmp.close();
+        });
+
+        canvas.toBlob((blob) => {
+          if (!isMounted || !blob) return;
+          if (collagePreviewUrl) URL.revokeObjectURL(collagePreviewUrl);
+          collagePreviewUrl = URL.createObjectURL(blob);
+        }, "image/jpeg", 0.85);
+      } catch (err) {
+        console.error("Collage preview error:", err);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  });
 
   const applyFrame = (src: HTMLCanvasElement) => {
     const w = src.width;
@@ -822,6 +914,74 @@
     }
   };
 
+  const generateCollageBlob = async () => {
+    if (images.length === 0) return;
+
+    // Load all images as Bitmaps
+    const bitmaps = await Promise.all(images.map((img) => createImageBitmap(img.file)));
+    
+    // Determine grid dimensions
+    const cols = Math.min(collageCols, bitmaps.length);
+    const rows = Math.ceil(bitmaps.length / cols);
+
+    // Assume uniform cell sizing based on the first image or max bounds
+    const sampleW = bitmaps[0].width;
+    const sampleH = bitmaps[0].height;
+    const cellW = Math.round(sampleW / (cols > 1 ? 1.2 : 1));
+    const cellH = Math.round(sampleH / (cols > 1 ? 1.2 : 1));
+
+    const totalW = collagePadding * 2 + cols * cellW + (cols - 1) * collageGap;
+    const totalH = collagePadding * 2 + rows * cellH + (rows - 1) * collageGap;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = totalW;
+    canvas.height = totalH;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas not available");
+
+    // Fill background
+    ctx.fillStyle = collageBgColor;
+    ctx.fillRect(0, 0, totalW, totalH);
+
+    // Draw each image into its grid slot
+    bitmaps.forEach((bmp, index) => {
+      const r = Math.floor(index / cols);
+      const c = index % cols;
+      const x = collagePadding + c * (cellW + collageGap);
+      const y = collagePadding + r * (cellH + collageGap);
+
+      // Draw rounded card container for each photo
+      ctx.save();
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "rgba(0, 0, 0, 0.15)";
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 4;
+      ctx.beginPath();
+      ctx.roundRect(x, y, cellW, cellH, 12);
+      ctx.fill();
+      ctx.clip();
+
+      // Cover fit inside cell
+      const ratio = Math.max(cellW / bmp.width, cellH / bmp.height);
+      const dw = bmp.width * ratio;
+      const dh = bmp.height * ratio;
+      const dx = x + (cellW - dw) / 2;
+      const dy = y + (cellH - dh) / 2;
+
+      ctx.drawImage(bmp, dx, dy, dw, dh);
+      ctx.restore();
+      bmp.close();
+    });
+
+    const quality = (100 - reduction) / 100;
+    const blob = await canvasToBlob(canvas, MIME[format as RasterFormat] || "image/jpeg", quality);
+    const originalBytes = images.reduce((total, item) => total + item.file.size, 0);
+    const fileName = `${sanitize(prefix)}photo_collage.${extensionFor(blob.type)}`;
+
+    downloadBlob(blob, fileName);
+    summary = { count: 1, originalBytes, outputBytes: blob.size, fileName };
+  };
+
   const canvasToBlob = (canvas: HTMLCanvasElement, type: string, quality: number) =>
     new Promise<Blob>((resolve, reject) =>
       canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Image encoding failed."))), type, quality),
@@ -1127,6 +1287,81 @@
         </div>
       </div>
     </section>
+
+    <div class="space-y-6">
+
+    {#if images.length > 0}
+        <!-- Mode Switcher Tabs -->
+        <div class="flex rounded-xl bg-gray-100 p-1 border border-gray-200">
+            <button
+                type="button"
+                onclick={() => appMode = "bulk"}
+                class="flex-1 rounded-lg py-2 text-xs font-bold transition {appMode === 'bulk' ? 'bg-white text-dark shadow-xs' : 'text-gray-500 hover:text-dark'}"
+            >
+                ⚡ Bulk Processor ({images.length} images)
+            </button>
+            <button
+                type="button"
+                onclick={() => appMode = "collage"}
+                class="flex-1 rounded-lg py-2 text-xs font-bold transition {appMode === 'collage' ? 'bg-white text-dark shadow-xs' : 'text-gray-500 hover:text-dark'}"
+            >
+                🖼️ Grid Collage Maker
+            </button>
+        </div>
+
+        {#if appMode === "collage"}
+        <!-- Collage Options Panel -->
+        <section class="space-y-4 rounded-2xl border border-gray-200 bg-white p-4 text-xs shadow-xs">
+            <h4 class="font-bold text-dark text-sm">Collage Layout Settings</h4>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                    <label for="collage-cols" class="block font-semibold text-gray-700">Columns: {collageCols}</label>
+                    <input id="collage-cols" type="range" min="1" max="5" bind:value={collageCols} class="w-full cursor-pointer accent-primary" />
+                </div>
+                <div>
+                    <label for="collage-gap" class="block font-semibold text-gray-700">Grid Gap: {collageGap}px</label>
+                    <input id="collage-gap" type="range" min="0" max="48" bind:value={collageGap} class="w-full cursor-pointer accent-primary" />
+                </div>
+                <div>
+                    <label for="collage-pad" class="block font-semibold text-gray-700">Padding: {collagePadding}px</label>
+                    <input id="collage-pad" type="range" min="0" max="64" bind:value={collagePadding} class="w-full cursor-pointer accent-primary" />
+                </div>
+                <div>
+                    <label for="collage-bg" class="block font-semibold text-gray-700">Background</label>
+                    <input id="collage-bg" type="color" bind:value={collageBgColor} class="h-9 w-full cursor-pointer rounded-xl border border-gray-200 bg-white p-1" />
+                </div>
+            </div>
+
+            <!-- Live Collage Preview Container -->
+            <div class="relative flex min-h-[240px] items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50 p-4">
+            {#if collagePreviewUrl}
+                <img src={collagePreviewUrl} alt="Collage Live Preview" class="max-h-80 w-auto rounded-lg shadow-md object-contain" />
+            {:else}
+                <div class="flex flex-col items-center gap-2 text-gray-400">
+                <Icon icon="mdi:loading" class="animate-spin text-2xl" />
+                <span>Rendering live preview...</span>
+                </div>
+            {/if}
+            </div>
+
+            <button
+            type="button"
+            onclick={generateCollageBlob}
+            disabled={isProcessing}
+            class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-xs font-semibold text-light shadow transition hover:bg-primary-dark disabled:opacity-60"
+            >
+            <Icon icon="mdi:collage" class="text-base" />
+            Generate & Download Collage
+            </button>
+        </section>
+
+        <!-- Collage preview section -->
+         
+        {:else}
+      <!-- Your existing Bulk Control Sections here -->
+        {/if}
+    {/if}
+    </div>
 
     <!-- Action Section -->
     <div class="space-y-3">
