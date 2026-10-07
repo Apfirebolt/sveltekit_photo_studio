@@ -1,0 +1,9 @@
+export type OutputFormat = "jpeg" | "webp" | "png" | "pdf" | "svg";
+export type RasterFormat = "jpeg" | "webp" | "png";
+export type NamingMode = "original" | "numeric" | "alpha" | "random";
+export type ResizeMode = "none" | "fit" | "fill" | "exact";
+export type WatermarkPos = "bottom-right" | "bottom-left" | "top-right" | "top-left" | "center";
+export type FrameStyle = "browser" | "android" | "iphone" | "ipad" | "macbook" | "polaroid" | "gallery" | "film" | "neon" | "border" | "forest" | "glossy" | "circular" | "aqua" | "marine" | "sand" | "mars" | "space";
+export type QueuedImage = { id: number; file: File; previewUrl: string };
+export type Summary = { count: number; originalBytes: number; outputBytes: number; fileName: string };
+export type Mode = "bulk" | "collage";
