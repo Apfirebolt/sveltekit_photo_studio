@@ -4,38 +4,10 @@
   import ImageTracer from "imagetracerjs";
   import { onDestroy } from "svelte";
   import { filterCategories } from "$lib/utils/filters";
+  import { MAX_FILE_MB, SVG_TRACE_MAX_PX } from "$lib/utils/constants";
   import type { OutputFormat, RasterFormat, NamingMode, ResizeMode, WatermarkPos, FrameStyle, QueuedImage, Summary, Mode } from "$lib/types/utility";
 
   let appMode = $state<Mode>("bulk");  
-  const MAX_FILE_MB = 25;
-  const SVG_TRACE_MAX_PX = 1000;
-  const FRAME_OPTIONS: { id: FrameStyle; label: string }[] = [
-    { id: "browser", label: "Browser Window" },
-    { id: "iphone", label: "iPhone Bezel" },
-    { id: "android", label: "Android Device" },
-    { id: "ipad", label: "iPad Bezel" },
-    { id: "macbook", label: "MacBook Pro" },
-    { id: "polaroid", label: "Polaroid Print" },
-    { id: "gallery", label: "Gallery Wood Frame" },
-    { id: "film", label: "Film Strip" },
-    { id: "neon", label: "Neon Glow" },
-    { id: "border", label: "Clean White Border" },
-    { id: "forest", label: "Forest Frame" },
-    { id: "glossy", label: "Glossy Frame" },
-    { id: "circular", label: "Circular Frame" },
-    { id: "aqua", label: "Aqua Frame" },
-    { id: "marine", label: "Marine Frame" },
-    { id: "sand", label: "Sand Frame" },
-    { id: "mars", label: "Mars Frame" },
-    { id: "space", label: "Space Frame" },
-
-    // add more frame options 
-  ];
-  const MIME: Record<RasterFormat, string> = {
-    jpeg: "image/jpeg",
-    webp: "image/webp",
-    png: "image/png",
-  };
 
   const allCanvasFilters = filterCategories.flatMap((cat) => cat.filters);
 
@@ -926,7 +898,7 @@
   onDestroy(() => images.forEach((image) => URL.revokeObjectURL(image.previewUrl)));
 </script>
 
-<div class="space-y-6">
+<div class="space-y-6 ">
   <!-- Dropzone -->
   <div
     role="presentation"
@@ -934,7 +906,7 @@
     ondragover={(event) => event.preventDefault()}
     ondragleave={handleDragLeave}
     ondrop={handleDrop}
-    class="rounded-3xl border-2 border-dashed p-8 text-center shadow-sm transition {isDragging ? 'border-primary bg-primary/5' : 'border-gray-300 bg-white'}"
+    class="rounded-3xl dark:bg-dark dark:text-light border-2 p-8 text-center shadow-sm transition {isDragging ? 'border-primary bg-primary/5' : 'border-gray-300 bg-white'}"
   >
     <Icon icon="mdi:image-multiple-outline" class="mx-auto h-14 w-14 text-gray-400" />
     <p class="mt-2 text-base font-bold text-dark">Drag & drop multiple images here</p>
@@ -951,7 +923,7 @@
 
   {#if images.length > 0}
     <!-- Preview Grid -->
-    <section class="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-xs">
+    <section class="space-y-3 rounded-2xl border border-gray-200 dark:bg-dark dark:text-light bg-white p-4 shadow-xs">
       <div class="flex items-center justify-between">
         <h3 class="text-sm font-bold text-dark">
           {images.length} image{images.length === 1 ? "" : "s"} selected
@@ -979,7 +951,7 @@
     </section>
 
     <!-- Controls Panel -->
-    <section class="grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-white p-4 text-xs shadow-xs md:grid-cols-2">
+    <section class="grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-white dark:bg-dark dark:text-light p-4 text-xs shadow-xs md:grid-cols-2">
       <!-- Compression & Format -->
       <div class="space-y-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3">
         <h4 class="font-bold text-dark">Export & Quality</h4>

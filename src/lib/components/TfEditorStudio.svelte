@@ -408,8 +408,8 @@
   <div class="w-full lg:col-span-1 bg-white dark:bg-dark p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 overflow-y-auto max-h-[85vh]">
     <div class="flex items-center justify-between border-b border-gray-100 pb-2">
       <div class="flex items-center gap-2">
-        <Icon icon="mdi:brain" class="text-primary text-lg" />
-        <h3 class="font-bold text-sm text-dark">TensorFlow.js Studio Adjustments</h3>
+        <Icon icon="mdi:brain" class="text-primary text-lg dark:text-light" />
+        <h3 class="font-bold text-sm text-dark dark:text-light">TensorFlow.js Studio Adjustments</h3>
       </div>
       <button 
         type="button" 
@@ -544,7 +544,7 @@
 
     <!-- RGB Channel Adjustments Section -->
     <div class="space-y-3 bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
-      <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-light font-mono">RGB Channel Mixer</h4>
+      <h4 class="text-[11px] font-bold uppercase tracking-wider text-dark font-mono">RGB Channel Mixer</h4>
       
       <div>
         <div class="flex justify-between text-xs font-medium mb-1 text-red-600">
@@ -590,7 +590,7 @@
     </div>
 
     <div>
-      <div class="flex justify-between text-xs font-medium mb-1 text-gray-600">
+      <div class="flex justify-between text-xs font-medium mb-1 text-gray-600 dark:text-light">
         <span>Saturation</span><span>{saturation}%</span>
       </div>
       <input type="range" bind:value={saturation} min="0" max="200" class="w-full accent-primary cursor-pointer" />
@@ -598,7 +598,7 @@
 
     <div class="border-t border-gray-100 pt-4 space-y-2">
       <p class="text-xs font-bold text-dark">AI Tools</p>
-      <button type="button" onclick={describeImage} disabled={isDescribing} class="w-full flex items-center justify-center gap-2 border border-gray-200 hover:bg-gray-50 disabled:opacity-60 text-dark font-semibold py-2.5 rounded-lg text-xs transition cursor-pointer">
+      <button type="button" onclick={describeImage} disabled={isDescribing} class="w-full flex items-center justify-center gap-2 border border-gray-200 hover:bg-gray-50 disabled:opacity-60 dark:text-light dark:bg-primary text-dark font-semibold py-2.5 rounded-lg text-xs transition cursor-pointer">
         <Icon icon="mdi:image-text" />
         {isDescribing ? 'Analyzing image...' : 'Describe image'}
       </button>
@@ -616,7 +616,7 @@
   </div>
 
   <!-- Canvas Preview Area with Fullscreen Expand & Sampled Color Footer -->
-  <div class="w-full lg:col-span-2 bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-between">
+  <div class="w-full lg:col-span-2 bg-white p-4 sm:p-6 rounded-2xl dark:bg-dark dark:text-light border border-gray-200 shadow-sm flex flex-col items-center justify-between">
     <div class="w-full flex items-center justify-center relative overflow-auto bg-gray-100 rounded-xl border border-gray-200 p-2 min-h-[350px] sm:min-h-[460px]">
       <button 
         type="button" 
