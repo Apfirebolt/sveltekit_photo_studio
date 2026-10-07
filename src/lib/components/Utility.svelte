@@ -4,7 +4,7 @@
   import ImageTracer from "imagetracerjs";
   import { onDestroy } from "svelte";
   import { filterCategories } from "$lib/utils/filters";
-  import { MAX_FILE_MB, SVG_TRACE_MAX_PX } from "$lib/utils/constants";
+  import { MAX_FILE_MB, SVG_TRACE_MAX_PX, MIME, FRAME_OPTIONS } from "$lib/utils/constants";
   import type { OutputFormat, RasterFormat, NamingMode, ResizeMode, WatermarkPos, FrameStyle, QueuedImage, Summary, Mode } from "$lib/types/utility";
 
   let appMode = $state<Mode>("bulk");  
@@ -908,9 +908,9 @@
     ondrop={handleDrop}
     class="rounded-3xl dark:bg-dark dark:text-light border-2 p-8 text-center shadow-sm transition {isDragging ? 'border-primary bg-primary/5' : 'border-gray-300 bg-white'}"
   >
-    <Icon icon="mdi:image-multiple-outline" class="mx-auto h-14 w-14 text-gray-400" />
-    <p class="mt-2 text-base font-bold text-dark">Drag & drop multiple images here</p>
-    <p class="font-mono text-xs text-gray-400">Up to {MAX_FILE_MB} MB per image</p>
+    <Icon icon="mdi:image-multiple-outline" class="mx-auto h-14 w-14 text-gray-400 dark:text-light" />
+    <p class="mt-2 text-base font-bold text-dark dark:text-light">Drag & drop multiple images here</p>
+    <p class="font-mono text-xs text-gray-400 dark:text-light">Up to {MAX_FILE_MB} MB per image</p>
     <label class="mt-3 inline-block cursor-pointer rounded-xl bg-primary px-8 py-3 text-xs font-semibold text-light shadow transition hover:bg-primary-dark">
       Select Images
       <input type="file" multiple accept="image/*" onchange={handleFileInput} class="hidden" />
@@ -925,9 +925,9 @@
     <!-- Preview Grid -->
     <section class="space-y-3 rounded-2xl border border-gray-200 dark:bg-dark dark:text-light bg-white p-4 shadow-xs">
       <div class="flex items-center justify-between">
-        <h3 class="text-sm font-bold text-dark">
+        <h3 class="text-sm font-bold text-dark dark:text-light">
           {images.length} image{images.length === 1 ? "" : "s"} selected
-          <span class="font-mono text-xs font-normal text-gray-500">({formatBytes(images.reduce((total, image) => total + image.file.size, 0))})</span>
+          <span class="font-mono text-xs font-normal text-gray-500 dark:text-light">({formatBytes(images.reduce((total, image) => total + image.file.size, 0))})</span>
         </h3>
         <button type="button" onclick={clearImages} class="cursor-pointer text-xs font-semibold text-red-500 hover:underline">Clear all</button>
       </div>
@@ -969,7 +969,7 @@
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label for="bulk-format" class="block font-semibold text-gray-700">Format</label>
-            <select id="bulk-format" bind:value={format} class="w-full rounded-xl border border-gray-200 bg-white p-2 font-medium text-dark">
+            <select id="bulk-format" bind:value={format} class="w-full rounded-xl border border-gray-200 bg-white dark:bg-dark dark:text-light p-2 font-medium text-dark">
               <option value="jpeg">JPEG</option>
               <option value="webp">WebP</option>
               <option value="png">PNG</option>
@@ -979,7 +979,7 @@
           </div>
           <div>
             <label for="bulk-naming" class="block font-semibold text-gray-700">Naming</label>
-            <select id="bulk-naming" bind:value={naming} disabled={format === "pdf"} class="w-full rounded-xl border border-gray-200 bg-white p-2 font-medium text-dark disabled:opacity-50">
+            <select id="bulk-naming" bind:value={naming} disabled={format === "pdf"} class="w-full rounded-xl border border-gray-200 bg-white dark:bg-dark dark:text-light p-2 font-medium text-dark disabled:opacity-50">
               <option value="numeric">Numbers</option>
               <option value="alpha">Letters</option>
               <option value="random">Random</option>
@@ -995,7 +995,7 @@
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label for="resize-mode" class="block font-semibold text-gray-700">Mode</label>
-            <select id="resize-mode" bind:value={resizeMode} class="w-full rounded-xl border border-gray-200 bg-white p-2 font-medium text-dark">
+            <select id="resize-mode" bind:value={resizeMode} class="w-full rounded-xl border border-gray-200 bg-white dark:bg-dark dark:text-light p-2 font-medium text-dark">
               <option value="none">Original Size</option>
               <option value="fit">Fit Within Bounds</option>
               <option value="fill">Fill Canvas (Pad)</option>
@@ -1011,8 +1011,8 @@
         </div>
         {#if resizeMode !== "none"}
           <div class="grid grid-cols-2 gap-2">
-            <input type="number" bind:value={targetWidth} placeholder="Max Width (px)" class="rounded-xl border border-gray-200 bg-white p-2" />
-            <input type="number" bind:value={targetHeight} placeholder="Max Height (px)" class="rounded-xl border border-gray-200 bg-white p-2" />
+            <input type="number" bind:value={targetWidth} placeholder="Max Width (px)" class="rounded-xl border border-gray-200 bg-white dark:bg-dark dark:text-light p-2" />
+            <input type="number" bind:value={targetHeight} placeholder="Max Height (px)" class="rounded-xl border border-gray-200 bg-white dark:bg-dark dark:text-light p-2" />
           </div>
         {/if}
       </div>
@@ -1039,9 +1039,9 @@
                 type="text"
                 bind:value={filterSearchQuery}
                 placeholder="🔍 Search filters..."
-                class="w-full rounded-xl border border-gray-200 bg-white p-2 text-dark"
+                class="w-full rounded-xl border border-gray-200 bg-white dark:bg-dark dark:text-light p-2 text-dark"
               />
-              <select bind:value={selectedFilterId} class="w-full rounded-xl border border-gray-200 bg-white p-2 font-medium text-dark">
+              <select bind:value={selectedFilterId} class="w-full rounded-xl border border-gray-200 bg-white dark:bg-dark dark:text-light p-2 font-medium text-dark">
                 {#each filteredCategories as category}
                   <optgroup label={category.name}>
                     {#each category.filters as filter}
@@ -1072,7 +1072,7 @@
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label for="frame-style" class="block font-semibold text-gray-700">Style</label>
-              <select id="frame-style" bind:value={frameStyle} class="w-full rounded-xl border border-gray-200 bg-white p-2 font-medium text-dark">
+              <select id="frame-style" bind:value={frameStyle} class="w-full rounded-xl border border-gray-200 bg-white dark:bg-dark dark:text-light p-2 font-medium text-dark">
                 {#each FRAME_OPTIONS as option}
                   <option value={option.id}>{option.label}</option>
                 {/each}
@@ -1083,21 +1083,21 @@
               <input id="frame-pad" type="range" min="8" max="100" bind:value={framePadding} class="w-full cursor-pointer accent-primary" />
             </div>
           </div>
-          <p class="text-[11px] text-gray-500">Applied after resizing, filter and watermark, and works with every output format.</p>
+          <p class="text-[11px] text-gray-500 dark:text-light">Applied after resizing, filter and watermark, and works with every output format.</p>
         {/if}
       </div>
 
       <!-- Watermarking & Adjustments -->
       <div class="space-y-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3">
-        <h4 class="font-bold text-dark">Watermark & Adjustments</h4>
-        <input type="text" bind:value={watermarkText} placeholder="© Watermark text (optional)" class="w-full rounded-xl border border-gray-200 bg-white p-2" />
+        <h4 class="font-bold text-dark dark:text-light">Watermark & Adjustments</h4>
+        <input type="text" bind:value={watermarkText} placeholder="© Watermark text (optional)" class="w-full rounded-xl border border-gray-200 bg-white dark:bg-dark dark:text-light p-2" />
         <div class="grid grid-cols-2 gap-2">
           <div class="space-y-1">
-            <span class="text-gray-500">Brightness: {brightness}%</span>
+            <span class="text-gray-500 dark:text-light">Brightness: {brightness}%</span>
             <input type="range" min="50" max="150" bind:value={brightness} class="w-full accent-primary" />
           </div>
           <div class="space-y-1">
-            <span class="text-gray-500">Contrast: {contrast}%</span>
+            <span class="text-gray-500 dark:text-light">Contrast: {contrast}%</span>
             <input type="range" min="50" max="150" bind:value={contrast} class="w-full accent-primary" />
           </div>
         </div>
@@ -1108,18 +1108,18 @@
 
     {#if images.length > 0}
         <!-- Mode Switcher Tabs -->
-        <div class="flex rounded-xl bg-gray-100 p-1 border border-gray-200">
+        <div class="flex rounded-xl bg-gray-100 p-1 border border-gray-200 dark:bg-dark dark:text-light">
             <button
                 type="button"
                 onclick={() => appMode = "bulk"}
-                class="flex-1 rounded-lg py-2 text-xs font-bold transition {appMode === 'bulk' ? 'bg-white text-dark shadow-xs' : 'text-gray-500 hover:text-dark'}"
+                class="flex-1 rounded-lg py-2 text-xs font-bold transition {appMode === 'bulk' ? 'bg-white text-dark shadow-xs' : 'text-gray-500'}"
             >
                 ⚡ Bulk Processor ({images.length} images)
             </button>
             <button
                 type="button"
                 onclick={() => appMode = "collage"}
-                class="flex-1 rounded-lg py-2 text-xs font-bold transition {appMode === 'collage' ? 'bg-white text-dark shadow-xs' : 'text-gray-500 hover:text-dark'}"
+                class="flex-1 rounded-lg py-2 text-xs font-bold transition {appMode === 'collage' ? 'bg-white text-dark shadow-xs' : 'text-gray-500'}"
             >
                 🖼️ Grid Collage Maker
             </button>
@@ -1127,23 +1127,23 @@
 
         {#if appMode === "collage"}
         <!-- Collage Options Panel -->
-        <section class="space-y-4 rounded-2xl border border-gray-200 bg-white p-4 text-xs shadow-xs">
-            <h4 class="font-bold text-dark text-sm">Collage Layout Settings</h4>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <section class="space-y-4 rounded-2xl border border-gray-200 bg-white dark:bg-dark dark:text-light p-4 text-xs shadow-xs">
+            <h4 class="font-bold text-dark dark:text-light text-sm">Collage Layout Settings</h4>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 dark:text-light">
                 <div>
-                    <label for="collage-cols" class="block font-semibold text-gray-700">Columns: {collageCols}</label>
+                    <label for="collage-cols" class="block font-semibold text-gray-700 dark:text-light">Columns: {collageCols}</label>
                     <input id="collage-cols" type="range" min="1" max="5" bind:value={collageCols} class="w-full cursor-pointer accent-primary" />
                 </div>
                 <div>
-                    <label for="collage-gap" class="block font-semibold text-gray-700">Grid Gap: {collageGap}px</label>
+                    <label for="collage-gap" class="block font-semibold text-gray-700 dark:text-light">Grid Gap: {collageGap}px</label>
                     <input id="collage-gap" type="range" min="0" max="48" bind:value={collageGap} class="w-full cursor-pointer accent-primary" />
                 </div>
                 <div>
-                    <label for="collage-pad" class="block font-semibold text-gray-700">Padding: {collagePadding}px</label>
+                    <label for="collage-pad" class="block font-semibold text-gray-700 dark:text-light">Padding: {collagePadding}px</label>
                     <input id="collage-pad" type="range" min="0" max="64" bind:value={collagePadding} class="w-full cursor-pointer accent-primary" />
                 </div>
                 <div>
-                    <label for="collage-bg" class="block font-semibold text-gray-700">Background</label>
+                    <label for="collage-bg" class="block font-semibold text-gray-700 dark:text-light">Background</label>
                     <input id="collage-bg" type="color" bind:value={collageBgColor} class="h-9 w-full cursor-pointer rounded-xl border border-gray-200 bg-white p-1" />
                 </div>
             </div>
