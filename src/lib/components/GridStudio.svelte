@@ -774,16 +774,16 @@
   </div>
 
   {#if rawImageObj}
-    <label class="flex w-fit items-center gap-2 text-xs font-semibold text-dark cursor-pointer">
+    <label class="flex w-fit items-center gap-2 text-xs font-semibold text-dark dark:text-light cursor-pointer">
       <input type="checkbox" bind:checked={showCropWindow} class="h-4 w-4 rounded accent-primary" />
       Show crop window
     </label>
     {#if showCropWindow}
-      <section class="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-xs">
+      <section class="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 dark:bg-dark dark:text-light shadow-xs">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h3 class="text-sm font-bold text-dark">Crop Image</h3>
-          <p class="text-[11px] text-gray-500">Drag on the image to draw a crop area, or drag inside it to reposition.</p>
+          <h3 class="text-sm font-bold text-dark dark:text-light">Crop Image</h3>
+          <p class="text-[11px] text-gray-500 dark:text-light">Drag on the image to draw a crop area, or drag inside it to reposition.</p>
         </div>
         <button
           type="button"

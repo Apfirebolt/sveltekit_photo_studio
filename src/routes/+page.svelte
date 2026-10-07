@@ -153,7 +153,7 @@
   <title>Softgenie Studio - Reference Grid & Photo Suite</title>
 </svelte:head>
 
-<div class="min-h-screen bg-light text-dark flex flex-col selection:bg-primary selection:text-light font-sans overflow-x-hidden">
+<div class="min-h-screen bg-light dark:bg-secondary dark:text-light text-dark flex flex-col selection:bg-primary selection:text-light font-sans overflow-x-hidden">
   {#if isDraggingImage}
     <div class="pointer-events-none fixed inset-3 z-100 flex items-center justify-center rounded-3xl border-4 border-dashed border-primary bg-white/90 text-primary shadow-2xl">
       <span class="flex items-center gap-3 text-lg font-bold"><Icon icon="mdi:cloud-upload-outline" class="text-3xl" /> Drop image to open</span>
@@ -175,7 +175,7 @@
   </section>
 
   <!-- 3-Tab Navigation Bar -->
-  <div class="bg-white border-b border-gray-200 sticky top-16 z-20 shadow-xs">
+  <div class="bg-white border-b border-gray-200 sticky top-16 z-20 shadow-xs dark:bg-dark dark:text-light">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
       <button 
         type="button"
@@ -230,10 +230,10 @@
 
     <div class:hidden={activeTab === 'bulk'}>
     {#if !imageLoaded}
-      <div class="max-w-2xl mx-auto bg-white border-2 border-gray-300 rounded-3xl p-8 sm:p-12 text-center hover:border-primary transition shadow-sm space-y-3">
+      <div class="max-w-2xl mx-auto bg-white dark:bg-dark border-2 border-gray-300 rounded-3xl p-8 sm:p-12 text-center hover:border-primary transition shadow-sm space-y-3">
         <Icon icon="mdi:cloud-upload-outline" class="w-16 h-16 mx-auto text-gray-400" />
-        <p class="text-dark font-bold text-base sm:text-lg mb-1">Drag & drop your reference photo</p>
-        <p class="text-xs text-gray-400 font-mono">Maximum file size allowed: 10 MB</p>
+        <p class="text-dark dark:text-light font-bold text-base sm:text-lg mb-1">Drag & drop your reference photo</p>
+        <p class="text-xs text-gray-400 dark:text-light font-mono">Maximum file size allowed: 10 MB</p>
         
         <label class="cursor-pointer bg-primary hover:bg-primary-dark text-light font-semibold py-3 px-8 rounded-xl shadow transition text-xs inline-block mt-2">
           Browse Image File
@@ -268,8 +268,8 @@
       <div class:hidden={activeTab !== 'editor'}>
         <div class="space-y-6">
           <!-- Artistic Preset Bar -->
-          <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-2">
-            <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-400 font-mono">Select Artistic Tensor Style</h4>
+          <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs space-y-2 dark:bg-dark dark:text-light">
+            <h4 class="text-[11px] font-bold uppercase tracking-wider font-mono">Select Artistic Tensor Style</h4>
             <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
               <button type="button" onclick={() => activePreset = 'normal'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'normal' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">🌟 Original</button>
               <button type="button" onclick={() => activePreset = 'sketch'} class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap {activePreset === 'sketch' ? 'bg-primary text-light shadow-sm' : 'bg-gray-50 border border-gray-200 text-dark hover:bg-gray-100'}">✏️ Pencil Sketch</button>

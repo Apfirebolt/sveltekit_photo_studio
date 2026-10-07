@@ -405,7 +405,7 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
   <!-- Controls Sidebar -->
-  <div class="w-full lg:col-span-1 bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 overflow-y-auto max-h-[85vh]">
+  <div class="w-full lg:col-span-1 bg-white dark:bg-dark p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 overflow-y-auto max-h-[85vh]">
     <div class="flex items-center justify-between border-b border-gray-100 pb-2">
       <div class="flex items-center gap-2">
         <Icon icon="mdi:brain" class="text-primary text-lg" />
@@ -499,7 +499,7 @@
               <button type="button" onclick={() => selectedColorToSwap = null} class="text-[10px] text-red-500 font-bold hover:underline">Clear</button>
             </div>
             <div class="flex items-center gap-2">
-              <input type="color" bind:value={replacementColorHex} oninput={() => customReplacementInput = replacementColorHex} class="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white shadow-xs" />
+              <input type="color" bind:value={replacementColorHex} oninput={() => customReplacementInput = replacementColorHex} class="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white dark:bg-dark dark:text-light shadow-xs" />
               <div class="relative flex-1">
                 <span class="absolute left-2.5 top-2 text-xs font-mono text-gray-400">#</span>
                 <input 
@@ -514,7 +514,7 @@
                   }}
                   placeholder="HEX (e.g. #3b82f6)" 
                   maxlength="7"
-                  class="w-full pl-6 pr-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-bold text-dark uppercase" 
+                  class="w-full pl-6 pr-2 py-1.5 bg-white  dark:bg-dark dark:text-light border border-gray-200 rounded-lg text-xs font-mono font-bold text-dark uppercase" 
                 />
               </div>
             </div>
@@ -544,7 +544,7 @@
 
     <!-- RGB Channel Adjustments Section -->
     <div class="space-y-3 bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
-      <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-500 font-mono">RGB Channel Mixer</h4>
+      <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-light font-mono">RGB Channel Mixer</h4>
       
       <div>
         <div class="flex justify-between text-xs font-medium mb-1 text-red-600">
@@ -569,21 +569,21 @@
     </div>
 
     <div>
-      <div class="flex justify-between text-xs font-medium mb-1 text-gray-600">
+      <div class="flex justify-between text-xs font-medium mb-1 text-gray-600 dark:text-light">
         <span>Style Blend Intensity</span><span>{styleIntensity}%</span>
       </div>
       <input type="range" bind:value={styleIntensity} min="0" max="100" class="w-full accent-primary cursor-pointer" />
     </div>
 
     <div>
-      <div class="flex justify-between text-xs font-medium mb-1 text-gray-600">
+      <div class="flex justify-between text-xs font-medium mb-1 text-gray-600 dark:text-light">
         <span>Brightness</span><span>{brightness}%</span>
       </div>
       <input type="range" bind:value={brightness} min="0" max="200" class="w-full accent-primary cursor-pointer" />
     </div>
 
     <div>
-      <div class="flex justify-between text-xs font-medium mb-1 text-gray-600">
+      <div class="flex justify-between text-xs font-medium mb-1 text-gray-600 dark:text-light">
         <span>Contrast</span><span>{contrast}%</span>
       </div>
       <input type="range" bind:value={contrast} min="0" max="200" class="w-full accent-primary cursor-pointer" />
