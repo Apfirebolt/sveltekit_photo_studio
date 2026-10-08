@@ -79,6 +79,13 @@
     innerShadowBlur: number;
     innerShadowOffsetX: number;
     innerShadowOffsetY: number;
+    // Stroke, blend and masking
+    strokeEnabled: boolean;
+    strokeColor: string;
+    strokeWidth: number;
+    blendMode: GlobalCompositeOperation;
+    maskEnabled: boolean;
+    maskColor: string;
   };
 
   let textOverlays = $state<TextOverlay[]>([]);
@@ -135,6 +142,13 @@
       innerShadowBlur: 6,
       innerShadowOffsetX: 3,
       innerShadowOffsetY: 3
+      ,
+      strokeEnabled: false,
+      strokeColor: '#000000',
+      strokeWidth: 2,
+      blendMode: 'source-over',
+      maskEnabled: false,
+      maskColor: '#000000'
     };
     textOverlays = [...textOverlays, newOverlay];
     activeTextId = newOverlay.id;
@@ -428,10 +442,12 @@
           ctx.fillRect(box.x, box.y, box.w, box.h);
         }
 
-        ctx.fillStyle = overlay.color;
+        // Apply blend mode for this overlay draw
+        const prevComposite = ctx.globalCompositeOperation;
+        ctx.globalCompositeOperation = overlay.blendMode || 'source-over';
 
+        // Glow (outer glow produced by blurred fill passes)
         if (overlay.glowEnabled) {
-          // Stacked passes intensify the glow
           ctx.shadowColor = overlay.glowColor;
           ctx.shadowBlur = overlay.glowBlur;
           ctx.shadowOffsetX = 0;
@@ -439,6 +455,7 @@
           for (let pass = 0; pass < 2; pass++) ctx.fillText(overlay.text, overlay.x, overlay.y);
         }
 
+        // Drop shadow
         if (overlay.shadowEnabled) {
           ctx.shadowColor = overlay.shadowColor;
           ctx.shadowBlur = overlay.shadowBlur;
@@ -450,7 +467,20 @@
           ctx.shadowOffsetX = 0;
           ctx.shadowOffsetY = 0;
         }
+
+        // Stroke (outline)
+        if (overlay.strokeEnabled) {
+          ctx.lineWidth = Math.max(1, overlay.strokeWidth || 1);
+          ctx.strokeStyle = overlay.strokeColor || '#000';
+          ctx.strokeText(overlay.text, overlay.x, overlay.y);
+        }
+
+        // Masked fill: if enabled, draw fill using maskColor, otherwise use color
+        ctx.fillStyle = overlay.maskEnabled ? overlay.maskColor : overlay.color;
         ctx.fillText(overlay.text, overlay.x, overlay.y);
+
+        // restore composite mode and canvas state
+        ctx.globalCompositeOperation = prevComposite;
         ctx.restore();
 
         if (overlay.innerShadowEnabled) drawInnerShadow(ctx, overlay);
@@ -799,6 +829,42 @@
                     {#if activeText.glowEnabled}
                       <label class="block text-[10px] font-bold text-gray-500">Intensity {activeText.glowBlur}<input type="range" min="1" max="100" bind:value={activeText.glowBlur} class="w-full accent-primary" /></label>
                     {/if}
+                  </div>
+
+                  <!-- Stroke -->
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                      <label class="flex items-center gap-1.5 text-xs font-semibold text-dark cursor-pointer">
+                        <input type="checkbox" bind:checked={activeText.strokeEnabled} class="rounded text-primary cursor-pointer" /> Stroke
+                      </label>
+                      <input type="color" bind:value={activeText.strokeColor} class="w-7 h-7 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
+                    </div>
+                    {#if activeText.strokeEnabled}
+                      <label class="block text-[10px] font-bold text-gray-500">Width {activeText.strokeWidth}<input type="range" min="1" max="40" bind:value={activeText.strokeWidth} class="w-full accent-primary" /></label>
+                    {/if}
+                  </div>
+
+                  <!-- Blend / Mask -->
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                      <label class="block text-xs font-bold text-gray-600 mb-1">Blend Mode</label>
+                      <select bind:value={activeText.blendMode} class="p-1.5 bg-white border border-gray-200 rounded-lg text-xs">
+                        <option value="source-over">Normal</option>
+                        <option value="multiply">Multiply</option>
+                        <option value="screen">Screen</option>
+                        <option value="overlay">Overlay</option>
+                        <option value="lighter">Additive</option>
+                        <option value="darken">Darken</option>
+                        <option value="lighten">Lighten</option>
+                      </select>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                      <label class="flex items-center gap-1.5 text-xs font-semibold text-dark cursor-pointer">
+                        <input type="checkbox" bind:checked={activeText.maskEnabled} class="rounded text-primary cursor-pointer" /> Mask Fill
+                      </label>
+                      <input type="color" bind:value={activeText.maskColor} class="w-7 h-7 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
+                    </div>
                   </div>
 
                   <div class="space-y-1.5">
