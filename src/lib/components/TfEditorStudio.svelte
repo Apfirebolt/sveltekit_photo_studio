@@ -53,9 +53,147 @@
   let isColorPickerActive = $state(false);
   let sampledColor = $state<{ hex: string; rgb: string } | null>(null);
 
+  // --- NEW: Text Overlay State ---
+  type TextOverlay = {
+    id: string;
+    text: string;
+    x: number;
+    y: number;
+    fontSize: number;
+    fontFamily: string;
+    color: string;
+    isBold: boolean;
+    isItalic: boolean;
+    hasBackground: boolean;
+    bgColor: string;
+    shadowEnabled: boolean;
+    shadowColor: string;
+    shadowBlur: number;
+    shadowOffsetX: number;
+    shadowOffsetY: number;
+    glowEnabled: boolean;
+    glowColor: string;
+    glowBlur: number;
+    innerShadowEnabled: boolean;
+    innerShadowColor: string;
+    innerShadowBlur: number;
+    innerShadowOffsetX: number;
+    innerShadowOffsetY: number;
+  };
+
+  let textOverlays = $state<TextOverlay[]>([]);
+  let activeTextId = $state<string | null>(null);
+  let isDraggingText = false;
+  let draggedTextId: string | null = null;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
+
+  const FONT_OPTIONS = [
+    'Arial', 'Helvetica', 'Verdana', 'Tahoma', 'Trebuchet MS', 'Impact',
+    'Georgia', 'Times New Roman', 'Palatino', 'Garamond',
+    'Courier New', 'Brush Script MT', 'Comic Sans MS', 'Papyrus',
+    'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy'
+  ];
+
+  const buildFont = (o: TextOverlay) =>
+    `${o.isItalic ? 'italic' : 'normal'} ${o.isBold ? 'bold' : 'normal'} ${o.fontSize}px "${o.fontFamily}", sans-serif`;
+
+  // Bounding box (including background padding) in canvas pixels
+  const getOverlayBox = (ctx: CanvasRenderingContext2D, o: TextOverlay) => {
+    ctx.save();
+    ctx.font = buildFont(o);
+    const width = ctx.measureText(o.text).width;
+    ctx.restore();
+    const pad = 10;
+    return { x: o.x - pad, y: o.y - pad, w: width + pad * 2, h: o.fontSize + pad * 2 };
+  };
+
+  const addTextOverlay = () => {
+    if (!rawImageObj) return;
+    const newOverlay: TextOverlay = {
+      id: Math.random().toString(36).substring(2, 9),
+      text: 'Custom Beautiful Text',
+      x: tfCanvas ? tfCanvas.width / 2 - 100 : 150,
+      y: tfCanvas ? tfCanvas.height / 2 - 20 : 150,
+      fontSize: 32,
+      fontFamily: 'Arial',
+      color: '#ffffff',
+      isBold: true,
+      isItalic: false,
+      hasBackground: true,
+      bgColor: 'rgba(0, 0, 0, 0.6)',
+      shadowEnabled: true,
+      shadowColor: '#000000',
+      shadowBlur: 4,
+      shadowOffsetX: 2,
+      shadowOffsetY: 2,
+      glowEnabled: false,
+      glowColor: '#00e5ff',
+      glowBlur: 20,
+      innerShadowEnabled: false,
+      innerShadowColor: '#000000',
+      innerShadowBlur: 6,
+      innerShadowOffsetX: 3,
+      innerShadowOffsetY: 3
+    };
+    textOverlays = [...textOverlays, newOverlay];
+    activeTextId = newOverlay.id;
+  };
+
+  const removeTextOverlay = (id: string) => {
+    textOverlays = textOverlays.filter(o => o.id !== id);
+    if (activeTextId === id) activeTextId = textOverlays[0]?.id || null;
+  };
+
   const hexToRgb = (hex: string) => {
     const bigint = parseInt(hex.replace('#', ''), 16);
     return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
+  };
+
+  // Renders text on an offscreen canvas, then paints an inverse-shape shadow clipped to the glyphs
+  const drawInnerShadow = (ctx: CanvasRenderingContext2D, o: TextOverlay) => {
+    const m = 10;
+    ctx.save();
+    ctx.font = buildFont(o);
+    const w = Math.ceil(ctx.measureText(o.text).width + m * 2);
+    ctx.restore();
+    const h = Math.ceil(o.fontSize * 1.5 + m * 2);
+    if (w <= 0 || h <= 0) return;
+
+    const make = () => {
+      const c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      return c;
+    };
+    const text = make();
+    const tctx = text.getContext('2d');
+    const inv = make();
+    const ictx = inv.getContext('2d');
+    if (!tctx || !ictx) return;
+
+    tctx.font = buildFont(o);
+    tctx.textBaseline = 'top';
+    tctx.fillStyle = o.color;
+    tctx.fillText(o.text, m, m);
+
+    ictx.fillStyle = '#000';
+    ictx.fillRect(0, 0, w, h);
+    ictx.globalCompositeOperation = 'destination-out';
+    ictx.font = buildFont(o);
+    ictx.textBaseline = 'top';
+    ictx.fillText(o.text, m, m);
+
+    // Draw the inverse far off-canvas so only its shadow lands on the glyphs
+    const far = 10000;
+    tctx.globalCompositeOperation = 'source-atop';
+    tctx.shadowColor = o.innerShadowColor;
+    tctx.shadowBlur = o.innerShadowBlur;
+    tctx.shadowOffsetX = o.innerShadowOffsetX + far;
+    tctx.shadowOffsetY = o.innerShadowOffsetY;
+    tctx.drawImage(inv, -far, 0);
+
+    ctx.drawImage(text, o.x - m, o.y - m);
   };
 
   const resetAllFilters = () => {
@@ -73,6 +211,8 @@
     backgroundMask = null;
     isColorPickerActive = false;
     sampledColor = null;
+    textOverlays = [];
+    activeTextId = null;
   };
 
   const applyTfCanvasFilters = async () => {
@@ -195,8 +335,7 @@
         } else if (viewMode === 'frost') {
           processed = pixels.mul(tf.tensor1d([0.8, 1.1, 1.3]).reshape([1, 1, 3])).clipByValue(0, 1);
         } else if (viewMode === 'glitch_matrix') {
-          const shifted = pixels.slice([0, 20, 0], [canvas.height, canvas.width - 20, 3]);
-          processed = pixels; // Fallback structure safeguard
+          processed = pixels;
         } else {
           if (activePreset === 'sketch') {
             const inverted = tf.onesLike(grayAdjusted).sub(grayAdjusted) as import('@tensorflow/tfjs').Tensor3D;
@@ -276,6 +415,47 @@
         }
         ctx.putImageData(imageData, 0, 0);
       }
+
+      // --- Draw Text Overlays onto Canvas Context ---
+      textOverlays.forEach((overlay) => {
+        ctx.save();
+        ctx.font = buildFont(overlay);
+        ctx.textBaseline = 'top';
+
+        if (overlay.hasBackground) {
+          const box = getOverlayBox(ctx, overlay);
+          ctx.fillStyle = overlay.bgColor;
+          ctx.fillRect(box.x, box.y, box.w, box.h);
+        }
+
+        ctx.fillStyle = overlay.color;
+
+        if (overlay.glowEnabled) {
+          // Stacked passes intensify the glow
+          ctx.shadowColor = overlay.glowColor;
+          ctx.shadowBlur = overlay.glowBlur;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 0;
+          for (let pass = 0; pass < 2; pass++) ctx.fillText(overlay.text, overlay.x, overlay.y);
+        }
+
+        if (overlay.shadowEnabled) {
+          ctx.shadowColor = overlay.shadowColor;
+          ctx.shadowBlur = overlay.shadowBlur;
+          ctx.shadowOffsetX = overlay.shadowOffsetX;
+          ctx.shadowOffsetY = overlay.shadowOffsetY;
+        } else {
+          ctx.shadowColor = 'transparent';
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 0;
+        }
+        ctx.fillText(overlay.text, overlay.x, overlay.y);
+        ctx.restore();
+
+        if (overlay.innerShadowEnabled) drawInnerShadow(ctx, overlay);
+      });
+
     } catch (error) {
       modelError = error instanceof Error ? error.message : 'TensorFlow.js could not process this image.';
     }
@@ -285,6 +465,63 @@
     if (!tfCanvas) return;
     modalImageSrc = tfCanvas.toDataURL('image/png', 0.95);
     isModalOpen = true;
+  };
+
+  // --- Drag and Drop Handlers for Text Overlays ---
+  const handlePointerDown = (e: PointerEvent) => {
+    if (!tfCanvas) return;
+    const rect = tfCanvas.getBoundingClientRect();
+    const scaleX = tfCanvas.width / rect.width;
+    const scaleY = tfCanvas.height / rect.height;
+    const mouseX = (e.clientX - rect.left) * scaleX;
+    const mouseY = (e.clientY - rect.top) * scaleY;
+
+    // Check if clicked inside any text overlay box
+    const ctx = tfCanvas.getContext('2d');
+    const clicked = ctx && !isColorPickerActive
+      ? textOverlays.slice().reverse().find(o => {
+          const b = getOverlayBox(ctx, o);
+          return mouseX >= b.x && mouseX <= b.x + b.w && mouseY >= b.y && mouseY <= b.y + b.h;
+        })
+      : undefined;
+
+    if (clicked) {
+      tfCanvas.setPointerCapture(e.pointerId);
+      isDraggingText = true;
+      draggedTextId = clicked.id;
+      activeTextId = clicked.id;
+      dragOffsetX = mouseX - clicked.x;
+      dragOffsetY = mouseY - clicked.y;
+    } else {
+      // Handle Eyedropper if active
+      if (isColorPickerActive) {
+        handleCanvasClick(e);
+      } else {
+        activeTextId = null;
+      }
+    }
+  };
+
+  const handlePointerMove = (e: PointerEvent) => {
+    if (!isDraggingText || !draggedTextId || !tfCanvas) return;
+    const rect = tfCanvas.getBoundingClientRect();
+    const scaleX = tfCanvas.width / rect.width;
+    const scaleY = tfCanvas.height / rect.height;
+    const mouseX = (e.clientX - rect.left) * scaleX;
+    const mouseY = (e.clientY - rect.top) * scaleY;
+
+    textOverlays = textOverlays.map(o => {
+      if (o.id === draggedTextId) {
+        return { ...o, x: mouseX - dragOffsetX, y: mouseY - dragOffsetY };
+      }
+      return o;
+    });
+    void applyTfCanvasFilters();
+  };
+
+  const handlePointerUp = () => {
+    isDraggingText = false;
+    draggedTextId = null;
   };
 
   const handleCanvasClick = (e: MouseEvent) => {
@@ -397,9 +634,18 @@
       imageDescription = '';
       sampledColor = null;
       selectedColorToSwap = null;
+      textOverlays = [];
+      activeTextId = null;
       extractColorPalette();
     }
     void applyTfCanvasFilters();
+  });
+
+  // Debounced redraw whenever any text property changes
+  $effect(() => {
+    JSON.stringify(textOverlays);
+    const timer = setTimeout(() => void applyTfCanvasFilters(), 250);
+    return () => clearTimeout(timer);
   });
 </script>
 
@@ -419,6 +665,165 @@
       >
         <Icon icon="mdi:reload" /> Reset
       </button>
+    </div>
+
+    <!-- --- NEW: Text Overlay Customization Panel --- -->
+    <div class="space-y-3 bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
+      <div class="flex items-center justify-between">
+        <h4 class="text-[11px] font-bold uppercase tracking-wider text-dark font-mono flex items-center gap-1">
+          <Icon icon="mdi:format-text" class="text-primary text-base" /> Text Editor Overlay
+        </h4>
+        <button
+          type="button"
+          onclick={addTextOverlay}
+          class="px-2.5 py-1 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-xs"
+        >
+          <Icon icon="mdi:plus" /> Add Text
+        </button>
+      </div>
+
+      {#if textOverlays.length > 0}
+        <div class="space-y-3 pt-2">
+          <!-- Text Layer Selector -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-1">
+            {#each textOverlays as overlay, index}
+              <button
+                type="button"
+                onclick={() => activeTextId = overlay.id}
+                class="px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer {activeTextId === overlay.id ? 'bg-primary text-white shadow-xs' : 'bg-white text-dark border border-gray-200 hover:bg-gray-100'}"
+              >
+                Text #{index + 1}
+              </button>
+            {/each}
+          </div>
+
+          {#if activeTextId}
+            {@const activeText = textOverlays.find(o => o.id === activeTextId)}
+            {#if activeText}
+              <div class="space-y-2.5 pt-2 border-t border-gray-200">
+                <div>
+                  <label class="block text-[11px] font-bold text-gray-600 mb-1">Content</label>
+                  <input
+                    type="text"
+                    bind:value={activeText.text}
+                    class="w-full px-3 py-1.5 bg-white dark:bg-dark dark:text-light border border-gray-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[11px] font-bold text-gray-600 mb-1">Font Family</label>
+                    <select
+                      bind:value={activeText.fontFamily}
+                      class="w-full p-1.5 bg-white dark:bg-dark dark:text-light border border-gray-200 rounded-lg text-xs font-medium cursor-pointer"
+                    >
+                      {#each FONT_OPTIONS as font}
+                        <option value={font} style="font-family: '{font}'">{font}</option>
+                      {/each}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] font-bold text-gray-600 mb-1">Font Size ({activeText.fontSize}px)</label>
+                    <div class="flex items-center gap-1.5">
+                      <input
+                        type="range"
+                        bind:value={activeText.fontSize}
+                        min="8"
+                        max="400"
+                        class="w-full accent-primary cursor-pointer"
+                      />
+                      <input
+                        type="number"
+                        bind:value={activeText.fontSize}
+                        min="8"
+                        max="400"
+                        class="w-14 p-1 bg-white dark:bg-dark dark:text-light border border-gray-200 rounded-lg text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <div class="flex items-center gap-2">
+                    <label class="text-[11px] font-bold text-gray-600">Text Color:</label>
+                    <input type="color" bind:value={activeText.color} class="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white shadow-xs" />
+                  </div>
+
+                  <label class="flex items-center gap-1.5 text-xs font-semibold text-dark cursor-pointer">
+                    <input type="checkbox" bind:checked={activeText.isBold} class="rounded text-primary cursor-pointer" /> Bold
+                  </label>
+
+                  <label class="flex items-center gap-1.5 text-xs font-semibold text-dark cursor-pointer">
+                    <input type="checkbox" bind:checked={activeText.isItalic} class="rounded text-primary cursor-pointer" /> Italic
+                  </label>
+
+                  <label class="flex items-center gap-1.5 text-xs font-semibold text-dark cursor-pointer">
+                    <input type="checkbox" bind:checked={activeText.hasBackground} class="rounded text-primary cursor-pointer" /> Box
+                  </label>
+
+                  <button
+                    type="button"
+                    onclick={() => activeText && removeTextOverlay(activeText.id)}
+                    class="text-[11px] text-red-500 hover:text-red-700 font-bold px-2 py-1 bg-red-50 hover:bg-red-100 rounded-lg transition cursor-pointer"
+                  >
+                    Delete
+                  </button>
+                </div>
+
+                <!-- Effects -->
+                <div class="space-y-2 pt-2 border-t border-gray-200">
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                      <label class="flex items-center gap-1.5 text-xs font-semibold text-dark cursor-pointer">
+                        <input type="checkbox" bind:checked={activeText.shadowEnabled} class="rounded text-primary cursor-pointer" /> Drop Shadow
+                      </label>
+                      <input type="color" bind:value={activeText.shadowColor} class="w-7 h-7 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
+                    </div>
+                    {#if activeText.shadowEnabled}
+                      <div class="grid grid-cols-3 gap-2 text-[10px] font-bold text-gray-500">
+                        <label>Blur {activeText.shadowBlur}<input type="range" min="0" max="50" bind:value={activeText.shadowBlur} class="w-full accent-primary" /></label>
+                        <label>X {activeText.shadowOffsetX}<input type="range" min="-30" max="30" bind:value={activeText.shadowOffsetX} class="w-full accent-primary" /></label>
+                        <label>Y {activeText.shadowOffsetY}<input type="range" min="-30" max="30" bind:value={activeText.shadowOffsetY} class="w-full accent-primary" /></label>
+                      </div>
+                    {/if}
+                  </div>
+
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                      <label class="flex items-center gap-1.5 text-xs font-semibold text-dark cursor-pointer">
+                        <input type="checkbox" bind:checked={activeText.glowEnabled} class="rounded text-primary cursor-pointer" /> Outer Glow
+                      </label>
+                      <input type="color" bind:value={activeText.glowColor} class="w-7 h-7 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
+                    </div>
+                    {#if activeText.glowEnabled}
+                      <label class="block text-[10px] font-bold text-gray-500">Intensity {activeText.glowBlur}<input type="range" min="1" max="100" bind:value={activeText.glowBlur} class="w-full accent-primary" /></label>
+                    {/if}
+                  </div>
+
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                      <label class="flex items-center gap-1.5 text-xs font-semibold text-dark cursor-pointer">
+                        <input type="checkbox" bind:checked={activeText.innerShadowEnabled} class="rounded text-primary cursor-pointer" /> Inner Shadow
+                      </label>
+                      <input type="color" bind:value={activeText.innerShadowColor} class="w-7 h-7 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
+                    </div>
+                    {#if activeText.innerShadowEnabled}
+                      <div class="grid grid-cols-3 gap-2 text-[10px] font-bold text-gray-500">
+                        <label>Blur {activeText.innerShadowBlur}<input type="range" min="0" max="30" bind:value={activeText.innerShadowBlur} class="w-full accent-primary" /></label>
+                        <label>X {activeText.innerShadowOffsetX}<input type="range" min="-20" max="20" bind:value={activeText.innerShadowOffsetX} class="w-full accent-primary" /></label>
+                        <label>Y {activeText.innerShadowOffsetY}<input type="range" min="-20" max="20" bind:value={activeText.innerShadowOffsetY} class="w-full accent-primary" /></label>
+                      </div>
+                    {/if}
+                  </div>
+                </div>
+              </div>
+            {/if}
+          {/if}
+        </div>
+      {:else}
+        <p class="text-[11px] text-gray-400 italic py-1 text-center">Click "Add Text" to start typing on the photo</p>
+      {/if}
     </div>
 
     <!-- 30+ Reference Study View Selector Dropdown / Scroll Grid -->
@@ -498,9 +903,7 @@
               <span class="text-[11px] text-gray-600 font-medium truncate">Swap <strong>{selectedColorToSwap}</strong> with:</span>
               <button type="button" onclick={() => selectedColorToSwap = null} class="text-[10px] text-red-500 font-bold hover:underline">Clear</button>
             </div>
-            <div class="flex items-center gap-2">
-              <input type="color" bind:value={replacementColorHex} oninput={() => customReplacementInput = replacementColorHex} class="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white dark:bg-dark dark:text-light shadow-xs" />
-              <div class="relative flex-1">
+            <div class="relative flex-1">
                 <span class="absolute left-2.5 top-2 text-xs font-mono text-gray-400">#</span>
                 <input 
                   type="text" 
@@ -514,10 +917,9 @@
                   }}
                   placeholder="HEX (e.g. #3b82f6)" 
                   maxlength="7"
-                  class="w-full pl-6 pr-2 py-1.5 bg-white  dark:bg-dark dark:text-light border border-gray-200 rounded-lg text-xs font-mono font-bold text-dark uppercase" 
+                  class="w-full pl-6 pr-2 py-1.5 bg-white dark:bg-dark dark:text-light border border-gray-200 rounded-lg text-xs font-mono font-bold text-dark uppercase" 
                 />
               </div>
-            </div>
           </div>
         {/if}
       </div>
@@ -631,8 +1033,11 @@
       <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
       <canvas 
         bind:this={tfCanvas} 
-        onclick={handleCanvasClick}
-        class="max-w-full max-h-[460px] object-contain rounded-lg shadow-md {isColorPickerActive ? 'cursor-crosshair ring-2 ring-purple-600' : 'cursor-default'}"
+        onpointerdown={handlePointerDown}
+        onpointermove={handlePointerMove}
+        onpointerup={handlePointerUp}
+        onpointercancel={handlePointerUp}
+        class="touch-none max-w-full max-h-[460px] object-contain rounded-lg shadow-md {isColorPickerActive ? 'cursor-crosshair ring-2 ring-purple-650' : 'cursor-grab active:cursor-grabbing'}"
       ></canvas>
     </div>
 
@@ -647,7 +1052,7 @@
             <span class="text-[11px] font-mono text-gray-500 hidden sm:inline">({sampledColor.rgb})</span>
           </div>
         {:else}
-          <span class="text-xs text-gray-400 italic">Toggle Eyedropper ON and click on image</span>
+          <span class="text-xs text-gray-400 italic">Toggle Eyedropper ON or drag text boxes around</span>
         {/if}
       </div>
 
