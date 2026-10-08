@@ -7,10 +7,32 @@
   import type { SketchFilter, CartoonFilter } from "$lib/types/filter";
   import FullImageModal from "$lib/components/FullImageModal.svelte";
   import VibeSearchModal from "$lib/components/VibeSearchModal.svelte";
+  import type { TextOverlay } from '$lib/utils/overlays';
+  import { buildFont, getOverlayBox, drawInnerShadow, defaultTextOverlay, FONT_OPTIONS } from '$lib/utils/overlays';
+  import TextOverlayEditor from '$lib/components/TextOverlayEditor.svelte';
+  import { debounce } from '$lib/utils/editorUtils';
 
   let { rawImageObj }: { rawImageObj: HTMLImageElement | null } = $props();
 
   let previewCanvas = $state<HTMLCanvasElement | null>(null);
+  let textOverlays = $state<TextOverlay[]>([]);
+  let activeTextId = $state<string | null>(null);
+  const activeText = $derived.by(() => textOverlays.find(x => x.id === activeTextId) || null);
+  let isDraggingText = $state(false);
+  let draggedTextId = $state<string | null>(null);
+  let dragOffsetX = $state(0);
+  let dragOffsetY = $state(0);
+  let isResizingText = $state(false);
+  let activeHandle = $state<string | null>(null);
+  let startBox = $state<{ x: number; y: number; w: number; h: number } | null>(null);
+  let startFontSize = $state(0);
+  let startPointerX = $state(0);
+  let startPointerY = $state(0);
+  const handleSize = 12;
+
+  const debouncedApplyFilter = debounce(() => {
+    try { applyFilter(activeFilterId, engineType); } catch {}
+  }, 120);
   let histogramCanvas = $state<HTMLCanvasElement | null>(null);
   let activeFilterId = $state<string>('normal');
   let filterSearch = $state('');
@@ -115,6 +137,180 @@
     drawCurve(bBins, 'rgba(59, 130, 246, 0.8)');
   };
 
+  // --- Text overlay helpers ---
+  const addTextOverlay = () => {
+    if (!previewCanvas || !rawImageObj) return;
+    const newOverlay = defaultTextOverlay(previewCanvas.width || rawImageObj.width, previewCanvas.height || rawImageObj.height);
+    textOverlays = [...textOverlays, newOverlay];
+    activeTextId = newOverlay.id;
+    applyFilter();
+  };
+
+  const removeTextOverlay = (id: string) => {
+    textOverlays = textOverlays.filter(o => o.id !== id);
+    if (activeTextId === id) activeTextId = textOverlays[0]?.id || null;
+    applyFilter();
+  };
+
+  const drawTextOverlays = (ctx: CanvasRenderingContext2D) => {
+    if (!textOverlays || textOverlays.length === 0) return;
+    for (const o of textOverlays) {
+      ctx.save();
+      ctx.font = buildFont(o);
+      ctx.textBaseline = 'top';
+
+      if (o.hasBackground) {
+        const box = getOverlayBox(ctx, o);
+        ctx.fillStyle = o.bgColor || 'rgba(0,0,0,0.5)';
+        ctx.fillRect(box.x, box.y, box.w, box.h);
+      }
+
+      if (o.shadowEnabled) {
+        ctx.shadowColor = o.shadowColor || 'transparent';
+        ctx.shadowBlur = o.shadowBlur || 0;
+        ctx.shadowOffsetX = o.shadowOffsetX || 0;
+        ctx.shadowOffsetY = o.shadowOffsetY || 0;
+      } else {
+        ctx.shadowColor = 'transparent';
+      }
+
+      ctx.fillStyle = o.color || '#fff';
+      if (o.strokeEnabled) {
+        ctx.lineWidth = o.strokeWidth || 1;
+        ctx.strokeStyle = o.strokeColor || '#000';
+        ctx.strokeText(o.text, o.x, o.y);
+      }
+      ctx.fillText(o.text, o.x, o.y);
+
+      if (o.innerShadowEnabled) {
+        drawInnerShadow(ctx, o);
+      }
+
+      // draw resize handles when active
+      if (o.id === activeTextId) {
+        const box = getOverlayBox(ctx, o);
+        const hs = handleSize;
+        const handles = [
+          { id: 'nw', x: box.x - hs / 2, y: box.y - hs / 2 },
+          { id: 'ne', x: box.x + box.w - hs / 2, y: box.y - hs / 2 },
+          { id: 'se', x: box.x + box.w - hs / 2, y: box.y + box.h - hs / 2 },
+          { id: 'sw', x: box.x - hs / 2, y: box.y + box.h - hs / 2 }
+        ];
+        ctx.save();
+        for (const h of handles) {
+          ctx.fillStyle = 'white';
+          ctx.strokeStyle = '#334155';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.rect(h.x, h.y, hs, hs);
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+  };
+
+  const getCanvasRelative = (e: PointerEvent) => {
+    if (!previewCanvas) return { x: 0, y: 0 };
+    const rect = previewCanvas.getBoundingClientRect();
+    const xCss = e.clientX - rect.left;
+    const yCss = e.clientY - rect.top;
+    const scaleX = previewCanvas.width / rect.width || 1;
+    const scaleY = previewCanvas.height / rect.height || 1;
+    return { x: xCss * scaleX, y: yCss * scaleY };
+  };
+
+  const handlePointerDown = (e: PointerEvent) => {
+    if (!previewCanvas) return;
+    previewCanvas.setPointerCapture(e.pointerId);
+    const p = getCanvasRelative(e);
+    for (let i = textOverlays.length - 1; i >= 0; i--) {
+      const o = textOverlays[i];
+      const ctx = previewCanvas.getContext('2d');
+      if (!ctx) continue;
+      const box = getOverlayBox(ctx, o);
+      const hs = handleSize;
+      const handleRects = {
+        nw: { x: box.x - hs / 2, y: box.y - hs / 2, w: hs, h: hs },
+        ne: { x: box.x + box.w - hs / 2, y: box.y - hs / 2, w: hs, h: hs },
+        se: { x: box.x + box.w - hs / 2, y: box.y + box.h - hs / 2, w: hs, h: hs },
+        sw: { x: box.x - hs / 2, y: box.y + box.h - hs / 2, w: hs, h: hs }
+      };
+      for (const [hid, r] of Object.entries(handleRects)) {
+        if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) {
+          draggedTextId = o.id;
+          activeTextId = o.id;
+          isResizingText = true;
+          activeHandle = hid;
+          startBox = { x: box.x, y: box.y, w: box.w, h: box.h };
+          startFontSize = (o as any).fontSize || 32;
+          startPointerX = p.x;
+          startPointerY = p.y;
+          return;
+        }
+      }
+      if (p.x >= box.x && p.x <= box.x + box.w && p.y >= box.y && p.y <= box.y + box.h) {
+        draggedTextId = o.id;
+        activeTextId = o.id;
+        isDraggingText = true;
+        dragOffsetX = p.x - o.x;
+        dragOffsetY = p.y - o.y;
+        return;
+      }
+    }
+    draggedTextId = null;
+    isDraggingText = false;
+  };
+
+  const handlePointerMove = (e: PointerEvent) => {
+    if (!previewCanvas) return;
+    const p = getCanvasRelative(e);
+    if (isResizingText && draggedTextId && startBox) {
+      const idx = textOverlays.findIndex(x => x.id === draggedTextId);
+      if (idx === -1) return;
+      const o = textOverlays[idx];
+      const dx = p.x - startPointerX;
+      const newW = Math.max(24, startBox.w + (activeHandle && activeHandle.includes('e') ? dx : -dx));
+      const ratio = newW / startBox.w;
+      const newFont = Math.max(8, Math.round(startFontSize * ratio));
+      (o as any).fontSize = newFont;
+      textOverlays = [...textOverlays];
+      if (engineType === 'canvas') applyFilter(activeFilterId, 'canvas');
+      else debouncedApplyFilter();
+      return;
+    }
+    if (!isDraggingText || !draggedTextId) return;
+    const idx = textOverlays.findIndex(x => x.id === draggedTextId);
+    if (idx === -1) return;
+    textOverlays[idx].x = p.x - dragOffsetX;
+    textOverlays[idx].y = p.y - dragOffsetY;
+    textOverlays = [...textOverlays];
+    if (engineType === 'canvas') applyFilter(activeFilterId, 'canvas');
+    else debouncedApplyFilter();
+  };
+
+  const handlePointerUp = (e: PointerEvent) => {
+    if (!previewCanvas) return;
+    try { previewCanvas.releasePointerCapture(e.pointerId); } catch {}
+    if (isResizingText) {
+      isResizingText = false;
+      activeHandle = null;
+      startBox = null;
+      startFontSize = 0;
+      startPointerX = 0;
+      startPointerY = 0;
+      applyFilter(activeFilterId, engineType);
+      return;
+    }
+    isDraggingText = false;
+    draggedTextId = null;
+    const ctx = previewCanvas.getContext('2d');
+    if (ctx) applyFilter(activeFilterId, engineType);
+  };
+
   const applyPostEffects = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     // 1. Ambient Glow
     if (glowEnabled) {
@@ -184,6 +380,8 @@
       ctx.filter = 'none';
 
       applyPostEffects(ctx, previewCanvas.width, previewCanvas.height);
+      // draw overlays (text)
+      drawTextOverlays(ctx);
       updateHistogram();
     } else {
       await new Promise(resolve => setTimeout(resolve, 30));
@@ -437,6 +635,8 @@
         ctx.drawImage(resultCanvas, 0, 0);
 
         applyPostEffects(ctx, previewCanvas.width, previewCanvas.height);
+        // draw overlays (text)
+        drawTextOverlays(ctx);
         updateHistogram();
       } catch (error) {
         filterError = error instanceof Error ? error.message : 'TensorFlow.js could not render this filter.';
@@ -629,6 +829,201 @@
       </div>
     </div>
 
+    <!-- --- NEW: Text Overlay Customization Panel --- -->
+    <div class="space-y-3 bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
+      <div class="flex items-center justify-between">
+        <h4 class="text-[11px] font-bold uppercase tracking-wider text-dark font-mono flex items-center gap-1">
+          <Icon icon="mdi:format-text" class="text-primary text-base" /> Text Editor Overlay
+        </h4>
+        <button
+          type="button"
+          onclick={addTextOverlay}
+          class="px-2.5 py-1 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-xs"
+        >
+          <Icon icon="mdi:plus" /> Add Text
+        </button>
+      </div>
+
+      {#if textOverlays.length > 0}
+        <div class="space-y-3 pt-2">
+          <!-- Text Layer Selector -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-1">
+            {#each textOverlays as overlay, index}
+              <button
+                type="button"
+                onclick={() => activeTextId = overlay.id}
+                class="px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer {activeTextId === overlay.id ? 'bg-primary text-white shadow-xs' : 'bg-white text-dark border border-gray-200 hover:bg-gray-100'}"
+              >
+                Text #{index + 1}
+              </button>
+            {/each}
+          </div>
+
+          {#if activeTextId}
+            {@const activeText = textOverlays.find(o => o.id === activeTextId)}
+            {#if activeText}
+              <div class="space-y-2.5 pt-2 border-t border-gray-200">
+                <div>
+                  <label class="block text-[11px] font-bold text-gray-600 mb-1">Content</label>
+                  <input
+                    type="text"
+                    bind:value={activeText.text}
+                    class="w-full px-3 py-1.5 bg-white dark:bg-dark dark:text-light border border-gray-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[11px] font-bold text-gray-600 mb-1">Font Family</label>
+                    <select
+                      bind:value={activeText.fontFamily}
+                      class="w-full p-1.5 bg-white dark:bg-dark dark:text-light border border-gray-200 rounded-lg text-xs font-medium cursor-pointer"
+                    >
+                      {#each FONT_OPTIONS as font}
+                        <option value={font} style="font-family: '{font}'">{font}</option>
+                      {/each}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] font-bold text-gray-600 mb-1">Font Size ({activeText.fontSize}px)</label>
+                    <div class="flex items-center gap-1.5">
+                      <input
+                        type="range"
+                        bind:value={activeText.fontSize}
+                        min="8"
+                        max="400"
+                        class="w-full accent-primary cursor-pointer"
+                      />
+                      <input
+                        type="number"
+                        bind:value={activeText.fontSize}
+                        min="8"
+                        max="400"
+                        class="w-14 p-1 bg-white dark:bg-dark dark:text-light border border-gray-200 rounded-lg text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <div class="flex items-center gap-2">
+                    <label class="text-[11px] font-bold text-gray-600">Text Color:</label>
+                    <input type="color" bind:value={activeText.color} class="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white shadow-xs" />
+                  </div>
+
+                  <label class="flex items-center gap-1.5 text-xs font-semibold text-dark cursor-pointer">
+                    <input type="checkbox" bind:checked={activeText.isBold} class="rounded text-primary cursor-pointer" /> Bold
+                  </label>
+
+                  <label class="flex items-center gap-1.5 text-xs font-semibold text-dark cursor-pointer">
+                    <input type="checkbox" bind:checked={activeText.isItalic} class="rounded text-primary cursor-pointer" /> Italic
+                  </label>
+
+                  <label class="flex items-center gap-1.5 text-xs font-semibold text-dark cursor-pointer">
+                    <input type="checkbox" bind:checked={activeText.hasBackground} class="rounded text-primary cursor-pointer" /> Box
+                  </label>
+
+                  <button
+                    type="button"
+                    onclick={() => activeText && removeTextOverlay(activeText.id)}
+                    class="text-[11px] text-red-500 hover:text-red-700 font-bold px-2 py-1 bg-red-50 hover:bg-red-100 rounded-lg transition cursor-pointer"
+                  >
+                    Delete
+                  </button>
+                </div>
+
+                <!-- Effects -->
+                <div class="space-y-2 pt-2 border-t border-gray-200">
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                      <label class="flex items-center gap-1.5 text-xs font-semibold text-dark cursor-pointer">
+                        <input type="checkbox" bind:checked={activeText.shadowEnabled} class="rounded text-primary cursor-pointer" /> Drop Shadow
+                      </label>
+                      <input type="color" bind:value={activeText.shadowColor} class="w-7 h-7 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
+                    </div>
+                    {#if activeText.shadowEnabled}
+                      <div class="grid grid-cols-3 gap-2 text-[10px] font-bold text-gray-500">
+                        <label>Blur {activeText.shadowBlur}<input type="range" min="0" max="50" bind:value={activeText.shadowBlur} class="w-full accent-primary" /></label>
+                        <label>X {activeText.shadowOffsetX}<input type="range" min="-30" max="30" bind:value={activeText.shadowOffsetX} class="w-full accent-primary" /></label>
+                        <label>Y {activeText.shadowOffsetY}<input type="range" min="-30" max="30" bind:value={activeText.shadowOffsetY} class="w-full accent-primary" /></label>
+                      </div>
+                    {/if}
+                  </div>
+
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                      <label class="flex items-center gap-1.5 text-xs font-semibold text-dark cursor-pointer">
+                        <input type="checkbox" bind:checked={activeText.glowEnabled} class="rounded text-primary cursor-pointer" /> Outer Glow
+                      </label>
+                      <input type="color" bind:value={activeText.glowColor} class="w-7 h-7 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
+                    </div>
+                    {#if activeText.glowEnabled}
+                      <label class="block text-[10px] font-bold text-gray-500">Intensity {activeText.glowBlur}<input type="range" min="1" max="100" bind:value={activeText.glowBlur} class="w-full accent-primary" /></label>
+                    {/if}
+                  </div>
+
+                  <!-- Stroke -->
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                      <label class="flex items-center gap-1.5 text-xs font-semibold text-dark cursor-pointer">
+                        <input type="checkbox" bind:checked={activeText.strokeEnabled} class="rounded text-primary cursor-pointer" /> Stroke
+                      </label>
+                      <input type="color" bind:value={activeText.strokeColor} class="w-7 h-7 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
+                    </div>
+                    {#if activeText.strokeEnabled}
+                      <label class="block text-[10px] font-bold text-gray-500">Width {activeText.strokeWidth}<input type="range" min="1" max="40" bind:value={activeText.strokeWidth} class="w-full accent-primary" /></label>
+                    {/if}
+                  </div>
+
+                  <!-- Blend / Mask -->
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                      <label class="block text-xs font-bold text-gray-600 mb-1">Blend Mode</label>
+                      <select bind:value={activeText.blendMode} class="p-1.5 bg-white border border-gray-200 rounded-lg text-xs">
+                        <option value="source-over">Normal</option>
+                        <option value="multiply">Multiply</option>
+                        <option value="screen">Screen</option>
+                        <option value="overlay">Overlay</option>
+                        <option value="lighter">Additive</option>
+                        <option value="darken">Darken</option>
+                        <option value="lighten">Lighten</option>
+                      </select>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                      <label class="flex items-center gap-1.5 text-xs font-semibold text-dark cursor-pointer">
+                        <input type="checkbox" bind:checked={activeText.maskEnabled} class="rounded text-primary cursor-pointer" /> Mask Fill
+                      </label>
+                      <input type="color" bind:value={activeText.maskColor} class="w-7 h-7 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
+                    </div>
+                  </div>
+
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                      <label class="flex items-center gap-1.5 text-xs font-semibold text-dark cursor-pointer">
+                        <input type="checkbox" bind:checked={activeText.innerShadowEnabled} class="rounded text-primary cursor-pointer" /> Inner Shadow
+                      </label>
+                      <input type="color" bind:value={activeText.innerShadowColor} class="w-7 h-7 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white" />
+                    </div>
+                    {#if activeText.innerShadowEnabled}
+                      <div class="grid grid-cols-3 gap-2 text-[10px] font-bold text-gray-500">
+                        <label>Blur {activeText.innerShadowBlur}<input type="range" min="0" max="30" bind:value={activeText.innerShadowBlur} class="w-full accent-primary" /></label>
+                        <label>X {activeText.innerShadowOffsetX}<input type="range" min="-20" max="20" bind:value={activeText.innerShadowOffsetX} class="w-full accent-primary" /></label>
+                        <label>Y {activeText.innerShadowOffsetY}<input type="range" min="-20" max="20" bind:value={activeText.innerShadowOffsetY} class="w-full accent-primary" /></label>
+                      </div>
+                    {/if}
+                  </div>
+                </div>
+              </div>
+            {/if}
+          {/if}
+        </div>
+      {:else}
+        <p class="text-[11px] text-gray-400 italic py-1 text-center">Click "Add Text" to start typing on the photo</p>
+      {/if}
+    </div>
+
     <!-- Advanced Effects Panel (Vignette, Grain, Glow) -->
     <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3">
       <h4 class="text-[11px] font-bold uppercase tracking-wider text-gray-500 font-mono">Atmosphere & Depth FX</h4>
@@ -790,7 +1185,14 @@
       {#if showOriginal && rawImageObj}
         <img src={rawImageObj.src} alt="Original Reference" class="max-w-full max-h-[500px] object-contain block animate-fade" />
       {/if}
-      <canvas bind:this={previewCanvas} class="max-w-full max-h-[500px] object-contain block {showOriginal ? 'hidden' : ''}"></canvas>
+      <canvas
+        bind:this={previewCanvas}
+        class="max-w-full max-h-[500px] object-contain block {showOriginal ? 'hidden' : ''}"
+        onpointerdown={handlePointerDown}
+        onpointermove={handlePointerMove}
+        onpointerup={handlePointerUp}
+        onpointercancel={handlePointerUp}
+      ></canvas>
     </div>
   </div>
 </div>
