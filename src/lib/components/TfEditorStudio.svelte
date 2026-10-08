@@ -1066,7 +1066,7 @@
 
     <div class="border-t border-gray-100 pt-4 space-y-2">
       <p class="text-xs font-bold text-dark">AI Tools</p>
-      <button type="button" onclick={describeImage} disabled={isDescribing} class="w-full flex items-center justify-center gap-2 border border-gray-200 hover:bg-gray-50 disabled:opacity-60 dark:text-light dark:bg-primary text-dark font-semibold py-2.5 rounded-lg text-xs transition cursor-pointer">
+      <button type="button" onclick={describeImage} disabled={isDescribing} class="w-full flex items-center hover:bg-dark hover:text-light justify-center gap-2 border border-gray-200 disabled:opacity-60 dark:text-light dark:bg-primary text-dark font-semibold py-2.5 rounded-lg text-xs transition cursor-pointer">
         <Icon icon="mdi:image-text" />
         {isDescribing ? 'Analyzing image...' : 'Describe image'}
       </button>
