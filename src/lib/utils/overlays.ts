@@ -29,6 +29,21 @@ export type TextOverlay = {
   blendMode?: string;
   maskEnabled?: boolean;
   maskColor?: string;
+  // optional attached shape
+  shape?: Shape | null;
+  wrapText?: boolean; // wrap text around shape when true
+};
+
+export type Shape = {
+  type: 'rectangle' | 'circle' | 'ellipse' | 'triangle' | 'pentagon' | 'hexagon' | 'star' | 'heart';
+  x: number; // center x
+  y: number; // center y
+  w: number;
+  h: number;
+  fill: string;
+  stroke?: string;
+  strokeWidth?: number;
+  blendMode?: string;
 };
 
 export const FONT_OPTIONS = [
@@ -69,6 +84,9 @@ export const defaultTextOverlay = (canvasWidth = 800, canvasHeight = 600): TextO
   blendMode: 'source-over',
   maskEnabled: false,
   maskColor: '#000000'
+  ,
+  shape: null,
+  wrapText: false
 });
 
 export const buildFont = (o: TextOverlay) => {
@@ -92,6 +110,84 @@ export const getOverlayBox = (ctx: CanvasRenderingContext2D, o: TextOverlay) => 
   const h = ascent + descent + padding * 2;
   ctx.restore();
   return { x, y, w, h };
+};
+
+export const getShapeBox = (s: Shape) => {
+  return { x: s.x - s.w / 2, y: s.y - s.h / 2, w: s.w, h: s.h };
+};
+
+export const drawShape = (ctx: CanvasRenderingContext2D, s: Shape) => {
+  ctx.save();
+  if (s.blendMode) ctx.globalCompositeOperation = s.blendMode as GlobalCompositeOperation;
+  ctx.beginPath();
+  const left = s.x - s.w / 2;
+  const top = s.y - s.h / 2;
+  switch (s.type) {
+    case 'rectangle':
+      ctx.rect(left, top, s.w, s.h);
+      break;
+    case 'circle': {
+      const r = Math.min(s.w, s.h) / 2;
+      ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+      break;
+    }
+    case 'ellipse':
+      ctx.ellipse(s.x, s.y, s.w / 2, s.h / 2, 0, 0, Math.PI * 2);
+      break;
+    case 'triangle': {
+      ctx.moveTo(s.x, top);
+      ctx.lineTo(left + s.w, top + s.h);
+      ctx.lineTo(left, top + s.h);
+      ctx.closePath();
+      break;
+    }
+    case 'pentagon':
+    case 'hexagon':
+    case 'star':
+    case 'heart': {
+      // simple polygon approximations
+      const cx = s.x;
+      const cy = s.y;
+      const rx = s.w / 2;
+      const ry = s.h / 2;
+      const sides = s.type === 'pentagon' ? 5 : s.type === 'hexagon' ? 6 : 5;
+      for (let i = 0; i < sides; i++) {
+        const theta = (Math.PI * 2 * i) / sides - Math.PI / 2;
+        const px = cx + Math.cos(theta) * rx;
+        const py = cy + Math.sin(theta) * ry;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      break;
+    }
+    default:
+      break;
+  }
+  if (s.fill) {
+    ctx.fillStyle = s.fill;
+    ctx.fill();
+  }
+  if (s.stroke) {
+    ctx.lineWidth = s.strokeWidth || 1;
+    ctx.strokeStyle = s.stroke;
+    ctx.stroke();
+  }
+  ctx.restore();
+};
+
+// compute horizontal blocked segment for a given y (canvas coords) from a shape
+export const shapeHorizontalGapAtY = (s: Shape, y: number) => {
+  const box = getShapeBox(s);
+  if (y < box.y || y > box.y + box.h) return null;
+  if (s.type === 'circle') {
+    const r = Math.min(s.w, s.h) / 2;
+    const dy = y - s.y;
+    const dx = Math.sqrt(Math.max(0, r * r - dy * dy));
+    return { left: s.x - dx, right: s.x + dx };
+  }
+  // rectangle/ellipse/others: approximate by box
+  return { left: box.x, right: box.x + box.w };
 };
 
 export const hexToRgb = (hex: string) => {

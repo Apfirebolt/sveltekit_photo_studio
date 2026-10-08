@@ -7,8 +7,8 @@
   import type { SketchFilter, CartoonFilter } from "$lib/types/filter";
   import FullImageModal from "$lib/components/FullImageModal.svelte";
   import VibeSearchModal from "$lib/components/VibeSearchModal.svelte";
-  import type { TextOverlay } from '$lib/utils/overlays';
-  import { buildFont, getOverlayBox, drawInnerShadow, defaultTextOverlay, FONT_OPTIONS } from '$lib/utils/overlays';
+  import type { TextOverlay, Shape } from '$lib/utils/overlays';
+  import { buildFont, getOverlayBox, drawInnerShadow, defaultTextOverlay, FONT_OPTIONS, drawShape, shapeHorizontalGapAtY, getShapeBox } from '$lib/utils/overlays';
   import TextOverlayEditor from '$lib/components/TextOverlayEditor.svelte';
   import { debounce } from '$lib/utils/editorUtils';
 
@@ -146,6 +146,40 @@
     applyFilter();
   };
 
+  const createDefaultShape = (type: Shape['type'] = 'rectangle') => {
+    const w = Math.round((previewCanvas?.width || 800) * 0.25);
+    const h = Math.round((previewCanvas?.height || 600) * 0.25);
+    return {
+      type,
+      x: Math.round((previewCanvas?.width || 800) / 2),
+      y: Math.round((previewCanvas?.height || 600) / 2),
+      w,
+      h,
+      fill: 'rgba(0,0,0,0.4)',
+      stroke: '#ffffff',
+      strokeWidth: 2,
+      blendMode: 'source-over'
+    } as Shape;
+  };
+
+  const addShapeToActive = (type: Shape['type'] = 'rectangle') => {
+    if (!activeTextId) return;
+    const idx = textOverlays.findIndex(x => x.id === activeTextId);
+    if (idx === -1) return;
+    textOverlays[idx].shape = createDefaultShape(type);
+    textOverlays = [...textOverlays];
+    applyFilter(activeFilterId, engineType);
+  };
+
+  const removeShapeFromActive = () => {
+    if (!activeTextId) return;
+    const idx = textOverlays.findIndex(x => x.id === activeTextId);
+    if (idx === -1) return;
+    textOverlays[idx].shape = null;
+    textOverlays = [...textOverlays];
+    applyFilter(activeFilterId, engineType);
+  };
+
   const removeTextOverlay = (id: string) => {
     textOverlays = textOverlays.filter(o => o.id !== id);
     if (activeTextId === id) activeTextId = textOverlays[0]?.id || null;
@@ -155,6 +189,11 @@
   const drawTextOverlays = (ctx: CanvasRenderingContext2D) => {
     if (!textOverlays || textOverlays.length === 0) return;
     for (const o of textOverlays) {
+      // draw attached shape first (if any)
+      if (o.shape) {
+        drawShape(ctx, o.shape);
+      }
+
       ctx.save();
       ctx.font = buildFont(o);
       ctx.textBaseline = 'top';
@@ -174,13 +213,64 @@
         ctx.shadowColor = 'transparent';
       }
 
-      ctx.fillStyle = o.color || '#fff';
-      if (o.strokeEnabled) {
-        ctx.lineWidth = o.strokeWidth || 1;
-        ctx.strokeStyle = o.strokeColor || '#000';
-        ctx.strokeText(o.text, o.x, o.y);
+      // apply blend mode for text
+      if (o.blendMode) ctx.globalCompositeOperation = o.blendMode as GlobalCompositeOperation;
+
+      // If wrapText and shape exist, perform simple wrapping around the shape
+      if (o.wrapText && o.shape) {
+        const lineHeight = Math.round(o.fontSize * 1.15);
+        const words = (o.text || '').split(/\s+/);
+        let line = '';
+        let y = o.y;
+        const canvasW = previewCanvas?.width || 800;
+        for (let i = 0; i < words.length; i++) {
+          const testLine = line ? line + ' ' + words[i] : words[i];
+          const metrics = ctx.measureText(testLine);
+          const testWidth = metrics.width;
+
+          // check for horizontal gap from shape at this y
+          const gap = shapeHorizontalGapAtY(o.shape, y + o.fontSize / 2);
+          let maxWidth = canvasW - o.x - 8; // default available width to right edge
+          if (gap) {
+            // if starting x is left of gap, constrain to gap.left - x
+            if (o.x < gap.left) maxWidth = Math.max(24, gap.left - o.x - 6);
+            else maxWidth = canvasW - o.x - 8;
+          }
+
+          if (testWidth > maxWidth && line) {
+            // draw current line
+            ctx.fillStyle = o.color || '#fff';
+            if (o.strokeEnabled) {
+              ctx.lineWidth = o.strokeWidth || 1;
+              ctx.strokeStyle = o.strokeColor || '#000';
+              ctx.strokeText(line, o.x, y);
+            }
+            ctx.fillText(line, o.x, y);
+            line = words[i];
+            y += lineHeight;
+          } else {
+            line = testLine;
+          }
+        }
+        // draw remaining
+        if (line) {
+          if (o.strokeEnabled) {
+            ctx.lineWidth = o.strokeWidth || 1;
+            ctx.strokeStyle = o.strokeColor || '#000';
+            ctx.strokeText(line, o.x, y);
+          }
+          ctx.fillStyle = o.color || '#fff';
+          ctx.fillText(line, o.x, y);
+        }
+      } else {
+        ctx.fillStyle = o.color || '#fff';
+        if (o.strokeEnabled) {
+          ctx.lineWidth = o.strokeWidth || 1;
+          ctx.strokeStyle = o.strokeColor || '#000';
+          ctx.strokeText(o.text, o.x, o.y);
+        }
+        ctx.fillText(o.text, o.x, o.y);
       }
-      ctx.fillText(o.text, o.x, o.y);
 
       if (o.innerShadowEnabled) {
         drawInnerShadow(ctx, o);
@@ -1011,6 +1101,72 @@
                         <label>Blur {activeText.innerShadowBlur}<input type="range" min="0" max="30" bind:value={activeText.innerShadowBlur} class="w-full accent-primary" /></label>
                         <label>X {activeText.innerShadowOffsetX}<input type="range" min="-20" max="20" bind:value={activeText.innerShadowOffsetX} class="w-full accent-primary" /></label>
                         <label>Y {activeText.innerShadowOffsetY}<input type="range" min="-20" max="20" bind:value={activeText.innerShadowOffsetY} class="w-full accent-primary" /></label>
+                      </div>
+                    {/if}
+                  </div>
+
+                  <!-- Shape: add/edit/wrap -->
+                  <div class="space-y-2 pt-2 border-t border-gray-200">
+                    <div class="flex items-center justify-between">
+                      <label class="block text-xs font-bold text-gray-600 mb-1">Shape</label>
+                      {#if !activeText.shape}
+                        <div class="flex items-center gap-2">
+                          <select class="p-1 text-xs" onchange={(e) => addShapeToActive((e.target as HTMLSelectElement).value as any)}>
+                            <option value="rectangle">Rectangle</option>
+                            <option value="circle">Circle</option>
+                            <option value="ellipse">Ellipse</option>
+                            <option value="triangle">Triangle</option>
+                            <option value="pentagon">Pentagon</option>
+                            <option value="hexagon">Hexagon</option>
+                            <option value="star">Star</option>
+                            <option value="heart">Heart</option>
+                          </select>
+                          <button type="button" onclick={() => addShapeToActive('rectangle')} class="px-2 py-1 text-xs bg-primary text-white rounded">Add</button>
+                        </div>
+                      {:else}
+                        <div class="flex items-center gap-2">
+                          <button type="button" onclick={removeShapeFromActive} class="px-2 py-1 text-xs bg-red-50 text-red-600 rounded">Remove</button>
+                        </div>
+                      {/if}
+                    </div>
+
+                    {#if activeText.shape}
+                      <div class="grid grid-cols-2 gap-2 items-center">
+                        <div>
+                          <label class="block text-[10px] text-gray-500 mb-0.5">Fill</label>
+                          <input type="color" bind:value={activeText.shape.fill} class="w-full h-8 rounded border" />
+                        </div>
+                        <div>
+                          <label class="block text-[10px] text-gray-500 mb-0.5">Stroke</label>
+                          <input type="color" bind:value={activeText.shape.stroke} class="w-full h-8 rounded border" />
+                        </div>
+                        <div>
+                          <label class="block text-[10px] text-gray-500 mb-0.5">Stroke Width</label>
+                          <input type="range" min="0" max="20" bind:value={activeText.shape.strokeWidth} class="w-full" />
+                        </div>
+                        <div>
+                          <label class="block text-[10px] text-gray-500 mb-0.5">Blend</label>
+                          <select bind:value={activeText.shape.blendMode} class="w-full p-1 text-xs">
+                            <option value="source-over">Normal</option>
+                            <option value="multiply">Multiply</option>
+                            <option value="screen">Screen</option>
+                            <option value="overlay">Overlay</option>
+                            <option value="lighter">Additive</option>
+                            <option value="darken">Darken</option>
+                            <option value="lighten">Lighten</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-[10px] text-gray-500 mb-0.5">Width</label>
+                          <input type="number" min="10" bind:value={activeText.shape.w} class="w-full p-1 text-xs border rounded" />
+                        </div>
+                        <div>
+                          <label class="block text-[10px] text-gray-500 mb-0.5">Height</label>
+                          <input type="number" min="10" bind:value={activeText.shape.h} class="w-full p-1 text-xs border rounded" />
+                        </div>
+                        <div class="col-span-2 flex items-center gap-2">
+                          <label class="flex items-center gap-2 text-xs"><input type="checkbox" bind:checked={activeText.wrapText} /> Wrap text around shape</label>
+                        </div>
                       </div>
                     {/if}
                   </div>
