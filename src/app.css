@@ -1,11 +1,53 @@
-@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Raleway:wght@400;700&display=swap');
 @import "tailwindcss";
 
 /* This line tells Tailwind v4 how to recognize the .dark class */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* 1. Define Local Fonts via @font-face */
+@font-face {
+  font-family: 'Nunito Sans';
+  src: url('/fonts/nunito-normal.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nunito Sans';
+  src: url('/fonts/nunito-italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Libra Caslon Condensed';
+  src: url('/fonts/libre-regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 2. Register Custom Fonts & Colors in Tailwind v4 @theme */
+@theme {
+  /* Overriding Tailwind's default sans stack forces body text to use Nunito Sans */
+  --font-sans: 'Nunito Sans', sans-serif;
+  --font-nunito: 'Nunito Sans', sans-serif;
+  --font-caslon: 'Libra Caslon Condensed', serif;
+  
+  --color-primary: #6D0808;
+  --color-secondary: #315B8C;
+  --color-tertiary: #757D6F;
+  --color-light: #EEEAD7;
+  --color-dark: #0D1C42;
+  --color-danger: #E82561;
+  --color-success: #5B913B;
+  --color-info: #f9f871;
+  --color-accent-dark: #CADABF;
+}
+
 body {
-  font-family: 'Lato', sans-serif;
+  font-family: var(--font-sans);
   background-color: #f0f4f8;
   color: #333;
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -18,17 +60,5 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Montserrat', sans-serif;
-}
-
-@theme {
-  --color-primary: #6D0808;
-  --color-secondary: #315B8C;
-  --color-tertiary: #757D6F;
-  --color-light: #EEEAD7;
-  --color-dark: #0D1C42;
-  --color-danger: #E82561;
-  --color-success: #5B913B;
-  --color-info: #f9f871;
-  --color-accent-dark: #CADABF;
+  font-family: 'Libra Caslon Condensed', serif;
 }
