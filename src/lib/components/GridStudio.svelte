@@ -45,6 +45,8 @@
   let showCropWindow = $state(false);
   let cropShape = $state<CropShape>("rectangle");
   let cropRect = $state({ x: 0, y: 0, width: 1, height: 1 });
+  let freeformRelPoints = $state<Array<{ x: number; y: number }>>([]);
+  let activeFreeformStroke = $state<Array<{ x: number; y: number }>>([]);
   let croppedImageObj = $state<HTMLImageElement | null>(null);
   let croppedImageSrc = $state("");
   let cropDrag: { mode: "move" | "draw"; startX: number; startY: number; rect: typeof cropRect } | null = null;
@@ -94,7 +96,7 @@
     "T",
   ];
 
-  type CropShape = "rectangle" | "square" | "circle" | "ellipse" | "rounded" | "triangle" | "hexagon" | "star" | "heart";
+  type CropShape = "rectangle" | "square" | "circle" | "ellipse" | "rounded" | "triangle" | "hexagon" | "star" | "heart" | "freeform";
 
   const CROP_SHAPES: { id: CropShape; label: string }[] = [
     { id: "rectangle", label: "▭ Rectangle" },
@@ -106,6 +108,7 @@
     { id: "hexagon", label: "⬡ Hexagon" },
     { id: "star", label: "☆ Star" },
     { id: "heart", label: "♡ Heart" },
+    { id: "freeform", label: "✎ Freeform" },
   ];
 
   const isSquareShape = (shape: CropShape) => shape === "square" || shape === "circle";
@@ -139,6 +142,13 @@
       }
       case "heart":
         return `M${P(0.5, 1)}C${P(0.2, 0.75)} ${P(0, 0.55)} ${P(0, 0.3)}C${P(0, 0.12)} ${P(0.14, 0)} ${P(0.28, 0)}C${P(0.4, 0)} ${P(0.47, 0.07)} ${P(0.5, 0.15)}C${P(0.53, 0.07)} ${P(0.6, 0)} ${P(0.72, 0)}C${P(0.86, 0)} ${P(1, 0.12)} ${P(1, 0.3)}C${P(1, 0.55)} ${P(0.8, 0.75)} ${P(0.5, 1)}Z`;
+      case "freeform": {
+        if (freeformRelPoints.length < 3) {
+          return `M${x} ${y}H${x + w}V${y + h}H${x}Z`;
+        }
+        const points = freeformRelPoints.map((pt) => P(pt.x, pt.y));
+        return `M${points.join("L")}Z`;
+      }
       default:
         return `M${x} ${y}H${x + w}V${y + h}H${x}Z`;
     }
@@ -157,6 +167,42 @@
     } else if (wasSquare) {
       aspectRatio = "free";
     }
+    if (shape === "freeform") {
+      aspectRatio = "free";
+      freeformRelPoints = [];
+      activeFreeformStroke = [];
+      if (rawImageObj) cropRect = getDefaultCropRect(rawImageObj);
+    }
+  };
+
+  const clearFreeform = () => {
+    freeformRelPoints = [];
+    activeFreeformStroke = [];
+    if (rawImageObj) cropRect = getDefaultCropRect(rawImageObj);
+  };
+
+  const resetCrop = () => {
+    freeformRelPoints = [];
+    activeFreeformStroke = [];
+    if (rawImageObj) cropRect = getDefaultCropRect(rawImageObj);
+  };
+
+  const isPointInPolygon = (
+    px: number,
+    py: number,
+    points: Array<{ x: number; y: number }>,
+  ) => {
+    let inside = false;
+    for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+      const xi = points[i].x;
+      const yi = points[i].y;
+      const xj = points[j].x;
+      const yj = points[j].y;
+      const intersect =
+        yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi;
+      if (intersect) inside = !inside;
+    }
+    return inside;
   };
 
   const getDefaultCropRect = (image: HTMLImageElement) => {
@@ -180,6 +226,38 @@
   const handleCropPointerDown = (event: PointerEvent) => {
     if (!rawImageObj) return;
     const point = getCropPoint(event);
+
+    if (cropShape === "freeform") {
+      const hasValidFreeform = freeformRelPoints.length >= 3;
+      const absPoints = hasValidFreeform
+        ? freeformRelPoints.map((p) => ({
+            x: cropRect.x + p.x * cropRect.width,
+            y: cropRect.y + p.y * cropRect.height,
+          }))
+        : [];
+      const insideCrop = hasValidFreeform && isPointInPolygon(point.x, point.y, absPoints);
+
+      if (insideCrop) {
+        cropDrag = {
+          mode: "move",
+          startX: point.x,
+          startY: point.y,
+          rect: { ...cropRect },
+        };
+      } else {
+        activeFreeformStroke = [{ x: point.x, y: point.y }];
+        freeformRelPoints = [];
+        cropDrag = {
+          mode: "draw",
+          startX: point.x,
+          startY: point.y,
+          rect: { ...cropRect },
+        };
+      }
+      (event.currentTarget as SVGSVGElement).setPointerCapture(event.pointerId);
+      return;
+    }
+
     const isFullImageCrop = cropRect.x === 0 && cropRect.y === 0 && cropRect.width === 1 && cropRect.height === 1;
     const insideCrop = !isFullImageCrop && point.x >= cropRect.x && point.x <= cropRect.x + cropRect.width &&
       point.y >= cropRect.y && point.y <= cropRect.y + cropRect.height;
@@ -206,6 +284,18 @@
       return;
     }
 
+    if (cropShape === "freeform") {
+      if (activeFreeformStroke.length > 0) {
+        const last = activeFreeformStroke[activeFreeformStroke.length - 1];
+        const dx = point.x - last.x;
+        const dy = point.y - last.y;
+        if (dx * dx + dy * dy >= 0.00003) {
+          activeFreeformStroke = [...activeFreeformStroke, { x: point.x, y: point.y }];
+        }
+      }
+      return;
+    }
+
     let width = Math.abs(point.x - cropDrag.startX);
     let height = Math.abs(point.y - cropDrag.startY);
     if (aspectRatio !== "free") {
@@ -229,6 +319,28 @@
   };
 
   const handleCropPointerUp = (event: PointerEvent) => {
+    if (cropShape === "freeform" && cropDrag?.mode === "draw") {
+      if (activeFreeformStroke.length >= 3) {
+        const xs = activeFreeformStroke.map((p) => p.x);
+        const ys = activeFreeformStroke.map((p) => p.y);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+        const width = Math.max(0.01, maxX - minX);
+        const height = Math.max(0.01, maxY - minY);
+
+        cropRect = { x: minX, y: minY, width, height };
+        freeformRelPoints = activeFreeformStroke.map((p) => ({
+          x: (p.x - minX) / width,
+          y: (p.y - minY) / height,
+        }));
+      } else {
+        freeformRelPoints = [];
+        if (rawImageObj) cropRect = getDefaultCropRect(rawImageObj);
+      }
+      activeFreeformStroke = [];
+    }
     cropDrag = null;
     (event.currentTarget as SVGSVGElement).releasePointerCapture(event.pointerId);
   };
@@ -241,6 +353,12 @@
   const updateCroppedImage = () => {
     if (!rawImageObj) return;
     const renderVersion = ++cropRenderVersion;
+
+    if (cropShape === "freeform" && freeformRelPoints.length < 3) {
+      croppedImageObj = rawImageObj;
+      croppedImageSrc = originalImageSrc;
+      return;
+    }
 
     const isFullCrop = cropRect.x === 0 && cropRect.y === 0 && cropRect.width === 1 && cropRect.height === 1;
     if (isFullCrop && !isShapedCrop) {
@@ -627,11 +745,12 @@
       ctx.setLineDash([]);
       ctx.strokeStyle = "#9333ea";
       ctx.lineWidth = Math.max(3, Math.floor(croppedImageObj.width / 350));
+      const targetImg = croppedImageObj;
       customLines.forEach((line) => {
-        const px1 = (line.x1 / 100) * croppedImageObj.width;
-        const py1 = (line.y1 / 100) * croppedImageObj.height;
-        const px2 = (line.x2 / 100) * croppedImageObj.width;
-        const py2 = (line.y2 / 100) * croppedImageObj.height;
+        const px1 = (line.x1 / 100) * targetImg.width;
+        const py1 = (line.y1 / 100) * targetImg.height;
+        const px2 = (line.x2 / 100) * targetImg.width;
+        const py2 = (line.y2 / 100) * targetImg.height;
         ctx.beginPath();
         ctx.moveTo(px1, py1);
         ctx.lineTo(px2, py2);
@@ -668,6 +787,7 @@
       }
       cropRect;
       cropShape;
+      freeformRelPoints;
       updateCroppedImage();
     }
   });
@@ -717,8 +837,8 @@
       <select
         value={aspectRatio}
         onchange={setAspectRatio}
-        disabled={isSquareShape(cropShape)}
-        title={isSquareShape(cropShape) ? "Square and circle crops are always 1:1" : undefined}
+        disabled={isSquareShape(cropShape) || cropShape === "freeform"}
+        title={cropShape === "freeform" ? "Freeform crop uses custom drawn boundaries" : isSquareShape(cropShape) ? "Square and circle crops are always 1:1" : undefined}
         class="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-dark disabled:opacity-50"
       >
         <option value="free">Freeform (Original)</option>
@@ -783,15 +903,30 @@
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 class="text-sm font-bold text-dark dark:text-light">Crop Image</h3>
-          <p class="text-[11px] text-gray-500 dark:text-light">Drag on the image to draw a crop area, or drag inside it to reposition.</p>
+          <p class="text-[11px] text-gray-500 dark:text-light">
+            {cropShape === "freeform"
+              ? "Draw a freeform outline on the image to crop it, or drag inside the shape to move it."
+              : "Drag on the image to draw a crop area, or drag inside it to reposition."}
+          </p>
         </div>
-        <button
-          type="button"
-          onclick={() => rawImageObj && (cropRect = getDefaultCropRect(rawImageObj))}
-          class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-dark transition hover:bg-gray-100 cursor-pointer"
-        >
-          Reset Crop
-        </button>
+        <div class="flex items-center gap-2">
+          {#if cropShape === "freeform" && freeformRelPoints.length >= 3}
+            <button
+              type="button"
+              onclick={clearFreeform}
+              class="rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 transition hover:bg-purple-100 cursor-pointer"
+            >
+              ✎ Redraw Shape
+            </button>
+          {/if}
+          <button
+            type="button"
+            onclick={resetCrop}
+            class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-dark transition hover:bg-gray-100 cursor-pointer"
+          >
+            Reset Crop
+          </button>
+        </div>
       </div>
       <div class="flex flex-wrap gap-1.5" role="group" aria-label="Crop shape">
         {#each CROP_SHAPES as shape}
@@ -827,15 +962,37 @@
             onpointerup={handleCropPointerUp}
             onpointercancel={handleCropPointerUp}
           >
-            <path d="M0 0H1000V1000H0Z {cropOverlayPath}" fill="black" fill-rule="evenodd" opacity="0.42" />
-            <path
-              d={cropOverlayPath}
-              fill="transparent"
-              stroke="white"
-              stroke-width="4"
-              vector-effect="non-scaling-stroke"
-            />
+            {#if cropShape === "freeform" && freeformRelPoints.length < 3}
+              <!-- Leave image unobscured prior to drawing -->
+            {:else}
+              <path d="M0 0H1000V1000H0Z {cropOverlayPath}" fill="black" fill-rule="evenodd" opacity="0.42" />
+              <path
+                d={cropOverlayPath}
+                fill="transparent"
+                stroke="white"
+                stroke-width="4"
+                vector-effect="non-scaling-stroke"
+              />
+            {/if}
+            {#if cropShape === "freeform" && activeFreeformStroke.length > 1}
+              <polyline
+                points={activeFreeformStroke.map((p) => `${p.x * 1000},${p.y * 1000}`).join(" ")}
+                fill="none"
+                stroke="#38bdf8"
+                stroke-width="4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                vector-effect="non-scaling-stroke"
+              />
+            {/if}
           </svg>
+          {#if cropShape === "freeform" && freeformRelPoints.length < 3 && activeFreeformStroke.length === 0}
+            <div class="pointer-events-none absolute inset-x-0 top-3 flex justify-center">
+              <span class="rounded-full bg-black/75 px-3 py-1 text-xs font-medium text-white shadow-md backdrop-blur-xs flex items-center gap-1.5">
+                ✎ Drag on the image to draw your custom crop shape
+              </span>
+            </div>
+          {/if}
         </div>
       </div>
       </section>
