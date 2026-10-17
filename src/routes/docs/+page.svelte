@@ -201,7 +201,7 @@
       class="bg-gray-900 text-white p-8 sm:p-12 rounded-3xl shadow-md space-y-6"
       in:fly={{ y: 30, duration: 400, delay: 900 }}
     >
-      <div class="max-w-xl space-y-2">
+      <div class="space-y-2">
         <span
           class="text-xs font-mono text-success font-bold uppercase tracking-wider"
           >Module - 1</span
@@ -209,30 +209,58 @@
         <h3 class="text-xl sm:text-2xl font-bold">
           Grid Lines and Tiling
         </h3>
-        <p class="text-xs sm:text-sm text-gray-400 leading-relaxed">
-          Powered by Svelte's high-performance reactivity model, TensorFlow.js
-          for browser-native machine learning, HTML5 Canvas API for rapid pixel
-          manipulation, and Tailwind CSS for responsive studio UI layouts.
+        <p class="text-xs sm:text-sm leading-relaxed">
+          This is the first module of this application. Major features included in this module include grid lines, straight lines, cropping image, tiling, adjusting
+          brightness and contrast. For this documentation I'd only focus on tiling and grid features as they were one of the most relevant features
+          which inspired me to develop this in the first place.
         </p>
-      </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+        <p class="text-xs sm:text-sm leading-relaxed">
+          Grid method is one of the most popular methods artists use to maintain proper proportions and alignment in their artwork. It helps in breaking down complex compositions into manageable sections, ensuring accuracy and consistency throughout the creative process.
+          In this module, the grid feature allows users to overlay a customizable grid on their canvas, making it easier to align elements and maintain consistent proportions. You have the option
+          to choose the number of rows and columns for the grid, allowing for precise control over the layout and alignment of elements on the canvas.
+        </p>
+
+        <h4 class="text-lg sm:text-xl font-bold">
+          Tiling Feature
+        </h4>
+        <p class="text-xs sm:text-sm leading-relaxed">
+          The tiling feature allows users to split the image into equal tiles which can later be individually edited and saved. You can also use this zoom in and save feature
+          to focus on specific areas of the image for detailed editing. In the illustration below, we have cut the image into four tiles.
+        </p>
+
+        <img class="rounded-xl shadow-md max-w-4xl my-3 mx-auto" src="/docs/1.jpg" alt="Documentation illustration" />
+
+        <p class="text-xs sm:text-sm leading-relaxed">
+          We would use the bottom right tile which has face of Goku for detailed editing in subsequent examples. The example image below shows
+          this tiled image being used in advanced filtering section to apply advanced tensorflow image effects on this.
+        </p>
+
+        <img class="rounded-xl shadow-md max-w-4xl my-3 mx-auto" src="/docs/10.jpg" alt="Documentation illustration" />
+
+        <p class="text-xs sm:text-sm leading-relaxed">
+          Some other trivial features of this module include the following. As most editors would have them by default, I decided to skip them 
+          for detailed explanation here.
+        </p>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
         <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">Svelte</span>
-          <p class="text-[11px] text-gray-400">Reactive Runes State</p>
+          <span class="text-xs font-mono text-success font-bold">Cropping</span>
+          <p class="text-[11px] text-light">Cropping an image is available in various shapes including freeform.</p>
         </div>
         <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">TensorFlow.js</span>
-          <p class="text-[11px] text-gray-400">WebGL Tensor Kernels</p>
+          <span class="text-xs font-mono text-success font-bold">Grid Lines</span>
+          <p class="text-[11px] text-light">Save image as solid or dashed grid lines, very useful for artists in determining proportions and alignment.</p>
         </div>
         <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">Canvas API</span>
-          <p class="text-[11px] text-gray-400">Low-level Pixel Editing</p>
+          <span class="text-xs font-mono text-success font-bold">Pan and Zoom</span>
+          <p class="text-[11px] text-light">Pan and zoom functionality for detailed image editing. You can also save the zoomed in area of the image.</p>
         </div>
         <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">Tailwind CSS</span>
-          <p class="text-[11px] text-gray-400">Responsive Studio UI</p>
+          <span class="text-xs font-mono text-success font-bold">Adjust parameters</span>
+          <p class="text-[11px] text-light">Adjust various image parameters such as brightness, contrast, and saturation for fine-tuned editing.</p>
         </div>
+      </div>
       </div>
     </div>
 
