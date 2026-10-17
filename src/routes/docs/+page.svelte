@@ -185,7 +185,7 @@
     </div>
 
     <div
-      class="bg-gray-900 text-white p-8 sm:p-12 rounded-3xl shadow-md space-y-6"
+      class="bg-gray-900 text-white p-6 sm:p-12 rounded-3xl shadow-md space-y-6 overflow-hidden"
       in:fly={{ y: 30, duration: 400, delay: 800 }}
     >
       <h3 class="text-xl sm:text-2xl font-bold">Documentation Illustration</h3>
@@ -193,12 +193,12 @@
         For demonstration purposes, this image of Goku from Dragonball Z would
         be used.
       </p>
-      <img src="/docs/test.jpg" alt="Documentation illustration" />
+      <img src="/docs/test.jpg" alt="Documentation illustration" class="w-full h-auto object-contain rounded-xl shadow-md my-3 mx-auto max-w-4xl" />
     </div>
 
     <!-- Technology Stack Callouts (Modules 1 to 4) -->
     <div
-      class="bg-gray-900 text-white p-8 sm:p-12 rounded-3xl shadow-md space-y-6"
+      class="bg-gray-900 text-white p-6 sm:p-12 rounded-3xl shadow-md space-y-6 overflow-hidden"
       in:fly={{ y: 30, duration: 400, delay: 900 }}
     >
       <div class="space-y-2">
@@ -228,7 +228,7 @@
           layout and alignment of elements on the canvas.
         </p>
 
-        <h4 class="text-lg sm:text-xl font-bold">Tiling Feature</h4>
+        <h4 class="text-lg sm:text-xl font-bold pt-2">Tiling Feature</h4>
         <p class="leading-relaxed">
           The tiling feature allows users to split the image into equal tiles
           which can later be individually edited and saved. You can also use
@@ -238,12 +238,12 @@
         </p>
 
         <img
-          class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+          class="w-full h-auto object-contain rounded-xl shadow-md max-w-4xl my-3 mx-auto"
           src="/docs/1.jpg"
           alt="Documentation illustration"
         />
 
-        <p class="eading-relaxed">
+        <p class="leading-relaxed">
           We would use the bottom right tile which has face of Goku for detailed
           editing in subsequent examples. The example image below shows this
           tiled image being used in advanced filtering section to apply advanced
@@ -251,7 +251,7 @@
         </p>
 
         <img
-          class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+          class="w-full h-auto object-contain rounded-xl shadow-md max-w-4xl my-3 mx-auto"
           src="/docs/10.jpg"
           alt="Documentation illustration"
         />
@@ -263,7 +263,7 @@
         </p>
 
         <img
-          class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+          class="w-full h-auto object-contain rounded-xl shadow-md max-w-4xl my-3 mx-auto"
           src="/docs/2.jpg"
           alt="Documentation illustration"
         />
@@ -274,12 +274,12 @@
           detailed explanation here.
         </p>
 
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-2">
           <div
             class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
           >
-            <span class="text-success font-bold">Cropping</span>
-            <p class="text-light">
+            <span class="text-success font-bold block">Cropping</span>
+            <p class="text-light text-sm">
               Cropping an image is available in various shapes including
               freeform.
             </p>
@@ -287,8 +287,8 @@
           <div
             class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
           >
-            <span class="text-success font-bold">Grid Lines</span>
-            <p class="text-light">
+            <span class="text-success font-bold block">Grid Lines</span>
+            <p class="text-light text-sm">
               Save image as solid or dashed grid lines, very useful for artists
               in determining proportions and alignment.
             </p>
@@ -296,8 +296,8 @@
           <div
             class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
           >
-            <span class="text-success font-bold">Pan and Zoom</span>
-            <p class="text-light">
+            <span class="text-success font-bold block">Pan and Zoom</span>
+            <p class="text-light text-sm">
               Pan and zoom functionality for detailed image editing. You can
               also save the zoomed in area of the image.
             </p>
@@ -305,8 +305,8 @@
           <div
             class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
           >
-            <span class="text-success font-bold">Adjust parameters</span>
-            <p class="text-light">
+            <span class="text-success font-bold block">Adjust parameters</span>
+            <p class="text-light text-sm">
               Adjust various image parameters such as brightness, contrast, and
               saturation for fine-tuned editing.
             </p>
@@ -316,11 +316,11 @@
     </div>
 
     <div
-      class="bg-gray-900 text-white p-8 sm:p-12 rounded-3xl shadow-md space-y-6"
+      class="bg-gray-900 text-white p-6 sm:p-12 rounded-3xl shadow-md space-y-6 overflow-hidden"
       in:fly={{ y: 30, duration: 400, delay: 1000 }}
     >
-      <div class="max-w-xl space-y-2">
-        <span class=" font-mono text-success font-bold uppercase tracking-wider"
+      <div class="space-y-2">
+        <span class="font-mono text-success font-bold uppercase tracking-wider"
           >Module - 2</span
         >
         <h3 class="text-xl sm:text-2xl font-bold">Tensor Studio</h3>
@@ -342,69 +342,69 @@
       </p>
 
       <img
-        class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+        class="w-full h-auto object-contain rounded-xl shadow-md max-w-4xl my-3 mx-auto"
         src="/docs/3.jpg"
         alt="Documentation illustration"
       />
 
-      <p class="eading-relaxed">
+      <p class="leading-relaxed">
         This uses pencil portrait effect powered by AI. You can create some cool
         illustrations by tweaking RGB values and other image parameters on top
         of pencil portrait effect.
       </p>
 
       <img
-        class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+        class="w-full h-auto object-contain rounded-xl shadow-md max-w-4xl my-3 mx-auto"
         src="/docs/4.jpg"
         alt="Documentation illustration"
       />
 
-      <p class="eading-relaxed">
+      <p class="leading-relaxed">
         This illustration shows another effect applied called "Soft Graphite"
         from tensorflow. As mentioned earlier, you could combine other effects
         with this to create unique and customized image styles.
       </p>
 
       <img
-        class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+        class="w-full h-auto object-contain rounded-xl shadow-md max-w-4xl my-3 mx-auto"
         src="/docs/5.jpg"
         alt="Documentation illustration"
       />
 
-      <p class="eading-relaxed">
+      <p class="leading-relaxed">
         We can see the edited image preview in a modal when clicking on the
         preview button as displayed in the illustration below.
       </p>
 
       <img
-        class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+        class="w-full h-auto object-contain rounded-xl shadow-md max-w-4xl my-3 mx-auto"
         src="/docs/6.jpg"
         alt="Documentation illustration"
       />
 
-      <p class="eading-relaxed">
+      <p class="leading-relaxed">
         In the image below, we show the use of describe image button which on
         click would call for AI to generate a description of the image based on
         what objects it can detect in the image.
       </p>
 
       <img
-        class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+        class="w-full h-auto object-contain rounded-xl shadow-md max-w-4xl my-3 mx-auto"
         src="/docs/7.jpg"
         alt="Documentation illustration"
       />
 
-      <p class="eading-relaxed">
+      <p class="leading-relaxed">
         Below is the summary of some of the lesser discussed features in this
         module.
       </p>
 
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-2">
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="text-success font-bold">Eye Dropper</span>
-          <p class="text-light">
+          <span class="text-success font-bold block">Eye Dropper</span>
+          <p class="text-light text-sm">
             The eye dropper tool allows you to pick colors directly from the
             image for precise color adjustments.
           </p>
@@ -412,8 +412,8 @@
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="text-success font-bold">Top Image Colors</span>
-          <p class="text-light">
+          <span class="text-success font-bold block">Top Image Colors</span>
+          <p class="text-light text-sm">
             Displays the most prominent colors in the image, helping artists and
             designers quickly identify the color palette precisely.
           </p>
@@ -421,8 +421,8 @@
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="text-success font-bold">RGB Channel Mixer</span>
-          <p class="text-light">
+          <span class="text-success font-bold block">RGB Channel Mixer</span>
+          <p class="text-light text-sm">
             Mix and adjust the red, green, and blue channels of the image to
             achieve desired color effects.
           </p>
@@ -430,8 +430,8 @@
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="text-success font-bold">Blend Intensity</span>
-          <p class="text-light">
+          <span class="text-success font-bold block">Blend Intensity</span>
+          <p class="text-light text-sm">
             Control the intensity of blending effects applied to the image
             through a slider.
           </p>
@@ -440,15 +440,15 @@
     </div>
 
     <div
-      class="bg-gray-900 text-white p-8 sm:p-12 rounded-3xl shadow-md space-y-6"
+      class="bg-gray-900 text-white p-6 sm:p-12 rounded-3xl shadow-md space-y-6 overflow-hidden"
       in:fly={{ y: 30, duration: 400, delay: 1100 }}
     >
       <div class="space-y-2">
-        <span class=" font-mono text-success font-bold uppercase tracking-wider"
+        <span class="font-mono text-success font-bold uppercase tracking-wider"
           >Module - 3</span
         >
         <h3 class="text-xl sm:text-2xl font-bold">Filter Library</h3>
-        <p class=" leading-relaxed">
+        <p class="leading-relaxed">
           Explore a wide range of filters to enhance your images with artistic
           and aesthetic effects. It has a total of around 400+ filters which can
           be applied to images for creative and professional results. It
@@ -457,18 +457,18 @@
           applied to efficiently process and enhance images with these filters.
         </p>
 
-        <p class="eading-relaxed">
+        <p class="leading-relaxed">
           Below is an illustration which shows one of the tensorflow-based
           artistic filters in action.
         </p>
 
         <img
-          class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+          class="w-full h-auto object-contain rounded-xl shadow-md max-w-4xl my-3 mx-auto"
           src="/docs/10.jpg"
           alt="Tensorflow illustration"
         />
 
-        <p class=" leading-relaxed">
+        <p class="leading-relaxed">
           As you might have already noticed, it has text edit features which
           allows you to add multiple text boxes in an image with effects like
           font customization, color adjustments, and various text effects. You
@@ -478,24 +478,24 @@
       </div>
 
       <img
-        class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+        class="w-full h-auto object-contain rounded-xl shadow-md max-w-4xl my-3 mx-auto"
         src="/docs/8.jpg"
         alt="Text edit illustration"
       />
 
-      <p class=" leading-relaxed">
+      <p class="leading-relaxed">
         Using the preview feature, you can see side-by-side comparisons of your
         edits in real-time, allowing you to make precise adjustments and ensure
         the final image meets your expectations.
       </p>
 
       <img
-        class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+        class="w-full h-auto object-contain rounded-xl shadow-md max-w-4xl my-3 mx-auto"
         src="/docs/9.jpg"
         alt="Preview feature illustration"
       />
 
-      <p class=" leading-relaxed">
+      <p class="leading-relaxed">
         There is also this cool feature called vibe filtering which allows you
         to enter some vibe text and submit. The system will then perform a text
         matching analysis using sentence transformers behind the scenes to apply
@@ -507,12 +507,12 @@
       </p>
 
       <img
-        class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+        class="w-full h-auto object-contain rounded-xl shadow-md max-w-4xl my-3 mx-auto"
         src="/docs/11.jpg"
         alt="Vibe filtering illustration"
       />
 
-      <p class=" leading-relaxed">
+      <p class="leading-relaxed">
         Though this vibe filter feature is not working properly and probably
         would not be able to select from all the filters available in this
         application. It is recommended to use it with caution and not rely
@@ -523,14 +523,14 @@
         Below is the summary of some of the features discussed in this module.
       </p>
 
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-2">
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="text-success font-bold">Text Editor</span>
-          <p class="text-light">
+          <span class="text-success font-bold block">Text Editor</span>
+          <p class="text-light text-sm">
             Text edit tool allows you to add multiple text to images with some
-            cool effects such as shadows, inner, outer glows , outlines and
+            cool effects such as shadows, inner, outer glows, outlines and
             strokes. You can also apply blending modes to the text for creative
             effects.
           </p>
@@ -538,8 +538,8 @@
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="text-success font-bold">AI and Canvas Filters</span>
-          <p class="text-light">
+          <span class="text-success font-bold block">AI and Canvas Filters</span>
+          <p class="text-light text-sm">
             Provides a wide range of AI-powered and canvas-based filters for
             enhancing and manipulating images.
           </p>
@@ -547,10 +547,10 @@
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="text-success font-bold"
+          <span class="text-success font-bold block"
             >Multi-format Export And Compression</span
           >
-          <p class="text-light">
+          <p class="text-light text-sm">
             Allows exporting images in multiple formats such as PNG, JPEG, PDF
             and WebP for versatile usage. Also provides compression options to
             reduce file size while maintaining quality.
@@ -559,8 +559,8 @@
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="text-success font-bold">Histogram Analysis</span>
-          <p class="text-light">
+          <span class="text-success font-bold block">Histogram Analysis</span>
+          <p class="text-light text-sm">
             Provides a visual representation of the tonal distribution in the
             image, helping to analyze exposure and contrast. Also, has options
             to tweak parameters like brightness, contrast, hue, blur radius and
@@ -571,15 +571,15 @@
     </div>
 
     <div
-      class="bg-gray-900 text-white p-8 sm:p-12 rounded-3xl shadow-md space-y-6"
+      class="bg-gray-900 text-white p-6 sm:p-12 rounded-3xl shadow-md space-y-6 overflow-hidden"
       in:fly={{ y: 30, duration: 400, delay: 1200 }}
     >
       <div class="space-y-2">
-        <span class=" font-mono text-success font-bold uppercase tracking-wider"
+        <span class="font-mono text-success font-bold uppercase tracking-wider"
           >Module - 4</span
         >
         <h3 class="text-xl sm:text-2xl font-bold">Bulk File Features</h3>
-        <p class=" leading-relaxed">
+        <p class="leading-relaxed">
           You can work with multiple files simultaneously, applying edits,
           filters, and adjustments in bulk to streamline your workflow. This
           provides a compression tool alongwith file format conversion options.
@@ -588,12 +588,12 @@
         </p>
 
         <img
-          class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+          class="w-full h-auto object-contain rounded-xl shadow-md max-w-4xl my-3 mx-auto"
           src="/docs/12.jpg"
           alt="Bulk edit illustration"
         />
 
-        <p class=" leading-relaxed">
+        <p class="leading-relaxed">
           In the illustration above, you can see how multiple files are being
           managed and edited in bulk, showcasing the efficiency of the bulk file
           features. You can crop multiple images to a specific dimension
@@ -601,19 +601,19 @@
           files.
         </p>
 
-        <p class=" leading-relaxed">
+        <p class="leading-relaxed">
           App gives you option to apply watermark text to multiple images at
           once, apply random filters or same filter to all selected images. It
           also has option to create beautiful collages from multiple images.
         </p>
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-2">
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="text-success font-bold">Watermark</span>
-          <p class="text-light">
+          <span class="text-success font-bold block">Watermark</span>
+          <p class="text-light text-sm">
             Watermark tool allows you to add multiple watermarks to your images
             at once.
           </p>
@@ -621,8 +621,8 @@
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="text-success font-bold">Bulk file conversion</span>
-          <p class="text-light">
+          <span class="text-success font-bold block">Bulk file conversion</span>
+          <p class="text-light text-sm">
             Allows you to convert multiple files to different formats in bulk
             and compress, saving time and effort.
           </p>
@@ -630,8 +630,8 @@
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="text-success font-bold">Frames</span>
-          <p class="text-light">
+          <span class="text-success font-bold block">Frames</span>
+          <p class="text-light text-sm">
             Allows you to add frames to multiple images at once. There are
             multiple in-built frame styles to choose from.
           </p>
@@ -639,8 +639,8 @@
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="text-success font-bold">Collage Maker</span>
-          <p class="text-light">
+          <span class="text-success font-bold block">Collage Maker</span>
+          <p class="text-light text-sm">
             Allows you to create collages from multiple images. You can choose
             from various templates and customize the layout, spacing, and
             background to create visually appealing collages.
