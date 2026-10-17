@@ -45,7 +45,7 @@
   <!-- Main Content Container -->
   <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-12 space-y-16">
     <!-- Vision & Philosophy -->
-    <div 
+    <div
       class="grid grid-cols-1 gap-8 items-center"
       in:fly={{ y: 30, duration: 500, delay: 200 }}
     >
@@ -84,7 +84,7 @@
 
     <!-- Core Feature Highlights Grid -->
     <div class="space-y-6">
-      <div 
+      <div
         class="text-center max-w-2xl mx-auto space-y-2"
         in:fly={{ y: 25, duration: 400, delay: 300 }}
       >
@@ -178,7 +178,8 @@
           File Bulk Process Features
         </h3>
         <p class="text-gray-600 dark:text-light leading-relaxed">
-          Bulk process features include conversion of file formats, resizing, renaming, and applying filters to multiple files simultaneously.
+          Bulk process features include conversion of file formats, resizing,
+          renaming, and applying filters to multiple files simultaneously.
         </p>
       </div>
     </div>
@@ -187,11 +188,10 @@
       class="bg-gray-900 text-white p-8 sm:p-12 rounded-3xl shadow-md space-y-6"
       in:fly={{ y: 30, duration: 400, delay: 800 }}
     >
-      <h3 class="text-xl sm:text-2xl font-bold">
-        Documentation Illustration
-      </h3>
+      <h3 class="text-xl sm:text-2xl font-bold">Documentation Illustration</h3>
       <p class="text-gray-400 leading-relaxed">
-        For demonstration purposes, this image of Goku from Dragonball Z would be used.
+        For demonstration purposes, this image of Goku from Dragonball Z would
+        be used.
       </p>
       <img src="/docs/test.jpg" alt="Documentation illustration" />
     </div>
@@ -206,61 +206,112 @@
           class="text-xs font-mono text-success font-bold uppercase tracking-wider"
           >Module - 1</span
         >
-        <h3 class="text-xl sm:text-2xl font-bold">
-          Grid Lines and Tiling
-        </h3>
-        <p class="text-xs sm:text-sm leading-relaxed">
-          This is the first module of this application. Major features included in this module include grid lines, straight lines, cropping image, tiling, adjusting
-          brightness and contrast. For this documentation I'd only focus on tiling and grid features as they were one of the most relevant features
-          which inspired me to develop this in the first place.
+        <h3 class="text-xl sm:text-2xl font-bold">Grid Lines and Tiling</h3>
+        <p class="leading-relaxed">
+          This is the first module of this application. Major features included
+          in this module include grid lines, straight lines, cropping image,
+          tiling, adjusting brightness and contrast. For this documentation I'd
+          only focus on tiling and grid features as they were one of the most
+          relevant features which inspired me to develop this in the first
+          place.
         </p>
 
-        <p class="text-xs sm:text-sm leading-relaxed">
-          Grid method is one of the most popular methods artists use to maintain proper proportions and alignment in their artwork. It helps in breaking down complex compositions into manageable sections, ensuring accuracy and consistency throughout the creative process.
-          In this module, the grid feature allows users to overlay a customizable grid on their canvas, making it easier to align elements and maintain consistent proportions. You have the option
-          to choose the number of rows and columns for the grid, allowing for precise control over the layout and alignment of elements on the canvas.
+        <p class="leading-relaxed">
+          Grid method is one of the most popular methods artists use to maintain
+          proper proportions and alignment in their artwork. It helps in
+          breaking down complex compositions into manageable sections, ensuring
+          accuracy and consistency throughout the creative process. In this
+          module, the grid feature allows users to overlay a customizable grid
+          on their canvas, making it easier to align elements and maintain
+          consistent proportions. You have the option to choose the number of
+          rows and columns for the grid, allowing for precise control over the
+          layout and alignment of elements on the canvas.
         </p>
 
-        <h4 class="text-lg sm:text-xl font-bold">
-          Tiling Feature
-        </h4>
-        <p class="text-xs sm:text-sm leading-relaxed">
-          The tiling feature allows users to split the image into equal tiles which can later be individually edited and saved. You can also use this zoom in and save feature
-          to focus on specific areas of the image for detailed editing. In the illustration below, we have cut the image into four tiles.
+        <h4 class="text-lg sm:text-xl font-bold">Tiling Feature</h4>
+        <p class="leading-relaxed">
+          The tiling feature allows users to split the image into equal tiles
+          which can later be individually edited and saved. You can also use
+          this zoom in and save feature to focus on specific areas of the image
+          for detailed editing. In the illustration below, we have cut the image
+          into four tiles.
         </p>
 
-        <img class="rounded-xl shadow-md max-w-4xl my-3 mx-auto" src="/docs/1.jpg" alt="Documentation illustration" />
+        <img
+          class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+          src="/docs/1.jpg"
+          alt="Documentation illustration"
+        />
 
-        <p class="text-xs sm:text-sm leading-relaxed">
-          We would use the bottom right tile which has face of Goku for detailed editing in subsequent examples. The example image below shows
-          this tiled image being used in advanced filtering section to apply advanced tensorflow image effects on this.
+        <p class="eading-relaxed">
+          We would use the bottom right tile which has face of Goku for detailed
+          editing in subsequent examples. The example image below shows this
+          tiled image being used in advanced filtering section to apply advanced
+          tensorflow image effects on this.
         </p>
 
-        <img class="rounded-xl shadow-md max-w-4xl my-3 mx-auto" src="/docs/10.jpg" alt="Documentation illustration" />
+        <img
+          class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+          src="/docs/10.jpg"
+          alt="Documentation illustration"
+        />
 
-        <p class="text-xs sm:text-sm leading-relaxed">
-          Some other trivial features of this module include the following. As most editors would have them by default, I decided to skip them 
-          for detailed explanation here.
+        <p class="leading-relaxed">
+          Below image shows selection of an individual tile for detailed
+          editing. You could also save it as it is, or tweak certain parameters
+          in-place like brightness and contrast for immediate visual feedback.
+        </p>
+
+        <img
+          class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+          src="/docs/2.jpg"
+          alt="Documentation illustration"
+        />
+
+        <p class="leading-relaxed">
+          Some other trivial features of this module include the following. As
+          most editors would have them by default, I decided to skip them for
+          detailed explanation here.
         </p>
 
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">Cropping</span>
-          <p class="text-[11px] text-light">Cropping an image is available in various shapes including freeform.</p>
+          <div
+            class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+          >
+            <span class="text-success font-bold">Cropping</span>
+            <p class="text-light">
+              Cropping an image is available in various shapes including
+              freeform.
+            </p>
+          </div>
+          <div
+            class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+          >
+            <span class="text-success font-bold">Grid Lines</span>
+            <p class="text-light">
+              Save image as solid or dashed grid lines, very useful for artists
+              in determining proportions and alignment.
+            </p>
+          </div>
+          <div
+            class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+          >
+            <span class="text-success font-bold">Pan and Zoom</span>
+            <p class="text-light">
+              Pan and zoom functionality for detailed image editing. You can
+              also save the zoomed in area of the image.
+            </p>
+          </div>
+          <div
+            class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+          >
+            <span class="text-success font-bold">Adjust parameters</span>
+            <p class="text-light">
+              Adjust various image parameters such as brightness, contrast, and
+              saturation for fine-tuned editing.
+            </p>
+          </div>
         </div>
-        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">Grid Lines</span>
-          <p class="text-[11px] text-light">Save image as solid or dashed grid lines, very useful for artists in determining proportions and alignment.</p>
-        </div>
-        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">Pan and Zoom</span>
-          <p class="text-[11px] text-light">Pan and zoom functionality for detailed image editing. You can also save the zoomed in area of the image.</p>
-        </div>
-        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">Adjust parameters</span>
-          <p class="text-[11px] text-light">Adjust various image parameters such as brightness, contrast, and saturation for fine-tuned editing.</p>
-        </div>
-      </div>
       </div>
     </div>
 
@@ -269,36 +320,111 @@
       in:fly={{ y: 30, duration: 400, delay: 1000 }}
     >
       <div class="max-w-xl space-y-2">
-        <span
-          class="text-xs font-mono text-success font-bold uppercase tracking-wider"
+        <span class=" font-mono text-success font-bold uppercase tracking-wider"
           >Module - 2</span
         >
-        <h3 class="text-xl sm:text-2xl font-bold">
-          Built with Modern Web Architecture
-        </h3>
-        <p class="text-xs sm:text-sm text-gray-400 leading-relaxed">
-          Powered by Svelte's high-performance reactivity model, TensorFlow.js
-          for browser-native machine learning, HTML5 Canvas API for rapid pixel
-          manipulation, and Tailwind CSS for responsive studio UI layouts.
-        </p>
+        <h3 class="text-xl sm:text-2xl font-bold">Tensor Studio</h3>
       </div>
 
+      <p class="leading-relaxed">
+        This module includes features like eye-dropper tool, can extract top
+        colors from the image, it has options to tweak certain properties of
+        image like brightness, contrast, saturation, and hue. RGB values of the image can also be changed through sliders. You can also get 
+        description of the image using the AI-powered describe image feature. Though, we have a separate module for advanced filters, this 
+        does have some filters as well and view modes powered by AI.
+      </p>
+
+      <p class="leading-relaxed">
+        Below image shows green channel effects applied on the individual image tile which I selected earlier from a Goku image.
+      </p>
+
+      <img
+        class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+        src="/docs/3.jpg"
+        alt="Documentation illustration"
+      />
+
+      <p class="eading-relaxed">
+        This uses pencil portrait effect powered by AI. You can create some cool illustrations by tweaking RGB values and other image parameters on top of
+        pencil portrait effect.
+      </p>
+
+      <img
+        class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+        src="/docs/4.jpg"
+        alt="Documentation illustration"
+      />
+
+      <p class="eading-relaxed">
+        This illustration shows another effect applied called "Soft Graphite" from tensorflow. As mentioned earlier, you could combine
+        other effects with this to create unique and customized image styles.
+      </p>
+
+      <img
+        class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+        src="/docs/5.jpg"
+        alt="Documentation illustration"
+      />
+
+      <p class="eading-relaxed">
+        We can see the edited image preview in a modal when clicking on the
+        preview button as displayed in the illustration below.
+      </p>
+
+      <img
+        class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+        src="/docs/6.jpg"
+        alt="Documentation illustration"
+      />
+
+      <p class="eading-relaxed">
+        In the image below, we show the use of describe image button which on
+        click would call for AI to generate a description of the image based on
+        what objects it can detect in the image.
+      </p>
+
+      <img
+        class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+        src="/docs/7.jpg"
+        alt="Documentation illustration"
+      />
+
+      <p class="eading-relaxed">
+        Below is the summary of some of the lesser discussed features in this module.
+      </p>
+
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">Svelte</span>
-          <p class="text-[11px] text-gray-400">Reactive Runes State</p>
+        <div
+          class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+        >
+          <span class="text-success font-bold">Eye Dropper</span>
+          <p class="text-light">
+            The eye dropper tool allows you to pick colors directly from the image for precise color adjustments.
+          </p>
         </div>
-        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">TensorFlow.js</span>
-          <p class="text-[11px] text-gray-400">WebGL Tensor Kernels</p>
+        <div
+          class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+        >
+          <span class="text-success font-bold">Top Image Colors</span>
+          <p class="text-light">
+            Displays the most prominent colors in the image, helping artists and designers quickly identify the color palette precisely.
+          </p>
         </div>
-        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">Canvas API</span>
-          <p class="text-[11px] text-gray-400">Low-level Pixel Editing</p>
+        <div
+          class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+        >
+          <span class="text-success font-bold">RGB Channel Mixer</span>
+          <p class="text-light">
+            Mix and adjust the red, green, and blue channels of the image to achieve desired color effects.
+          </p>
         </div>
-        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">Tailwind CSS</span>
-          <p class="text-[11px] text-gray-400">Responsive Studio UI</p>
+        <div
+          class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+        >
+          <span class="text-success font-bold">Blend Intensity</span>
+          <p class="text-light">
+            Control the intensity of blending effects applied to the image through a slider.
+          </p>
         </div>
       </div>
     </div>
@@ -308,14 +434,13 @@
       in:fly={{ y: 30, duration: 400, delay: 1100 }}
     >
       <div class="max-w-xl space-y-2">
-        <span
-          class="text-xs font-mono text-success font-bold uppercase tracking-wider"
+        <span class=" font-mono text-success font-bold uppercase tracking-wider"
           >Module - 3</span
         >
         <h3 class="text-xl sm:text-2xl font-bold">
           400+ Artistic filters and Vibe filters
         </h3>
-        <p class="text-xs sm:text-sm text-gray-400 leading-relaxed">
+        <p class=" sm:text-sm text-gray-400 leading-relaxed">
           Powered by Svelte's high-performance reactivity model, TensorFlow.js
           for browser-native machine learning, HTML5 Canvas API for rapid pixel
           manipulation, and Tailwind CSS for responsive studio UI layouts.
@@ -323,20 +448,28 @@
       </div>
 
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">Svelte</span>
+        <div
+          class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+        >
+          <span class=" font-mono text-success font-bold">Svelte</span>
           <p class="text-[11px] text-gray-400">Reactive Runes State</p>
         </div>
-        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">TensorFlow.js</span>
+        <div
+          class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+        >
+          <span class=" font-mono text-success font-bold">TensorFlow.js</span>
           <p class="text-[11px] text-gray-400">WebGL Tensor Kernels</p>
         </div>
-        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">Canvas API</span>
+        <div
+          class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+        >
+          <span class=" font-mono text-success font-bold">Canvas API</span>
           <p class="text-[11px] text-gray-400">Low-level Pixel Editing</p>
         </div>
-        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">Tailwind CSS</span>
+        <div
+          class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+        >
+          <span class=" font-mono text-success font-bold">Tailwind CSS</span>
           <p class="text-[11px] text-gray-400">Responsive Studio UI</p>
         </div>
       </div>
@@ -347,13 +480,10 @@
       in:fly={{ y: 30, duration: 400, delay: 1200 }}
     >
       <div class="max-w-xl space-y-2">
-        <span
-          class="text-xs font-mono text-success font-bold uppercase tracking-wider"
+        <span class=" font-mono text-success font-bold uppercase tracking-wider"
           >Module - 4</span
         >
-        <h3 class="text-xl sm:text-2xl font-bold">
-          Bulk File Features
-        </h3>
+        <h3 class="text-xl sm:text-2xl font-bold">Bulk File Features</h3>
         <p class="text-xs sm:text-sm text-gray-400 leading-relaxed">
           Powered by Svelte's high-performance reactivity model, TensorFlow.js
           for browser-native machine learning, HTML5 Canvas API for rapid pixel
@@ -362,20 +492,34 @@
       </div>
 
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">Svelte</span>
+        <div
+          class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+        >
+          <span class="font-mono text-success font-bold">Svelte</span>
           <p class="text-[11px] text-gray-400">Reactive Runes State</p>
         </div>
-        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">TensorFlow.js</span>
+        <div
+          class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+        >
+          <span class="text-xs font-mono text-success font-bold"
+            >TensorFlow.js</span
+          >
           <p class="text-[11px] text-gray-400">WebGL Tensor Kernels</p>
         </div>
-        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">Canvas API</span>
+        <div
+          class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+        >
+          <span class="text-xs font-mono text-success font-bold"
+            >Canvas API</span
+          >
           <p class="text-[11px] text-gray-400">Low-level Pixel Editing</p>
         </div>
-        <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1">
-          <span class="text-xs font-mono text-success font-bold">Tailwind CSS</span>
+        <div
+          class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+        >
+          <span class="text-xs font-mono text-success font-bold"
+            >Tailwind CSS</span
+          >
           <p class="text-[11px] text-gray-400">Responsive Studio UI</p>
         </div>
       </div>
