@@ -8,6 +8,7 @@
   const menuItems = [
     { name: "Home", url: "/", icon: "mdi:home-variant-outline" },
     { name: "About", url: "/about", icon: "mdi:information-outline" },
+    { name: "Docs", url: "/docs", icon: "mdi:file-document-outline" },
   ];
 
   let isMenuOpen = false;

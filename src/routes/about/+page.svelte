@@ -9,7 +9,7 @@
   <title>About - Softgenie Studio Photo Suite</title>
 </svelte:head>
 
-<div class="min-h-screen bg-light text-dark flex flex-col selection:bg-primary selection:text-light font-sans overflow-x-hidden">
+<div class="min-h-screen bg-light dark:bg-dark dark:text-light text-dark flex flex-col selection:bg-primary selection:text-light font-sans overflow-x-hidden">
   <HeaderComponent title="Softgenie Studio" />
 
   <!-- Hero Section -->
@@ -31,18 +31,18 @@
     <!-- Vision & Philosophy -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
       <div class="space-y-4">
-        <span class="text-xs font-mono font-bold uppercase tracking-wider text-primary bg-primary/10 px-3 py-1 rounded-full">Our Philosophy</span>
-        <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-dark">Empowering Artists with Intelligent Tools</h2>
-        <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
+        <span class="text-xs font-mono font-bold uppercase tracking-wider text-primary bg-primary/10 px-3 py-1 rounded-full dark:bg-light">Our Philosophy</span>
+        <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-dark dark:text-light">Empowering Artists with Intelligent Tools</h2>
+        <p class="text-sm sm:text-base text-gray-600 dark:text-light leading-relaxed">
           Creating accurate drawings and managing reference photos often requires jumping across heavy desktop software. Softgenie Studio Suite was engineered to provide a lightning-fast, zero-install, privacy-first workstation right inside your web browser.
         </p>
       </div>
-      <div class="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm space-y-4">
-        <div class="flex items-center gap-3 text-primary">
+      <div class="bg-white dark:bg-secondary p-8 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+        <div class="flex items-center gap-3 text-primary dark:text-light">
           <Icon icon="mdi:shield-check-outline" class="text-3xl" />
-          <h3 class="font-bold text-base text-dark">100% Client-Side Privacy</h3>
+          <h3 class="font-bold text-base text-dark dark:text-light">100% Client-Side Privacy</h3>
         </div>
-        <p class="text-xs sm:text-sm text-gray-600 leading-relaxed">
+        <p class="text-xs sm:text-sm text-dark dark:text-light leading-relaxed">
           Your reference images never touch an external server. All image processing, AI background removal, tensor convolutions, and color extractions happen locally on your machine via WebGL and browser memory.
         </p>
       </div>
@@ -51,40 +51,40 @@
     <!-- Core Feature Highlights Grid -->
     <div class="space-y-6">
       <div class="text-center max-w-2xl mx-auto space-y-2">
-        <span class="text-xs font-mono font-bold uppercase tracking-wider text-primary">Workstation Modules</span>
-        <h2 class="text-2xl sm:text-3xl font-black text-dark">Engineered for Creative Excellence</h2>
+        <span class="text-xs font-mono font-bold uppercase tracking-wider text-primary dark:bg-light rounded-2xl p-2">Workstation Modules</span>
+        <h2 class="text-2xl sm:text-3xl font-black text-dark dark:text-light mt-2">Engineered for Creative Excellence</h2>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Feature 1 -->
-        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-3">
-          <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl">
+        <div class="bg-white dark:bg-secondary p-6 rounded-2xl border border-gray-200 shadow-xs space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary dark:text-white flex items-center justify-center text-xl">
             <Icon icon="mdi:grid" />
           </div>
-          <h3 class="font-bold text-sm text-dark">Artist Grid & Line Studio</h3>
-          <p class="text-xs text-gray-600 leading-relaxed">
+          <h3 class="font-bold text-xl text-dark dark:text-light">Artist Grid & Line Studio</h3>
+          <p class="text-xs text-gray-600 dark:text-light leading-relaxed">
             Configure rows, columns, coordinate labels (A1, B2), Rule of Thirds, center diagonals, custom perspective lines, and split tiles for large-scale canvas transfers.
           </p>
         </div>
 
         <!-- Feature 2 -->
-        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-3">
-          <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl">
+        <div class="bg-white dark:bg-secondary p-6 rounded-2xl border border-gray-200 shadow-xs space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary dark:text-white flex items-center justify-center text-xl">
             <Icon icon="mdi:brain" />
           </div>
-          <h3 class="font-bold text-sm text-dark">TensorFlow.js Neural Studio</h3>
-          <p class="text-xs text-gray-600 leading-relaxed">
+          <h3 class="font-bold text-dark dark:text-light text-xl">TensorFlow.js Neural Studio</h3>
+          <p class="text-xs text-gray-600 leading-relaxed dark:text-light">
             Leverage WebGL matrix kernels, Sobel edge detectors, Laplacian embossing, and neural color mapping to turn photos into precise sketches or cinematic masterpieces.
           </p>
         </div>
 
         <!-- Feature 3 -->
-        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-3">
-          <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl">
+        <div class="bg-white dark:bg-secondary p-6 rounded-2xl border border-gray-200 shadow-xs space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary dark:text-white flex items-center justify-center text-xl">
             <Icon icon="mdi:palette-advanced" />
           </div>
-          <h3 class="font-bold text-sm text-dark">300+ Filter & Retouch Library</h3>
-          <p class="text-xs text-gray-600 leading-relaxed">
+          <h3 class="font-bold text-xl text-dark dark:text-light">300+ Filter & Retouch Library</h3>
+          <p class="text-xs text-gray-600 dark:text-light leading-relaxed">
             Explore vast collections of professional studio grades, film stocks, graphite pencils, charcoal shading, and real-time RGB histogram tonal analyzers.
           </p>
         </div>
