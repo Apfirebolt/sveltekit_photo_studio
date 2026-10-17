@@ -329,13 +329,16 @@
       <p class="leading-relaxed">
         This module includes features like eye-dropper tool, can extract top
         colors from the image, it has options to tweak certain properties of
-        image like brightness, contrast, saturation, and hue. RGB values of the image can also be changed through sliders. You can also get 
-        description of the image using the AI-powered describe image feature. Though, we have a separate module for advanced filters, this 
-        does have some filters as well and view modes powered by AI.
+        image like brightness, contrast, saturation, and hue. RGB values of the
+        image can also be changed through sliders. You can also get description
+        of the image using the AI-powered describe image feature. Though, we
+        have a separate module for advanced filters, this does have some filters
+        as well and view modes powered by AI.
       </p>
 
       <p class="leading-relaxed">
-        Below image shows green channel effects applied on the individual image tile which I selected earlier from a Goku image.
+        Below image shows green channel effects applied on the individual image
+        tile which I selected earlier from a Goku image.
       </p>
 
       <img
@@ -345,8 +348,9 @@
       />
 
       <p class="eading-relaxed">
-        This uses pencil portrait effect powered by AI. You can create some cool illustrations by tweaking RGB values and other image parameters on top of
-        pencil portrait effect.
+        This uses pencil portrait effect powered by AI. You can create some cool
+        illustrations by tweaking RGB values and other image parameters on top
+        of pencil portrait effect.
       </p>
 
       <img
@@ -356,8 +360,9 @@
       />
 
       <p class="eading-relaxed">
-        This illustration shows another effect applied called "Soft Graphite" from tensorflow. As mentioned earlier, you could combine
-        other effects with this to create unique and customized image styles.
+        This illustration shows another effect applied called "Soft Graphite"
+        from tensorflow. As mentioned earlier, you could combine other effects
+        with this to create unique and customized image styles.
       </p>
 
       <img
@@ -390,7 +395,8 @@
       />
 
       <p class="eading-relaxed">
-        Below is the summary of some of the lesser discussed features in this module.
+        Below is the summary of some of the lesser discussed features in this
+        module.
       </p>
 
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
@@ -399,7 +405,8 @@
         >
           <span class="text-success font-bold">Eye Dropper</span>
           <p class="text-light">
-            The eye dropper tool allows you to pick colors directly from the image for precise color adjustments.
+            The eye dropper tool allows you to pick colors directly from the
+            image for precise color adjustments.
           </p>
         </div>
         <div
@@ -407,7 +414,8 @@
         >
           <span class="text-success font-bold">Top Image Colors</span>
           <p class="text-light">
-            Displays the most prominent colors in the image, helping artists and designers quickly identify the color palette precisely.
+            Displays the most prominent colors in the image, helping artists and
+            designers quickly identify the color palette precisely.
           </p>
         </div>
         <div
@@ -415,7 +423,8 @@
         >
           <span class="text-success font-bold">RGB Channel Mixer</span>
           <p class="text-light">
-            Mix and adjust the red, green, and blue channels of the image to achieve desired color effects.
+            Mix and adjust the red, green, and blue channels of the image to
+            achieve desired color effects.
           </p>
         </div>
         <div
@@ -423,7 +432,8 @@
         >
           <span class="text-success font-bold">Blend Intensity</span>
           <p class="text-light">
-            Control the intensity of blending effects applied to the image through a slider.
+            Control the intensity of blending effects applied to the image
+            through a slider.
           </p>
         </div>
       </div>
@@ -433,44 +443,113 @@
       class="bg-gray-900 text-white p-8 sm:p-12 rounded-3xl shadow-md space-y-6"
       in:fly={{ y: 30, duration: 400, delay: 1100 }}
     >
-      <div class="max-w-xl space-y-2">
+      <div class="space-y-2">
         <span class=" font-mono text-success font-bold uppercase tracking-wider"
           >Module - 3</span
         >
-        <h3 class="text-xl sm:text-2xl font-bold">
-          400+ Artistic filters and Vibe filters
-        </h3>
-        <p class=" sm:text-sm text-gray-400 leading-relaxed">
-          Powered by Svelte's high-performance reactivity model, TensorFlow.js
-          for browser-native machine learning, HTML5 Canvas API for rapid pixel
-          manipulation, and Tailwind CSS for responsive studio UI layouts.
+        <h3 class="text-xl sm:text-2xl font-bold">Filter Library</h3>
+        <p class=" leading-relaxed">
+          Explore a wide range of filters to enhance your images with artistic
+          and aesthetic effects. It has a total of around 400+ filters which can
+          be applied to images for creative and professional results. It
+          includes artistic filters, vibe filters, and various other effect
+          categories. Behind the scenes AI using Tensorflow and HTML canvas is
+          applied to efficiently process and enhance images with these filters.
+        </p>
+
+        <p class="eading-relaxed">
+          Below is an illustration which shows one of the tensorflow-based
+          artistic filters in action.
+        </p>
+
+        <img
+          class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+          src="/docs/10.jpg"
+          alt="Tensorflow illustration"
+        />
+
+        <p class=" leading-relaxed">
+          As you might have already noticed, it has text edit features which
+          allows you to add multiple text boxes in an image with effects like
+          font customization, color adjustments, and various text effects. You
+          can also add shadows, outlines, and other stylistic enhancements to
+          your text boxes.
         </p>
       </div>
+
+      <img
+          class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+          src="/docs/8.jpg"
+          alt="Text edit illustration"
+        />
+
+      <p class=" leading-relaxed">
+          Using the preview feature, you can see side-by-side comparisons of your edits in real-time, allowing you to make precise adjustments and ensure the final image meets your expectations.
+        </p>
+
+        <img
+          class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+          src="/docs/9.jpg"
+          alt="Preview feature illustration"
+        />
+
+        <p class=" leading-relaxed">
+          There is also this cool feature called vibe filtering which allows you to enter some vibe text and submit. The system will then perform
+          a text matching analysis using sentence transformers behind the scenes to apply appropriate vibe filters to your image. It does so by performing
+          a text search on existing filters and returning the top five closest matches. It automatically applies the one which matched the most,
+          but with the choices it gives you, you can manually select the one that best fits your desired vibe.
+        </p>
+
+        <img
+          class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+          src="/docs/11.jpg"
+          alt="Vibe filtering illustration"
+        />
+
+        <p class=" leading-relaxed">
+          Though this vibe filter feature is not working properly and probably would not be able to select from all the filters available in this 
+          application. It is recommended to use it with caution and not rely solely on it for critical edits. It is still under development.
+        </p>
+
+        <p class="leading-relaxed">
+        Below is the summary of some of the features discussed in this
+        module.
+      </p>
 
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class=" font-mono text-success font-bold">Svelte</span>
-          <p class="text-[11px] text-gray-400">Reactive Runes State</p>
+          <span class="text-success font-bold">Text Editor</span>
+          <p class="text-light">
+                Text edit tool allows you to add multiple text to images with some cool effects such as shadows, inner, outer glows
+                , outlines and strokes. You can also apply blending modes to the text for creative effects.
+          </p>
         </div>
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class=" font-mono text-success font-bold">TensorFlow.js</span>
-          <p class="text-[11px] text-gray-400">WebGL Tensor Kernels</p>
+          <span class="text-success font-bold">AI and Canvas Filters</span>
+          <p class="text-light">
+                Provides a wide range of AI-powered and canvas-based filters for enhancing and manipulating images.
+          </p>
         </div>
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class=" font-mono text-success font-bold">Canvas API</span>
-          <p class="text-[11px] text-gray-400">Low-level Pixel Editing</p>
+          <span class="text-success font-bold">Multi-format Export And Compression</span>
+          <p class="text-light">
+            Allows exporting images in multiple formats such as PNG, JPEG, PDF and WebP for versatile usage. Also provides compression options to reduce file size while maintaining quality.
+          </p>
         </div>
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class=" font-mono text-success font-bold">Tailwind CSS</span>
-          <p class="text-[11px] text-gray-400">Responsive Studio UI</p>
+          <span class="text-success font-bold">Histogram Analysis</span>
+          <p class="text-light">
+            Provides a visual representation of the tonal distribution in the image, helping to analyze exposure and contrast. Also, has 
+            options to tweak parameters like brightness, contrast, hue, blur radius and saturation.
+          </p>
         </div>
       </div>
     </div>
