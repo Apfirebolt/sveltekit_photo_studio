@@ -478,42 +478,49 @@
       </div>
 
       <img
-          class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
-          src="/docs/8.jpg"
-          alt="Text edit illustration"
-        />
+        class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+        src="/docs/8.jpg"
+        alt="Text edit illustration"
+      />
 
       <p class=" leading-relaxed">
-          Using the preview feature, you can see side-by-side comparisons of your edits in real-time, allowing you to make precise adjustments and ensure the final image meets your expectations.
-        </p>
+        Using the preview feature, you can see side-by-side comparisons of your
+        edits in real-time, allowing you to make precise adjustments and ensure
+        the final image meets your expectations.
+      </p>
 
-        <img
-          class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
-          src="/docs/9.jpg"
-          alt="Preview feature illustration"
-        />
+      <img
+        class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+        src="/docs/9.jpg"
+        alt="Preview feature illustration"
+      />
 
-        <p class=" leading-relaxed">
-          There is also this cool feature called vibe filtering which allows you to enter some vibe text and submit. The system will then perform
-          a text matching analysis using sentence transformers behind the scenes to apply appropriate vibe filters to your image. It does so by performing
-          a text search on existing filters and returning the top five closest matches. It automatically applies the one which matched the most,
-          but with the choices it gives you, you can manually select the one that best fits your desired vibe.
-        </p>
+      <p class=" leading-relaxed">
+        There is also this cool feature called vibe filtering which allows you
+        to enter some vibe text and submit. The system will then perform a text
+        matching analysis using sentence transformers behind the scenes to apply
+        appropriate vibe filters to your image. It does so by performing a text
+        search on existing filters and returning the top five closest matches.
+        It automatically applies the one which matched the most, but with the
+        choices it gives you, you can manually select the one that best fits
+        your desired vibe.
+      </p>
 
-        <img
-          class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
-          src="/docs/11.jpg"
-          alt="Vibe filtering illustration"
-        />
+      <img
+        class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+        src="/docs/11.jpg"
+        alt="Vibe filtering illustration"
+      />
 
-        <p class=" leading-relaxed">
-          Though this vibe filter feature is not working properly and probably would not be able to select from all the filters available in this 
-          application. It is recommended to use it with caution and not rely solely on it for critical edits. It is still under development.
-        </p>
+      <p class=" leading-relaxed">
+        Though this vibe filter feature is not working properly and probably
+        would not be able to select from all the filters available in this
+        application. It is recommended to use it with caution and not rely
+        solely on it for critical edits. It is still under development.
+      </p>
 
-        <p class="leading-relaxed">
-        Below is the summary of some of the features discussed in this
-        module.
+      <p class="leading-relaxed">
+        Below is the summary of some of the features discussed in this module.
       </p>
 
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
@@ -522,8 +529,10 @@
         >
           <span class="text-success font-bold">Text Editor</span>
           <p class="text-light">
-                Text edit tool allows you to add multiple text to images with some cool effects such as shadows, inner, outer glows
-                , outlines and strokes. You can also apply blending modes to the text for creative effects.
+            Text edit tool allows you to add multiple text to images with some
+            cool effects such as shadows, inner, outer glows , outlines and
+            strokes. You can also apply blending modes to the text for creative
+            effects.
           </p>
         </div>
         <div
@@ -531,15 +540,20 @@
         >
           <span class="text-success font-bold">AI and Canvas Filters</span>
           <p class="text-light">
-                Provides a wide range of AI-powered and canvas-based filters for enhancing and manipulating images.
+            Provides a wide range of AI-powered and canvas-based filters for
+            enhancing and manipulating images.
           </p>
         </div>
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="text-success font-bold">Multi-format Export And Compression</span>
+          <span class="text-success font-bold"
+            >Multi-format Export And Compression</span
+          >
           <p class="text-light">
-            Allows exporting images in multiple formats such as PNG, JPEG, PDF and WebP for versatile usage. Also provides compression options to reduce file size while maintaining quality.
+            Allows exporting images in multiple formats such as PNG, JPEG, PDF
+            and WebP for versatile usage. Also provides compression options to
+            reduce file size while maintaining quality.
           </p>
         </div>
         <div
@@ -547,8 +561,10 @@
         >
           <span class="text-success font-bold">Histogram Analysis</span>
           <p class="text-light">
-            Provides a visual representation of the tonal distribution in the image, helping to analyze exposure and contrast. Also, has 
-            options to tweak parameters like brightness, contrast, hue, blur radius and saturation.
+            Provides a visual representation of the tonal distribution in the
+            image, helping to analyze exposure and contrast. Also, has options
+            to tweak parameters like brightness, contrast, hue, blur radius and
+            saturation.
           </p>
         </div>
       </div>
@@ -558,15 +574,37 @@
       class="bg-gray-900 text-white p-8 sm:p-12 rounded-3xl shadow-md space-y-6"
       in:fly={{ y: 30, duration: 400, delay: 1200 }}
     >
-      <div class="max-w-xl space-y-2">
+      <div class="space-y-2">
         <span class=" font-mono text-success font-bold uppercase tracking-wider"
           >Module - 4</span
         >
         <h3 class="text-xl sm:text-2xl font-bold">Bulk File Features</h3>
-        <p class="text-xs sm:text-sm text-gray-400 leading-relaxed">
-          Powered by Svelte's high-performance reactivity model, TensorFlow.js
-          for browser-native machine learning, HTML5 Canvas API for rapid pixel
-          manipulation, and Tailwind CSS for responsive studio UI layouts.
+        <p class=" leading-relaxed">
+          You can work with multiple files simultaneously, applying edits,
+          filters, and adjustments in bulk to streamline your workflow. This
+          provides a compression tool alongwith file format conversion options.
+          You can also club multiple images into a single pdf document. This is
+          one of the features which I use a lot in my workflow.
+        </p>
+
+        <img
+          class="rounded-xl shadow-md max-w-4xl my-3 mx-auto"
+          src="/docs/12.jpg"
+          alt="Bulk edit illustration"
+        />
+
+        <p class=" leading-relaxed">
+          In the illustration above, you can see how multiple files are being
+          managed and edited in bulk, showcasing the efficiency of the bulk file
+          features. You can crop multiple images to a specific dimension
+          simultaneously, saving time and ensuring consistency across your
+          files.
+        </p>
+
+        <p class=" leading-relaxed">
+          App gives you option to apply watermark text to multiple images at
+          once, apply random filters or same filter to all selected images. It
+          also has option to create beautiful collages from multiple images.
         </p>
       </div>
 
@@ -574,32 +612,39 @@
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="font-mono text-success font-bold">Svelte</span>
-          <p class="text-[11px] text-gray-400">Reactive Runes State</p>
+          <span class="text-success font-bold">Watermark</span>
+          <p class="text-light">
+            Watermark tool allows you to add multiple watermarks to your images
+            at once.
+          </p>
         </div>
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="text-xs font-mono text-success font-bold"
-            >TensorFlow.js</span
-          >
-          <p class="text-[11px] text-gray-400">WebGL Tensor Kernels</p>
+          <span class="text-success font-bold">Bulk file conversion</span>
+          <p class="text-light">
+            Allows you to convert multiple files to different formats in bulk
+            and compress, saving time and effort.
+          </p>
         </div>
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="text-xs font-mono text-success font-bold"
-            >Canvas API</span
-          >
-          <p class="text-[11px] text-gray-400">Low-level Pixel Editing</p>
+          <span class="text-success font-bold">Frames</span>
+          <p class="text-light">
+            Allows you to add frames to multiple images at once. There are
+            multiple in-built frame styles to choose from.
+          </p>
         </div>
         <div
           class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
-          <span class="text-xs font-mono text-success font-bold"
-            >Tailwind CSS</span
-          >
-          <p class="text-[11px] text-gray-400">Responsive Studio UI</p>
+          <span class="text-success font-bold">Collage Maker</span>
+          <p class="text-light">
+            Allows you to create collages from multiple images. You can choose
+            from various templates and customize the layout, spacing, and
+            background to create visually appealing collages.
+          </p>
         </div>
       </div>
     </div>
