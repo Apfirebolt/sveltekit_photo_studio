@@ -185,11 +185,11 @@
     </div>
 
     <div
-      class="bg-gray-900 text-white p-6 sm:p-12 rounded-3xl shadow-md space-y-6 overflow-hidden"
+      class="dark:bg-gray-900 bg-white dark:text-light text-dark p-6 sm:p-12 rounded-3xl shadow-md space-y-6 overflow-hidden"
       in:fly={{ y: 30, duration: 400, delay: 800 }}
     >
       <h3 class="text-xl sm:text-2xl font-bold">Documentation Illustration</h3>
-      <p class="text-gray-400 leading-relaxed">
+      <p class="dark:text-light text-dark leading-relaxed">
         For demonstration purposes, this image of Goku from Dragonball Z would
         be used.
       </p>
@@ -198,7 +198,7 @@
 
     <!-- Technology Stack Callouts (Modules 1 to 4) -->
     <div
-      class="bg-gray-900 text-white p-6 sm:p-12 rounded-3xl shadow-md space-y-6 overflow-hidden"
+      class="dark:bg-gray-900 bg-white dark:text-light text-dark p-6 sm:p-12 rounded-3xl shadow-md space-y-6 overflow-hidden"
       in:fly={{ y: 30, duration: 400, delay: 900 }}
     >
       <div class="space-y-2">
@@ -316,7 +316,7 @@
     </div>
 
     <div
-      class="bg-gray-900 text-white p-6 sm:p-12 rounded-3xl shadow-md space-y-6 overflow-hidden"
+      class="dark:bg-gray-900 dark:text-light bg-white text-dark p-6 sm:p-12 rounded-3xl shadow-md space-y-6 overflow-hidden"
       in:fly={{ y: 30, duration: 400, delay: 1000 }}
     >
       <div class="space-y-2">
@@ -440,7 +440,7 @@
     </div>
 
     <div
-      class="bg-gray-900 text-white p-6 sm:p-12 rounded-3xl shadow-md space-y-6 overflow-hidden"
+      class="dark:bg-gray-900 bg-white text-dark dark:text-light p-6 sm:p-12 rounded-3xl shadow-md space-y-6 overflow-hidden"
       in:fly={{ y: 30, duration: 400, delay: 1100 }}
     >
       <div class="space-y-2">
@@ -571,7 +571,7 @@
     </div>
 
     <div
-      class="bg-gray-900 text-white p-6 sm:p-12 rounded-3xl shadow-md space-y-6 overflow-hidden"
+      class="dark:bg-gray-900 dark:text-white bg-white text-dark p-6 sm:p-12 rounded-3xl shadow-md space-y-6 overflow-hidden"
       in:fly={{ y: 30, duration: 400, delay: 1200 }}
     >
       <div class="space-y-2">
@@ -608,39 +608,39 @@
         </p>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+      <div class="grid grid-cols-1 dark:text-light sm:grid-cols-2 md:grid-cols-4 gap-4 pt-2">
         <div
-          class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+          class="dark:bg-gray-800/80 bg-light p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
           <span class="text-success font-bold block">Watermark</span>
-          <p class="text-light text-sm">
+          <p class="text-sm">
             Watermark tool allows you to add multiple watermarks to your images
             at once.
           </p>
         </div>
         <div
-          class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+          class="dark:bg-gray-800/80 bg-light p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
           <span class="text-success font-bold block">Bulk file conversion</span>
-          <p class="text-light text-sm">
+          <p class="text-sm">
             Allows you to convert multiple files to different formats in bulk
             and compress, saving time and effort.
           </p>
         </div>
         <div
-          class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+          class="dark:bg-gray-800/80 bg-light p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
           <span class="text-success font-bold block">Frames</span>
-          <p class="text-light text-sm">
+          <p class="text-sm">
             Allows you to add frames to multiple images at once. There are
             multiple in-built frame styles to choose from.
           </p>
         </div>
         <div
-          class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/60 space-y-1"
+          class="dark:bg-gray-800/80 bg-light p-4 rounded-xl border border-gray-700/60 space-y-1"
         >
           <span class="text-success font-bold block">Collage Maker</span>
-          <p class="text-light text-sm">
+          <p class="text-sm">
             Allows you to create collages from multiple images. You can choose
             from various templates and customize the layout, spacing, and
             background to create visually appealing collages.
